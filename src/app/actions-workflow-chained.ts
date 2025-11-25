@@ -351,28 +351,23 @@ export async function executeNextWorkflowStep(): Promise<{
   }
 }
 
-// Start the workflow - FULLY SERVER-SIDE
-// Executes all steps recursively on the server, no client needed
+// Start the workflow - Initialize queue and let client executor handle the rest
 export async function startChainedWorkflow(): Promise<{ success: boolean; message: string }> {
   try {
-    console.log('🚀 Starting FULLY server-side chained workflow...');
+    console.log('🚀 Starting chained workflow...');
+    
+    // Clear any previous queue state
     await clearQueueState();
-    await updateQueueState({ currentStep: 'clear_data', attempt: 1, draftsMade: 0 });
+    
+    // Initialize workflow state
     await updateWorkflowState({ status: 'running', message: 'Workflow started' });
     
-    // Execute ALL steps server-side recursively
-    console.log('⚡ Executing complete workflow server-side...');
-    const finalResult = await executeNextWorkflowStep();
+    // Set queue to first step - CLIENT EXECUTOR WILL TAKE OVER FROM HERE
+    await updateQueueState({ currentStep: 'clear_data', attempt: 1, draftsMade: 0 });
     
-    if (!finalResult.success) {
-      return { success: false, message: `Workflow failed: ${finalResult.error}` };
-    }
+    console.log('✅ Workflow initialized. Queue set to: clear_data. Client executor will handle step execution.');
     
-    if (finalResult.completed) {
-      return { success: true, message: `Workflow completed successfully! ${finalResult.message}` };
-    }
-    
-    return { success: true, message: `Workflow in progress: ${finalResult.message}` };
+    return { success: true, message: 'Workflow started. Steps will execute via client executor.' };
   } catch (error: any) {
     console.error('❌ Failed to start workflow:', error);
     await updateQueueState({ currentStep: 'error', error: error.message });
