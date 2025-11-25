@@ -230,11 +230,15 @@ export function MissionControl() {
                <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Next Auto Run</p>
-                    <p className="text-2xl font-bold font-mono text-primary">{countdown}</p>
+                    <p className="text-2xl font-bold font-mono text-primary">
+                      {mounted ? countdown : "00:00:00"}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Next Auto Publish</p>
-                    <p className="text-2xl font-bold font-mono text-green-600">{publishCountdown}</p>
+                    <p className="text-2xl font-bold font-mono text-green-600">
+                      {mounted ? publishCountdown : "00:00:00"}
+                    </p>
                   </div>
                </div>
             </CardHeader>
