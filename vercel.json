@@ -4,20 +4,6 @@
       "maxDuration": 300
     }
   },
-  "crons": [
-    {
-      "path": "/api/cron/daily-workflow",
-      "schedule": "0 21 * * *"
-    },
-    {
-      "path": "/api/cron/workflow-step",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/daily-publish",
-      "schedule": "30 21 * * *"
-    }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",
