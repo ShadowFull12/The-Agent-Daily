@@ -277,27 +277,24 @@ export function MissionControl() {
                         Force Full Run
                     </Button>
 
-                    {runStatus === 'running' && (
+                    {(runStatus === 'running' || runStatus === 'stopping') && (
                         <Button variant="destructive" onClick={handleForceStop}>
                             <Square className="mr-2 h-4 w-4" />
                             Force Stop
                         </Button>
                     )}
 
-                    {/* Emergency Kill Switch - Triple Click to Activate */}
-                    <Button 
-                        variant="outline" 
-                        className="border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
-                        onClick={(e) => {
-                            if (e.detail === 3) {
-                                handleEmergencyKill();
-                            }
-                        }}
-                        title="Triple-click to activate emergency kill switch"
-                    >
-                        <Skull className="mr-2 h-4 w-4" />
-                        🚨 Kill Switch
-                    </Button>
+                    {/* Emergency Kill Switch - Single Click */}
+                    {(runStatus === 'running' || runStatus === 'stopping') && (
+                        <Button 
+                            variant="destructive" 
+                            className="bg-red-600 hover:bg-red-700 border-red-700"
+                            onClick={handleEmergencyKill}
+                        >
+                            <Skull className="mr-2 h-4 w-4" />
+                            🚨 EMERGENCY KILL
+                        </Button>
+                    )}
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>

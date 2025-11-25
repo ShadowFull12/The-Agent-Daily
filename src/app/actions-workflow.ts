@@ -9,6 +9,7 @@ import {
     clearAllDataAction,
 } from "@/app/actions";
 import { initializeWorkflowState, updateWorkflowState, updateAgentProgress, clearWorkflowState, getWorkflowState } from "@/lib/workflow-state";
+import { getFirebaseServices } from "@/lib/firebase-server";
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -217,24 +218,34 @@ export async function stopWorkflowAction(): Promise<{ success: boolean; message:
     try {
         shouldStopWorkflow = true;
         
-        await updateWorkflowState({
-            status: 'stopping',
-            message: 'Stopping workflow immediately and reverting changes...',
-        });
-        
-        // Clear all data immediately
+        // Immediately clear all data
         await clearAllDataAction();
         
-        // Set to idle after a short delay
-        setTimeout(async () => {
-            await updateWorkflowState({
-                status: 'idle',
-                message: 'Workflow stopped and all changes reverted',
-            });
-        }, 2000);
+        // Force set state to idle immediately
+        const { firestore } = getFirebaseServices();
+        const { doc, setDoc, Timestamp } = await import('firebase/firestore');
+        
+        const workflowDoc = doc(firestore, 'workflow_state', 'current_workflow');
+        await setDoc(workflowDoc, {
+            status: 'idle',
+            currentAgent: null,
+            message: 'Workflow stopped by user',
+            progress: {
+                scout: { status: 'idle', message: '' },
+                deduplicator: { status: 'idle', message: '', checked: 0, remaining: 0 },
+                journalist: { status: 'idle', message: '', drafted: 0, remaining: 0 },
+                validator: { status: 'idle', message: '' },
+                editor: { status: 'idle', message: '' },
+                publisher: { status: 'idle', message: '' },
+            },
+            startedAt: Timestamp.now(),
+            lastUpdated: Timestamp.now(),
+        }, { merge: false });
         
         return { success: true, message: 'Workflow stopped immediately and data cleared' };
     } catch (error: any) {
         return { success: false, message: error.message };
+    } finally {
+        shouldStopWorkflow = false;
     }
 }
