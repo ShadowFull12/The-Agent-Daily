@@ -238,12 +238,22 @@ export async function executeNextWorkflowStep(): Promise<{
 // Start the workflow
 export async function startChainedWorkflow(): Promise<{ success: boolean; message: string }> {
   try {
+    console.log('🚀 Starting chained workflow...');
     await clearQueueState();
     await updateQueueState({ currentStep: 'clear_data', attempt: 1, draftsMade: 0 });
     await updateWorkflowState({ status: 'running', message: 'Workflow started' });
     
-    return { success: true, message: 'Workflow started. Auto-executing steps...' };
+    // Execute the first step immediately instead of waiting for the client executor
+    console.log('⚡ Executing first step immediately...');
+    const firstStepResult = await executeNextWorkflowStep();
+    
+    if (!firstStepResult.success) {
+      return { success: false, message: `First step failed: ${firstStepResult.error}` };
+    }
+    
+    return { success: true, message: `Workflow started. First step: ${firstStepResult.message}` };
   } catch (error: any) {
+    console.error('❌ Failed to start workflow:', error);
     return { success: false, message: error.message };
   }
 }
