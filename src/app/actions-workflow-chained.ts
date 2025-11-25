@@ -62,61 +62,70 @@ export async function executeStep2_Dedup(): Promise<{ success: boolean; message:
     }
     
     await updateAgentProgress('deduplicator', 'success', `Removed ${dedupResult.deletedCount} duplicates. ${dedupResult.totalLeads} unique leads remain.`);
-    await updateQueueState({ currentStep: 'journalist', draftsMade: 0 });
+    await updateQueueState({ currentStep: 'journalist_1', draftsMade: 0 });
     
-    return { success: true, message: `Removed ${dedupResult.deletedCount} duplicates. Proceeding to journalist...` };
+    return { success: true, message: `Removed ${dedupResult.deletedCount} duplicates. Proceeding to journalist_1...` };
   } catch (error: any) {
     await updateQueueState({ currentStep: 'error', error: error.message });
     return { success: false, message: 'Step 2 failed', error: error.message };
   }
 }
 
-// Step 3: Journalist - drafts ALL articles with 5 parallel workers (completes in ~50-80s)
-export async function executeStep3_Journalist(): Promise<{ success: boolean; message: string; error?: string }> {
+// Step 3.1: Journalist 1
+export async function executeStep3_Journalist1(): Promise<{ success: boolean; message: string; error?: string }> {
+  return await executeSingleJournalist('journalist_1', 'journalist_2');
+}
+
+// Step 3.2: Journalist 2
+export async function executeStep3_Journalist2(): Promise<{ success: boolean; message: string; error?: string }> {
+  return await executeSingleJournalist('journalist_2', 'journalist_3');
+}
+
+// Step 3.3: Journalist 3
+export async function executeStep3_Journalist3(): Promise<{ success: boolean; message: string; error?: string }> {
+  return await executeSingleJournalist('journalist_3', 'journalist_4');
+}
+
+// Step 3.4: Journalist 4
+export async function executeStep3_Journalist4(): Promise<{ success: boolean; message: string; error?: string }> {
+  return await executeSingleJournalist('journalist_4', 'journalist_5');
+}
+
+// Step 3.5: Journalist 5
+export async function executeStep3_Journalist5(): Promise<{ success: boolean; message: string; error?: string }> {
+  return await executeSingleJournalist('journalist_5', 'validate');
+}
+
+// Execute a single journalist process
+async function executeSingleJournalist(journalistId: string, nextStep: string): Promise<{ success: boolean; message: string; error?: string }> {
   try {
-    console.log('📋 Step 3: Journalist (5 separate processes)');
+    console.log(`📋 Step: ${journalistId}`);
     
-    await updateAgentProgress('journalist', 'working', 'Starting 5 journalist processes...');
+    await updateAgentProgress(journalistId as any, 'working', 'Starting...', { drafted: 0 });
     
-    // Initialize all 5 journalists
-    for (let i = 1; i <= 5; i++) {
-      await updateAgentProgress(`journalist_${i}` as any, 'working', 'Starting...', { drafted: 0 });
-    }
+    const result = await runJournalistProcess(journalistId);
     
-    let totalDrafts = 0;
-    
-    // Start all 5 journalist processes as separate function calls
-    const journalist1Promise = runJournalistProcess('journalist_1');
-    const journalist2Promise = runJournalistProcess('journalist_2');
-    const journalist3Promise = runJournalistProcess('journalist_3');
-    const journalist4Promise = runJournalistProcess('journalist_4');
-    const journalist5Promise = runJournalistProcess('journalist_5');
-    
-    // Wait for all to complete
-    const results = await Promise.all([
-      journalist1Promise,
-      journalist2Promise,
-      journalist3Promise,
-      journalist4Promise,
-      journalist5Promise
-    ]);
-    
-    // Sum up total drafts
-    results.forEach((result: { drafted: number }) => {
-      totalDrafts += result.drafted;
+    await updateAgentProgress(journalistId as any, 'success', `Completed ${result.drafted} article${result.drafted !== 1 ? 's' : ''}`, { 
+      drafted: result.drafted 
     });
     
-    await updateAgentProgress('journalist', 'success', `All 5 journalists completed. ${totalDrafts} articles drafted.`, { 
+    // Update total drafted count
+    const state = await getQueueState();
+    const totalDrafts = (state?.draftsMade || 0) + result.drafted;
+    
+    // Update journalist aggregated status
+    await updateAgentProgress('journalist', 'working', `Total: ${totalDrafts} articles drafted`, { 
       drafted: totalDrafts, 
       remaining: 0 
     });
     
-    await updateQueueState({ currentStep: 'validate', draftsMade: totalDrafts });
+    await updateQueueState({ currentStep: nextStep as any, draftsMade: totalDrafts });
     
-    return { success: true, message: `Drafted ${totalDrafts} articles with 5 separate journalists. Proceeding to validation...` };
+    return { success: true, message: `${journalistId} drafted ${result.drafted} article(s). Total: ${totalDrafts}` };
+    
   } catch (error: any) {
     await updateQueueState({ currentStep: 'error', error: error.message });
-    return { success: false, message: 'Step 3 failed', error: error.message };
+    return { success: false, message: `${journalistId} failed`, error: error.message };
   }
 }
 
@@ -241,8 +250,8 @@ export async function executeStep4_ValidateAndEdit(): Promise<{ success: boolean
   }
 }
 
-// Main orchestrator - checks queue and executes next step
-// Now fully server-side: each step triggers the next automatically
+// Main orchestrator - checks queue and executes ONE step only
+// Client or scheduler must call this repeatedly to advance workflow
 export async function executeNextWorkflowStep(): Promise<{ 
   success: boolean; 
   message: string; 
@@ -270,23 +279,35 @@ export async function executeNextWorkflowStep(): Promise<{
     console.log(`🎯 Executing workflow step: ${state.currentStep}`);
     
     let result: any;
-    let shouldContinue = false;
     
     switch (state.currentStep) {
       case 'clear_data':
       case 'scout':
         result = await executeStep1_ClearAndScout();
-        shouldContinue = result.success;
         break;
         
       case 'dedup':
         result = await executeStep2_Dedup();
-        shouldContinue = result.success;
         break;
         
-      case 'journalist':
-        result = await executeStep3_Journalist();
-        shouldContinue = result.success;
+      case 'journalist_1':
+        result = await executeStep3_Journalist1();
+        break;
+        
+      case 'journalist_2':
+        result = await executeStep3_Journalist2();
+        break;
+        
+      case 'journalist_3':
+        result = await executeStep3_Journalist3();
+        break;
+        
+      case 'journalist_4':
+        result = await executeStep3_Journalist4();
+        break;
+        
+      case 'journalist_5':
+        result = await executeStep3_Journalist5();
         break;
         
       case 'validate':
@@ -295,20 +316,13 @@ export async function executeNextWorkflowStep(): Promise<{
         const nextState = await getQueueState();
         result.nextStep = nextState?.currentStep === 'clear_data' ? 'clear_data' : 'complete';
         result.completed = nextState?.currentStep === 'complete';
-        shouldContinue = result.success && nextState?.currentStep === 'clear_data';
         break;
         
       default:
         return { success: false, message: 'Unknown step', error: 'Unknown workflow step' };
     }
     
-    // Server-side auto-chaining: if successful and not completed, execute next step
-    if (shouldContinue && !result.completed) {
-      console.log(`➡️ Auto-executing next step: ${result.nextStep}`);
-      await sleep(1000); // Brief pause
-      return await executeNextWorkflowStep(); // Recursive call for next step
-    }
-    
+    // Return result - let client/executor call again for next step
     return result;
     
   } catch (error: any) {
