@@ -299,9 +299,9 @@ export function MissionControl() {
             <Card className="overflow-hidden">
                 <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                    <div className="space-y-1.5 flex-1">
-                     <CardTitle>Automated Workflow (Fully Server-Side)</CardTitle>
+                     <CardTitle>Automated Workflow (Vercel Cron)</CardTitle>
                      <CardDescription>
-                        Workflow runs completely on server. Each step completes in &lt;5 min. All steps execute sequentially. Works with auto-trigger (no client needed). 25 leads, 20+ articles target.
+                        Each step runs as a separate Vercel function call (&lt;300s). Vercel Cron triggers steps every minute. Works with auto-trigger at 8 PM IST (no client needed). 25 leads, 20+ articles target.
                      </CardDescription>
                    </div>
                <div className="flex items-center gap-4">
