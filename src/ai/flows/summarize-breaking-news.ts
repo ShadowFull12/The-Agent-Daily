@@ -4,74 +4,63 @@
  * @fileOverview A flow for summarizing breaking news articles based on provided content.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { callGrok } from '@/lib/openrouter';
 
-const SummarizeBreakingNewsInputSchema = z.object({
-  url: z.string().url().describe('The URL of the breaking news article.'),
-  title: z.string().describe('The title of the news article.'),
-  topic: z.string().describe('The topic of the news article.'),
-  content: z.string().describe('The content/description of the article to be summarized.'),
-});
-export type SummarizeBreakingNewsInput = z.infer<
-  typeof SummarizeBreakingNewsInputSchema
->;
+export interface SummarizeBreakingNewsInput {
+  url: string;
+  title: string;
+  topic: string;
+  content: string;
+}
 
-const SummarizeBreakingNewsOutputSchema = z.object({
-  summary: z
-    .string()
-    .describe('A detailed, objective news report of approximately 250 words based on the provided content.'),
-  headline: z
-    .string()
-    .describe('A compelling, newspaper-style headline for the article.')
-});
-export type SummarizeBreakingNewsOutput = z.infer<
-  typeof SummarizeBreakingNewsOutputSchema
->;
+export interface SummarizeBreakingNewsOutput {
+  summary: string;
+  headline: string;
+}
 
 export async function summarizeBreakingNews(
   input: SummarizeBreakingNewsInput
 ): Promise<SummarizeBreakingNewsOutput> {
-  return summarizeBreakingNewsFlow(input);
-}
+  const prompt = `You are an expert journalist. Rewrite the provided article content into a detailed and objective news report.
 
-const summarizeBreakingNewsPrompt = ai.definePrompt({
-  name: 'summarizeBreakingNewsPrompt',
-  input: {schema: SummarizeBreakingNewsInputSchema},
-  output: {schema: SummarizeBreakingNewsOutputSchema},
-  prompt: `You are an expert journalist. Your task is to rewrite the provided article content into a detailed and objective news report.
+**Instructions:**
+1. Write a Detailed Report of approximately 250 words based ONLY on the Article Content provided
+2. Create a compelling, newspaper-style headline
+3. Maintain neutral, objective, factual tone
+4. Do not access external sources
 
-  **Instructions:**
-  1.  **Write a Detailed Report**: Based *only* on the 'Article Content' provided, write a comprehensive news report of approximately 250 words. Do not make it a short summary. Elaborate on the key points, provide context, and structure it like a professional news article.
-  2.  **Create a Headline**: Write a new, compelling, newspaper-style headline that accurately reflects the main point of the story.
-  3.  **Objective Tone**: Maintain a neutral, objective, and factual tone throughout the report. Do not inject personal opinions or biases.
-  4.  **No External Info**: Do not access the provided URL or any other external sources. Your entire output must be generated from the text provided in the 'Article Content' field.
+**Article Data:**
+- Original Title: ${input.title}
+- Topic: ${input.topic}
+- Article Content:
+${input.content}
 
-  **Article Data:**
-  -   **Original Title**: {{title}}
-  -   **Topic**: {{topic}}
-  -   **Article Content**:
-      \`\`\`
-      {{{content}}}
-      \`\`\`
+Return ONLY a JSON object with this exact format (no markdown, no extra text):
+{"summary": "detailed 250-word report", "headline": "compelling headline"}`;
 
-  Return your response as a single JSON object with 'summary' and 'headline' fields.
-  `,
-});
+  const systemPrompt = `You are a professional journalist AI. Always respond with valid JSON only, no markdown formatting.`;
 
-const summarizeBreakingNewsFlow = ai.defineFlow(
-  {
-    name: 'summarizeBreakingNewsFlow',
-    inputSchema: SummarizeBreakingNewsInputSchema,
-    outputSchema: SummarizeBreakingNewsOutputSchema,
-  },
-  async input => {
-    const {output} = await summarizeBreakingNewsPrompt(input);
-    if (!output) {
-      throw new Error('The AI failed to generate a summary.');
-    }
-    return output;
+  const response = await callGrok(prompt, systemPrompt);
+  
+  // Clean response
+  let cleanResponse = response.trim();
+  if (cleanResponse.startsWith('```')) {
+    cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
   }
-);
+  
+  try {
+    const parsed = JSON.parse(cleanResponse);
+    return {
+      summary: parsed.summary || 'Failed to generate summary',
+      headline: parsed.headline || input.title,
+    };
+  } catch (error) {
+    console.error('Failed to parse Grok response:', cleanResponse);
+    return {
+      summary: input.content.substring(0, 500),
+      headline: input.title,
+    };
+  }
+}
 
     

@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
 import { initializeApp, getApps } from "firebase/app";
+import { firebaseConfig } from "@/firebase/config";
 
 const formatCountdown = (ms: number) => {
     if (ms < 0) return "00:00:00";
@@ -52,9 +53,7 @@ type RunStatus = "idle" | "running" | "success" | "error" | "stopping";
 // Initialize Firebase client
 const getFirestoreClient = () => {
     if (getApps().length === 0) {
-        const app = initializeApp({
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "the-daily-agent"
-        });
+        const app = initializeApp(firebaseConfig);
         return getFirestore(app);
     }
     return getFirestore();

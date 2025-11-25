@@ -3,59 +3,52 @@
  * @fileOverview AI flow to check if two news article titles are essentially the same story.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { callGrok } from '@/lib/openrouter';
 
-const CheckDuplicateInputSchema = z.object({
-  title1: z.string().describe('The first article title to compare.'),
-  title2: z.string().describe('The second article title to compare.'),
-});
-export type CheckDuplicateInput = z.infer<typeof CheckDuplicateInputSchema>;
+export interface CheckDuplicateInput {
+  title1: string;
+  title2: string;
+}
 
-const CheckDuplicateOutputSchema = z.object({
-  isDuplicate: z.boolean().describe('True if the two titles are essentially about the same story, false otherwise.'),
-  reason: z.string().describe('Brief explanation of why they are or are not duplicates.'),
-});
-export type CheckDuplicateOutput = z.infer<typeof CheckDuplicateOutputSchema>;
+export interface CheckDuplicateOutput {
+  isDuplicate: boolean;
+  reason: string;
+}
 
 export async function checkDuplicate(
   input: CheckDuplicateInput
 ): Promise<CheckDuplicateOutput> {
-  return checkDuplicateFlow(input);
-}
+  const prompt = `You are an expert news editor. Determine if these two news article titles are essentially reporting the same story.
 
-const checkDuplicatePrompt = ai.definePrompt({
-  name: 'checkDuplicatePrompt',
-  input: {schema: CheckDuplicateInputSchema},
-  output: {schema: CheckDuplicateOutputSchema},
-  prompt: `You are an expert news editor. Your task is to determine if two news article titles are essentially reporting the same story or event.
+**Title 1:** ${input.title1}
 
-**Instructions:**
-1. Compare the two titles carefully.
-2. Determine if they are about the same core news story, event, or topic.
-3. Titles may use different wording but still be about the same story.
-4. If they refer to the same person, place, event, or breaking news, they are likely duplicates.
-5. If they are about completely different topics or events, they are not duplicates.
+**Title 2:** ${input.title2}
 
-**Title 1:** {{title1}}
+Return ONLY a JSON object with this exact format (no markdown, no extra text):
+{"isDuplicate": true/false, "reason": "brief explanation"}`;
 
-**Title 2:** {{title2}}
+  const systemPrompt = `You are a news editor AI. Always respond with valid JSON only, no markdown formatting.`;
 
-Return your response as a JSON object with 'isDuplicate' (boolean) and 'reason' (string) fields.
-`,
-});
-
-const checkDuplicateFlow = ai.defineFlow(
-  {
-    name: 'checkDuplicateFlow',
-    inputSchema: CheckDuplicateInputSchema,
-    outputSchema: CheckDuplicateOutputSchema,
-  },
-  async input => {
-    const {output} = await checkDuplicatePrompt(input);
-    if (!output) {
-      throw new Error('The AI failed to check for duplicates.');
-    }
-    return output;
+  const response = await callGrok(prompt, systemPrompt);
+  
+  // Clean response - remove markdown code blocks if present
+  let cleanResponse = response.trim();
+  if (cleanResponse.startsWith('```')) {
+    cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
   }
-);
+  
+  try {
+    const parsed = JSON.parse(cleanResponse);
+    return {
+      isDuplicate: parsed.isDuplicate || false,
+      reason: parsed.reason || 'No reason provided',
+    };
+  } catch (error) {
+    console.error('Failed to parse Grok response:', cleanResponse);
+    // Default to not duplicate if parsing fails
+    return {
+      isDuplicate: false,
+      reason: 'Failed to parse AI response',
+    };
+  }
+}
