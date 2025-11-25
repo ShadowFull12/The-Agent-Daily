@@ -78,61 +78,24 @@ async function runWorkflowInBackground(isManualRun: boolean) {
             if (await checkShouldStop()) throw new Error('Workflow stopped by user');
             await updateAgentProgress('scout', 'cooldown', '');
 
-            // 2. Deduplicator Agent
-            await updateAgentProgress('deduplicator', 'working', 'AI Deduplicator is scanning for duplicates...');
-            let dedupRemaining = -1;
-            let dedupChecks = 0;
-            let totalDeleted = 0;
-            let totalLeads = 0;
+            // 2. Deduplicator Agent - NEW BATCH PROCESSING
+            await updateAgentProgress('deduplicator', 'working', 'AI Deduplicator is analyzing all leads in one batch...');
             
-            do {
-                if (await checkShouldStop()) throw new Error('Workflow stopped by user');
-                
-                const dedupResult = await deduplicateLeadsAction();
-                
-                console.log('📊 Dedup result:', { 
-                    success: dedupResult.success, 
-                    deletedCount: dedupResult.deletedCount, 
-                    remaining: dedupResult.remaining,
-                    totalLeads: dedupResult.totalLeads,
-                    checkedTitle: dedupResult.checkedTitle?.substring(0, 50)
-                });
-                
-                if (dedupResult.totalLeads) {
-                    totalLeads = dedupResult.totalLeads;
-                }
-                
-                if (!dedupResult.success && dedupResult.error) {
-                    console.warn("Deduplication failed for one lead:", dedupResult.error);
-                    if (dedupResult.error.includes('quota') || dedupResult.error.includes('rate limit')) {
-                        await updateAgentProgress('deduplicator', 'working', 'Rate limited. Waiting 5 seconds...', { checked: dedupChecks, remaining: dedupRemaining });
-                        await sleep(5000);
-                        continue;
-                    }
-                    break;
-                }
-                
-                dedupChecks++;
-                totalDeleted += dedupResult.deletedCount;
-                dedupRemaining = dedupResult.remaining;
-                
-                if (dedupResult.checkedTitle) {
-                    const status = dedupResult.deletedCount > 0 ? "duplicate found!" : "unique";
-                    const checkedCount = totalLeads - dedupRemaining;
-                    console.log(`✅ Dedup progress: ${checkedCount}/${totalLeads} checked, ${totalDeleted} duplicates removed`);
-                    await updateAgentProgress('deduplicator', 'working', `Checked ${checkedCount} of ${totalLeads} - "${dedupResult.checkedTitle.substring(0, 40)}..." ${status}`, { checked: checkedCount, remaining: dedupRemaining });
-                }
-                
-                if (dedupRemaining > 0) {
-                    await sleep(1500);
-                }
-            } while (dedupRemaining > 0);
+            const { deduplicateLeadsActionBatch } = await import('@/app/actions-dedup-new');
+            const dedupResult = await deduplicateLeadsActionBatch();
             
-            if (await checkShouldStop()) throw new Error('Workflow stopped by user');
+            console.log('📊 Batch dedup result:', { 
+                success: dedupResult.success, 
+                deletedCount: dedupResult.deletedCount, 
+                remaining: dedupResult.remaining,
+                totalLeads: dedupResult.totalLeads
+            });
             
-            await updateAgentProgress('deduplicator', 'success', `AI checked ${dedupChecks} leads and removed ${totalDeleted} duplicates.`, { checked: dedupChecks, remaining: 0 });
-            await sleep(5000);
-            await updateAgentProgress('deduplicator', 'cooldown', '', { checked: 0, remaining: 0 });
+            if (!dedupResult.success && dedupResult.error) {
+                throw new Error(`Deduplication failed: ${dedupResult.error}`);
+            }
+            
+            await updateAgentProgress('deduplicator', 'success', `AI checked all leads and removed ${dedupResult.deletedCount} duplicates in one batch.`, { checked: dedupResult.totalLeads, remaining: 0 });
 
             // 3. Journalist
             if (await checkShouldStop()) throw new Error('Workflow stopped by user');
