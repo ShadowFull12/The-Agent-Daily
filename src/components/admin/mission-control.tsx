@@ -26,10 +26,12 @@ const getNext5AmIst = () => {
     const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
     const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
 
+    // Test mode: 7:40 PM today (19:40)
     const next5AmIst = new Date(nowIst);
-    next5AmIst.setHours(5, 0, 0, 0);
+    next5AmIst.setHours(19, 40, 0, 0);
 
-    if (nowIst.getHours() >= 5) {
+    // If already past 7:40 PM, set for tomorrow
+    if (nowIst.getHours() > 19 || (nowIst.getHours() === 19 && nowIst.getMinutes() >= 40)) {
         next5AmIst.setDate(next5AmIst.getDate() + 1);
     }
     
@@ -41,9 +43,12 @@ const getNext6AmIst = () => {
     const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
     const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
 
+    // Test mode: 8:10 PM today (20:10)
     const next6AmIst = new Date(nowIst);
-    next6AmIst.setHours(6, 0, 0, 0);
-    if(nowIst.getHours() >= 6){
+    next6AmIst.setHours(20, 10, 0, 0);
+    
+    // If already past 8:10 PM, set for tomorrow
+    if(nowIst.getHours() > 20 || (nowIst.getHours() === 20 && nowIst.getMinutes() >= 10)){
         next6AmIst.setDate(next6AmIst.getDate() + 1);
     }
 
@@ -122,11 +127,15 @@ export function MissionControl() {
         resetWorkflow();
         setRunStatus("running"); // resetWorkflow sets it to idle, so set it back
         
+        // Always clear all data on workflow start (both manual and automated)
+        setGlobalMessage("Clearing previous data for a fresh start...");
+        await clearAllDataAction();
+        router.refresh();
+        await sleep(2000);
+        
         if(isManualRun){
             setGlobalMessage("Manual workflow initiated...");
-            toast({ title: "Manual Run Started", description: "Clearing previous data for a fresh start." });
-            await clearAllDataAction();
-            router.refresh();
+            toast({ title: "Manual Run Started", description: "Starting fresh workflow." });
         } else {
              setGlobalMessage("Automated daily workflow initiated...");
              toast({ title: "Automated Run Started", description: "The daily newspaper generation process has begun." });
@@ -137,28 +146,6 @@ export function MissionControl() {
         let attempts = 0;
 
         try {
-            // Check if there are existing draft articles in the database
-            const existingDraftsResult = await checkExistingDraftsAction();
-            const hasExistingDrafts = existingDraftsResult.success && existingDraftsResult.draftCount > 0;
-            
-            if (hasExistingDrafts) {
-                setGlobalMessage(`Found ${existingDraftsResult.draftCount} existing draft articles. Skipping to validation...`);
-                toast({ 
-                    title: "Existing Drafts Found", 
-                    description: `Found ${existingDraftsResult.draftCount} articles. Skipping scout, deduplicator, and journalist.`,
-                    duration: 5000
-                });
-                await sleep(3000);
-                
-                // Mark scout, deduplicator, and journalist as skipped
-                setAgentStatus('scout', 'success', 'Skipped - using existing drafts');
-                setAgentStatus('deduplicator', 'success', 'Skipped - using existing drafts');
-                setAgentStatus('journalist', 'success', 'Skipped - using existing drafts');
-                
-                // Jump directly to validation
-                requiredArticlesMet = true;
-            }
-            
             while (!requiredArticlesMet && attempts < 3) {
                 if (isStoppingRef.current) throw new Error("Workflow manually stopped.");
                 attempts++;
@@ -263,8 +250,7 @@ export function MissionControl() {
             
             toast({
                 title: "Workflow Complete: Ready for Review",
-                description: "Today's edition is ready. It will be published automatically at 6 AM IST.",
-                icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+                description: "Today's edition is ready. It will be published automatically at 8:10 PM IST.",
                 duration: 10000,
             });
             setRunStatus("success");
@@ -332,7 +318,7 @@ export function MissionControl() {
                 toast({title: "Publication Time!", description: "Publishing the latest edition."});
                 publishLatestEditionAction().then(res => {
                     if(res.success){
-                        toast({title: "Published!", description: res.message, icon: <CheckCircle className="h-5 w-5 text-green-500" />});
+                        toast({title: "Published!", description: res.message});
                         router.refresh();
                     } else {
                         toast({variant: 'destructive', title: "Publication Failed", description: res.error});
