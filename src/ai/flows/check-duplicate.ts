@@ -4,6 +4,8 @@
  */
 
 import { callGrok } from '@/lib/openrouter';
+import { generate } from '@/ai/genkit';
+import { z } from 'genkit';
 
 export interface CheckDuplicateInput {
   title1: string;
@@ -14,6 +16,11 @@ export interface CheckDuplicateOutput {
   isDuplicate: boolean;
   reason: string;
 }
+
+const CheckDuplicateOutputSchema = z.object({
+  isDuplicate: z.boolean(),
+  reason: z.string(),
+});
 
 export async function checkDuplicate(
   input: CheckDuplicateInput
@@ -29,26 +36,48 @@ Return ONLY a JSON object with this exact format (no markdown, no extra text):
 
   const systemPrompt = `You are a news editor AI. Always respond with valid JSON only, no markdown formatting.`;
 
-  const response = await callGrok(prompt, systemPrompt);
-  
-  // Clean response - remove markdown code blocks if present
-  let cleanResponse = response.trim();
-  if (cleanResponse.startsWith('```')) {
-    cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  }
-  
   try {
+    // Try Grok first
+    console.log('🤖 Trying Grok for duplicate check...');
+    const response = await callGrok(prompt, systemPrompt);
+    
+    // Clean response - remove markdown code blocks if present
+    let cleanResponse = response.trim();
+    if (cleanResponse.startsWith('```')) {
+      cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    }
+    
     const parsed = JSON.parse(cleanResponse);
+    console.log('✅ Grok duplicate check successful');
     return {
       isDuplicate: parsed.isDuplicate || false,
       reason: parsed.reason || 'No reason provided',
     };
-  } catch (error) {
-    console.error('Failed to parse Grok response:', cleanResponse);
-    // Default to not duplicate if parsing fails
-    return {
-      isDuplicate: false,
-      reason: 'Failed to parse AI response',
-    };
+  } catch (grokError) {
+    console.warn('⚠️ Grok failed, falling back to Gemini 2.5 Pro:', grokError);
+    
+    // Fallback to Gemini 2.5 Pro
+    try {
+      const result = await generate({
+        model: 'googleai/gemini-2.5-pro',
+        prompt: prompt,
+        output: {
+          schema: CheckDuplicateOutputSchema,
+        },
+        config: {
+          temperature: 0.3,
+        },
+      });
+
+      console.log('✅ Gemini 2.5 Pro duplicate check successful');
+      return result.output!;
+    } catch (geminiError) {
+      console.error('❌ Both Grok and Gemini failed:', geminiError);
+      // Default to not duplicate if both fail
+      return {
+        isDuplicate: false,
+        reason: 'AI check failed for both models',
+      };
+    }
   }
 }
