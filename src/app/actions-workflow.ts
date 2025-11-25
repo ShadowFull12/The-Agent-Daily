@@ -90,6 +90,14 @@ async function runWorkflowInBackground(isManualRun: boolean) {
                 
                 const dedupResult = await deduplicateLeadsAction();
                 
+                console.log('📊 Dedup result:', { 
+                    success: dedupResult.success, 
+                    deletedCount: dedupResult.deletedCount, 
+                    remaining: dedupResult.remaining,
+                    totalLeads: dedupResult.totalLeads,
+                    checkedTitle: dedupResult.checkedTitle?.substring(0, 50)
+                });
+                
                 if (dedupResult.totalLeads) {
                     totalLeads = dedupResult.totalLeads;
                 }
@@ -111,13 +119,14 @@ async function runWorkflowInBackground(isManualRun: boolean) {
                 if (dedupResult.checkedTitle) {
                     const status = dedupResult.deletedCount > 0 ? "duplicate found!" : "unique";
                     const checkedCount = totalLeads - dedupRemaining;
+                    console.log(`✅ Dedup progress: ${checkedCount}/${totalLeads} checked, ${totalDeleted} duplicates removed`);
                     await updateAgentProgress('deduplicator', 'working', `Checked ${checkedCount} of ${totalLeads} - "${dedupResult.checkedTitle.substring(0, 40)}..." ${status}`, { checked: checkedCount, remaining: dedupRemaining });
                 }
                 
                 if (dedupRemaining > 0) {
                     await sleep(1500);
                 }
-            } while (dedupRemaining > 1);
+            } while (dedupRemaining > 0);
             
             if (await checkShouldStop()) throw new Error('Workflow stopped by user');
             

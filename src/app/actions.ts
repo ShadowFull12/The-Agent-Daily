@@ -100,7 +100,10 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
         const totalLeadsSnapshot = await getDocs(collection(firestore, "raw_leads"));
         const totalLeads = totalLeadsSnapshot.size;
         
+        console.log(`🔍 Dedup: Found ${leadsSnapshot.size} unchecked leads out of ${totalLeads} total`);
+        
         if (leadsSnapshot.empty || leadsSnapshot.size === 1) {
+            console.log(`✅ Dedup: Skipping - only ${leadsSnapshot.size} unchecked lead(s) remaining`);
             return { success: true, deletedCount: 0, remaining: leadsSnapshot.size, totalLeads };
         }
 
