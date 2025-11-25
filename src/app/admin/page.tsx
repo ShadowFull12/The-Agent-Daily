@@ -3,6 +3,7 @@
 
 import { MissionControl } from "@/components/admin/mission-control";
 import { AdvancedOptions } from "@/components/admin/advanced-options";
+import { EditionReview } from "@/components/admin/edition-review";
 
 export default function AdminDashboard() {
 
@@ -16,6 +17,7 @@ export default function AdminDashboard() {
             </p>
         </div>
         <MissionControl />
+        <EditionReview />
         <AdvancedOptions />
     </div>
   );

@@ -10,7 +10,8 @@ import {
     validateArticlesAction,
     createPreviewEditionAction,
     publishLatestEditionAction,
-    clearAllDataAction
+    clearAllDataAction,
+    checkExistingDraftsAction
 } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -136,6 +137,28 @@ export function MissionControl() {
         let attempts = 0;
 
         try {
+            // Check if there are existing draft articles in the database
+            const existingDraftsResult = await checkExistingDraftsAction();
+            const hasExistingDrafts = existingDraftsResult.success && existingDraftsResult.draftCount > 0;
+            
+            if (hasExistingDrafts) {
+                setGlobalMessage(`Found ${existingDraftsResult.draftCount} existing draft articles. Skipping to validation...`);
+                toast({ 
+                    title: "Existing Drafts Found", 
+                    description: `Found ${existingDraftsResult.draftCount} articles. Skipping scout, deduplicator, and journalist.`,
+                    duration: 5000
+                });
+                await sleep(3000);
+                
+                // Mark scout, deduplicator, and journalist as skipped
+                setAgentStatus('scout', 'success', 'Skipped - using existing drafts');
+                setAgentStatus('deduplicator', 'success', 'Skipped - using existing drafts');
+                setAgentStatus('journalist', 'success', 'Skipped - using existing drafts');
+                
+                // Jump directly to validation
+                requiredArticlesMet = true;
+            }
+            
             while (!requiredArticlesMet && attempts < 3) {
                 if (isStoppingRef.current) throw new Error("Workflow manually stopped.");
                 attempts++;
@@ -149,12 +172,35 @@ export function MissionControl() {
                 await sleep(10000);
                 setAgentStatus('scout', 'cooldown');
 
-                // 2. Deduplicator
+                // 2. Deduplicator (AI-powered, checks one lead at a time)
                 if (isStoppingRef.current) throw new Error("Workflow manually stopped.");
-                setAgentStatus('deduplicator', 'working', "Checking for duplicate stories...");
-                const dedupResult = await deduplicateLeadsAction();
-                if (!dedupResult.success) throw new Error(dedupResult.error || "Deduplication failed.");
-                setAgentStatus('deduplicator', 'success', `Removed ${dedupResult.deletedCount} duplicate stories.`);
+                setAgentStatus('deduplicator', 'working', "AI is checking for duplicate stories...");
+                let dedupRemaining = -1;
+                let totalDeleted = 0;
+                let dedupChecks = 0;
+                
+                do {
+                    if (isStoppingRef.current) throw new Error("Workflow manually stopped during deduplication.");
+                    const dedupResult = await deduplicateLeadsAction();
+                    if (!dedupResult.success && dedupResult.error) {
+                        console.warn("Deduplication failed for one lead:", dedupResult.error);
+                        break; // Exit loop on error
+                    }
+                    dedupChecks++;
+                    totalDeleted += dedupResult.deletedCount;
+                    dedupRemaining = dedupResult.remaining;
+                    
+                    if (dedupResult.checkedTitle) {
+                        const status = dedupResult.deletedCount > 0 ? "duplicate found!" : "unique";
+                        setGlobalMessage(`Deduplicator: "${dedupResult.checkedTitle.substring(0, 50)}..." - ${status}. ${dedupRemaining} leads remaining.`);
+                    }
+                    
+                    if (dedupRemaining > 0) {
+                        await sleep(1500); // Cooldown between checks
+                    }
+                } while (dedupRemaining > 1); // Continue until only 1 or 0 leads left
+                
+                setAgentStatus('deduplicator', 'success', `AI checked ${dedupChecks} leads and removed ${totalDeleted} duplicates.`);
                 await sleep(5000);
                 setAgentStatus('deduplicator', 'cooldown');
 

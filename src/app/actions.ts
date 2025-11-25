@@ -27,7 +27,7 @@ import { firebaseConfig } from "@/firebase/config";
 
 // This function must only be called from within a server-side context (e.g., Server Actions)
 // It ensures a stable, new, or existing Firebase app instance is used for each server action.
-function getFirebaseServices() {
+export function getFirebaseServices() {
     const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     const firestore = getFirestore(app);
     return { firestore };
@@ -73,36 +73,65 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
   }
 }
 
-// 2. Deduplication Agent: Removes duplicate leads
-export async function deduplicateLeadsAction(): Promise<{ success: boolean; deletedCount: number; error?: string; }> {
+// 2. Deduplication Agent: AI-powered duplicate checker (processes one lead at a time)
+export async function deduplicateLeadsAction(): Promise<{ success: boolean; deletedCount: number; remaining: number; checkedTitle?: string; error?: string; }> {
     const { firestore } = getFirebaseServices();
     try {
+        // Fetch all leads to check against
         const leadsSnapshot = await getDocs(collection(firestore, "raw_leads"));
-        const leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RawLead));
-
-        const seenUrls = new Set<string>();
-        const duplicates: string[] = [];
-
-        leads.forEach(lead => {
-            if (seenUrls.has(lead.url)) {
-                duplicates.push(lead.id);
-            } else {
-                seenUrls.add(lead.url);
-            }
-        });
-
-        if (duplicates.length > 0) {
-            const batch = writeBatch(firestore);
-            duplicates.forEach(id => {
-                batch.delete(doc(firestore, "raw_leads", id));
-            });
-            await batch.commit();
+        
+        if (leadsSnapshot.empty || leadsSnapshot.size === 1) {
+            return { success: true, deletedCount: 0, remaining: leadsSnapshot.size };
         }
 
-        return { success: true, deletedCount: duplicates.length };
+        const leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RawLead));
+        
+        // Pick the first lead to check
+        const currentLead = leads[0];
+        const otherLeads = leads.slice(1);
+        
+        // Use AI to check if current lead is duplicate of any other lead
+        const { checkDuplicate } = await import('@/ai/flows/check-duplicate');
+        
+        for (const otherLead of otherLeads) {
+            const result = await checkDuplicate({
+                title1: currentLead.title,
+                title2: otherLead.title,
+            });
+            
+            if (result.isDuplicate) {
+                // Delete the current lead (keep the other one)
+                await deleteDoc(doc(firestore, "raw_leads", currentLead.id));
+                
+                // Get remaining count
+                const remainingSnapshot = await getDocs(collection(firestore, "raw_leads"));
+                return { 
+                    success: true, 
+                    deletedCount: 1, 
+                    remaining: remainingSnapshot.size,
+                    checkedTitle: currentLead.title
+                };
+            }
+        }
+        
+        // No duplicates found, get remaining count
+        const remainingSnapshot = await getDocs(collection(firestore, "raw_leads"));
+        return { 
+            success: true, 
+            deletedCount: 0, 
+            remaining: remainingSnapshot.size,
+            checkedTitle: currentLead.title
+        };
+        
     } catch (error: any) {
         console.error("deduplicateLeadsAction failed:", error);
-        return { success: false, deletedCount: 0, error: error.message };
+        // Get remaining count even on error
+        try {
+            const remainingSnapshot = await getDocs(collection(firestore, "raw_leads"));
+            return { success: false, deletedCount: 0, remaining: remainingSnapshot.size, error: error.message };
+        } catch (countError: any) {
+            return { success: false, deletedCount: 0, remaining: 0, error: error.message };
+        }
     }
 }
 
@@ -111,15 +140,22 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
 export async function draftArticleAction(): Promise<{ success: boolean; articleId?: string; headline?: string; error?: string; remaining: number }> {
     const { firestore } = getFirebaseServices();
     try {
-        // 1. Fetch the single oldest lead from the database.
-        const leadsQuery = query(collection(firestore, "raw_leads"), where("status", "==", "pending"), orderBy("createdAt", "asc"), limit(1));
+        // 1. Fetch leads from the database without status filter to avoid index requirement
+        const leadsQuery = query(collection(firestore, "raw_leads"), limit(10));
         const leadsSnapshot = await getDocs(leadsQuery);
         
         if (leadsSnapshot.empty) {
              return { success: true, remaining: 0 }; // No more leads to process
         }
 
-        const leadDoc = leadsSnapshot.docs[0];
+        // Sort in memory to get the oldest one
+        const sortedDocs = leadsSnapshot.docs.sort((a, b) => {
+            const aTime = a.data().createdAt?.toMillis() || 0;
+            const bTime = b.data().createdAt?.toMillis() || 0;
+            return aTime - bTime;
+        });
+        
+        const leadDoc = sortedDocs[0];
         const lead = { id: leadDoc.id, ...leadDoc.data() } as RawLead;
 
         // 2. Use the lead as input to generate the article.
@@ -145,7 +181,7 @@ export async function draftArticleAction(): Promise<{ success: boolean; articleI
         await batch.commit();
         
         // 5. Correctly get the count of remaining leads for the UI *after* deletion.
-        const remainingQuery = query(collection(firestore, "raw_leads"), where("status", "==", "pending"));
+        const remainingQuery = query(collection(firestore, "raw_leads"));
         const remainingSnapshot = await getDocs(remainingQuery);
 
         return { 
@@ -158,7 +194,7 @@ export async function draftArticleAction(): Promise<{ success: boolean; articleI
         console.error("--- DRAFT ARTICLE ACTION FAILED ---", error);
         // Attempt to get a remaining count even if the action failed, for UI consistency
         try {
-            const remainingQuery = query(collection(firestore, "raw_leads"), where("status", "==", "pending"));
+            const remainingQuery = query(collection(firestore, "raw_leads"));
             const remainingSnapshot = await getDocs(remainingQuery);
             return { success: false, error: error.message, remaining: remainingSnapshot.size };
         } catch (countError: any) {
@@ -206,8 +242,17 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
     const { firestore } = getFirebaseServices();
 
     try {
-        const draftsSnapshot = await getDocs(query(collection(firestore, "draft_articles"), where("status", "==", "validated"), orderBy("createdAt", "desc")));
-        const articles = draftsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id})) as DraftArticle[];
+        // Fetch validated articles without composite index requirement
+        const draftsSnapshot = await getDocs(query(collection(firestore, "draft_articles"), where("status", "==", "validated")));
+        const articles = draftsSnapshot.docs
+            .map(doc => ({...doc.data(), id: doc.id})) as DraftArticle[];
+        
+        // Sort in memory by createdAt descending
+        articles.sort((a, b) => {
+            const aTime = a.createdAt?.toMillis() || 0;
+            const bTime = b.createdAt?.toMillis() || 0;
+            return bTime - aTime;
+        });
 
         if (articles.length === 0) {
             return { success: false, error: "No valid articles to create an edition." };
@@ -328,6 +373,19 @@ export async function deleteDraftArticleAction(id: string): Promise<{ success: b
         return { success: true };
     } catch (error: any) {
         return { success: false, error: error.message };
+    }
+}
+
+
+// Check if there are existing draft articles in the database
+export async function checkExistingDraftsAction(): Promise<{ success: boolean; draftCount: number; error?: string; }> {
+    const { firestore } = getFirebaseServices();
+    try {
+        const draftsSnapshot = await getDocs(collection(firestore, "draft_articles"));
+        return { success: true, draftCount: draftsSnapshot.size };
+    } catch (error: any) {
+        console.error("checkExistingDraftsAction failed:", error);
+        return { success: false, draftCount: 0, error: error.message };
     }
 }
 
