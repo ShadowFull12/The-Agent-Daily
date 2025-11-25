@@ -26,12 +26,12 @@ const getNext5AmIst = () => {
     const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
     const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
 
-    // Test mode: 7:40 PM today (19:40)
+    // Test mode: 8:00 PM today (20:00)
     const next5AmIst = new Date(nowIst);
-    next5AmIst.setHours(19, 40, 0, 0);
+    next5AmIst.setHours(20, 0, 0, 0);
 
-    // If already past 7:40 PM, set for tomorrow
-    if (nowIst.getHours() > 19 || (nowIst.getHours() === 19 && nowIst.getMinutes() >= 40)) {
+    // If already past 8:00 PM, set for tomorrow
+    if (nowIst.getHours() > 20 || (nowIst.getHours() === 20 && nowIst.getMinutes() >= 0)) {
         next5AmIst.setDate(next5AmIst.getDate() + 1);
     }
     
@@ -43,11 +43,11 @@ const getNext6AmIst = () => {
     const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
     const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
 
-    // Test mode: 8:10 PM today (20:10)
+    // Test mode: 8:30 PM today (20:30)
     const next6AmIst = new Date(nowIst);
-    next6AmIst.setHours(20, 10, 0, 0);
+    next6AmIst.setHours(20, 30, 0, 0);
     
-    // If already past 8:10 PM, set for tomorrow
+    // If already past 8:30 PM, set for tomorrow
     if(nowIst.getHours() > 20 || (nowIst.getHours() === 20 && nowIst.getMinutes() >= 10)){
         next6AmIst.setDate(next6AmIst.getDate() + 1);
     }
@@ -165,13 +165,25 @@ export function MissionControl() {
                 let dedupRemaining = -1;
                 let totalDeleted = 0;
                 let dedupChecks = 0;
+                let totalLeads = 0;
                 
                 do {
                     if (isStoppingRef.current) throw new Error("Workflow manually stopped during deduplication.");
                     const dedupResult = await deduplicateLeadsAction();
+                    
+                    if (dedupResult.totalLeads) {
+                        totalLeads = dedupResult.totalLeads;
+                    }
+                    
                     if (!dedupResult.success && dedupResult.error) {
                         console.warn("Deduplication failed for one lead:", dedupResult.error);
-                        break; // Exit loop on error
+                        // If rate limited, wait longer
+                        if (dedupResult.error.includes('quota') || dedupResult.error.includes('rate limit')) {
+                            setGlobalMessage(`Rate limited. Waiting 5 seconds before retry...`);
+                            await sleep(5000);
+                            continue; // Retry without counting this attempt
+                        }
+                        break; // Exit loop on other errors
                     }
                     dedupChecks++;
                     totalDeleted += dedupResult.deletedCount;
@@ -179,7 +191,8 @@ export function MissionControl() {
                     
                     if (dedupResult.checkedTitle) {
                         const status = dedupResult.deletedCount > 0 ? "duplicate found!" : "unique";
-                        setGlobalMessage(`Deduplicator: "${dedupResult.checkedTitle.substring(0, 50)}..." - ${status}. ${dedupRemaining} leads remaining.`);
+                        const checkedCount = totalLeads - dedupRemaining;
+                        setGlobalMessage(`Deduplicator: Checked ${checkedCount} of ${totalLeads} leads - "${dedupResult.checkedTitle.substring(0, 40)}..." ${status}`);
                     }
                     
                     if (dedupRemaining > 0) {

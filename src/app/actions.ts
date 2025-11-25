@@ -65,14 +65,15 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
 }
 
 // 2. Deduplication Agent: AI-powered duplicate checker (processes one lead at a time)
-export async function deduplicateLeadsAction(): Promise<{ success: boolean; deletedCount: number; remaining: number; checkedTitle?: string; error?: string; }> {
+export async function deduplicateLeadsAction(): Promise<{ success: boolean; deletedCount: number; remaining: number; totalLeads: number; checkedTitle?: string; error?: string; }> {
     const { firestore } = getFirebaseServices();
     try {
         // Fetch all leads to check against
         const leadsSnapshot = await getDocs(collection(firestore, "raw_leads"));
+        const totalLeads = leadsSnapshot.size;
         
         if (leadsSnapshot.empty || leadsSnapshot.size === 1) {
-            return { success: true, deletedCount: 0, remaining: leadsSnapshot.size };
+            return { success: true, deletedCount: 0, remaining: leadsSnapshot.size, totalLeads };
         }
 
         const leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RawLead));
@@ -84,33 +85,50 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
         // Use AI to check if current lead is duplicate of any other lead
         const { checkDuplicate } = await import('@/ai/flows/check-duplicate');
         
+        let isDuplicate = false;
         for (const otherLead of otherLeads) {
-            const result = await checkDuplicate({
-                title1: currentLead.title,
-                title2: otherLead.title,
-            });
-            
-            if (result.isDuplicate) {
-                // Delete the current lead (keep the other one)
-                await deleteDoc(doc(firestore, "raw_leads", currentLead.id));
+            try {
+                const result = await checkDuplicate({
+                    title1: currentLead.title,
+                    title2: otherLead.title,
+                });
                 
-                // Get remaining count
-                const remainingSnapshot = await getDocs(collection(firestore, "raw_leads"));
-                return { 
-                    success: true, 
-                    deletedCount: 1, 
-                    remaining: remainingSnapshot.size,
-                    checkedTitle: currentLead.title
-                };
+                if (result.isDuplicate) {
+                    isDuplicate = true;
+                    break;
+                }
+            } catch (error: any) {
+                // If rate limited or error, skip this comparison and continue
+                if (error.message?.includes('quota') || error.message?.includes('rate limit')) {
+                    console.log('Rate limited, will retry on next iteration');
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
             }
         }
         
-        // No duplicates found, get remaining count
+        if (isDuplicate) {
+            // Delete the current lead (keep the other one)
+            await deleteDoc(doc(firestore, "raw_leads", currentLead.id));
+            
+            // Get remaining count
+            const remainingSnapshot = await getDocs(collection(firestore, "raw_leads"));
+            return { 
+                success: true, 
+                deletedCount: 1, 
+                remaining: remainingSnapshot.size,
+                totalLeads,
+                checkedTitle: currentLead.title
+            };
+        }
+        
+        // Mark this lead as checked by deleting and re-adding at end (or just continue)
+        // For now, we'll just move to next iteration
         const remainingSnapshot = await getDocs(collection(firestore, "raw_leads"));
         return { 
             success: true, 
             deletedCount: 0, 
             remaining: remainingSnapshot.size,
+            totalLeads,
             checkedTitle: currentLead.title
         };
         
@@ -119,9 +137,9 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
         // Get remaining count even on error
         try {
             const remainingSnapshot = await getDocs(collection(firestore, "raw_leads"));
-            return { success: false, deletedCount: 0, remaining: remainingSnapshot.size, error: error.message };
+            return { success: false, deletedCount: 0, remaining: remainingSnapshot.size, totalLeads: remainingSnapshot.size, error: error.message };
         } catch (countError: any) {
-            return { success: false, deletedCount: 0, remaining: 0, error: error.message };
+            return { success: false, deletedCount: 0, remaining: 0, totalLeads: 0, error: error.message };
         }
     }
 }
