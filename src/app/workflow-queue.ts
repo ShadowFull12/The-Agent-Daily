@@ -40,24 +40,30 @@ export async function updateQueueState(state: Partial<QueueState>) {
   const { firestore } = getFirebaseServices();
   const currentState = await getQueueState();
   
-  const newState: QueueState = {
+  const newState: any = {
     currentStep: state.currentStep ?? currentState?.currentStep ?? 'idle',
     attempt: state.attempt ?? currentState?.attempt ?? 1,
     draftsMade: state.draftsMade ?? currentState?.draftsMade ?? 0,
     validCount: state.validCount ?? currentState?.validCount ?? 0,
-    error: state.error,
     lastUpdated: Timestamp.now(),
   };
   
+  // Only include error field if it has a value (Firestore doesn't accept undefined)
+  if (state.error !== undefined && state.error !== null) {
+    newState.error = state.error;
+  } else if (currentState?.error) {
+    newState.error = currentState.error;
+  }
+  
   await setDoc(doc(firestore, 'workflow_queue', 'current'), newState);
-  return newState;
+  return newState as QueueState;
 }
 
 // Clear queue state
 export async function clearQueueState() {
   const { firestore } = getFirebaseServices();
   await setDoc(doc(firestore, 'workflow_queue', 'current'), {
-    currentStep: 'idle',
+    currentStep: 'idle' as WorkflowStep,
     attempt: 1,
     draftsMade: 0,
     validCount: 0,
