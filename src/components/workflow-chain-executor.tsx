@@ -30,7 +30,7 @@ export function WorkflowChainExecutor() {
           return;
         }
 
-        console.log(`🔄 Queue status: ${state.currentStep}, executing next step...`);
+        console.log(`🔄 Executor checking queue: ${state.currentStep} - Executing...`);
         isExecutingRef.current = true;
         
         const result = await executeNextWorkflowStep();
@@ -42,14 +42,20 @@ export function WorkflowChainExecutor() {
             intervalRef.current = undefined;
           }
         } else if (result.success && result.nextStep) {
-          console.log(`➡️ Step completed. Next: ${result.nextStep}. Scheduling next check...`);
-          // Continue polling for next step
+          console.log(`➡️ Step completed. Next: ${result.nextStep}. Immediately checking next step...`);
+          // Immediately trigger next step check (after brief delay for state to settle)
+          isExecutingRef.current = false;
+          setTimeout(() => checkAndExecute(), 500);
+          return; // Exit to prevent the finally block from resetting the flag
         } else if (!result.success) {
           console.error(`❌ Step failed: ${result.error}. Stopping executor.`);
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = undefined;
           }
+        } else {
+          // No nextStep but also not completed or failed - continue polling
+          console.log(`⏸️ Step finished but no nextStep indicated. Continuing to poll...`);
         }
         
       } catch (error) {
