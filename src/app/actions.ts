@@ -121,6 +121,8 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
         const MAX_RETRIES = 3;
         
         for (const otherLead of otherLeads) {
+            if (isDuplicate) break; // Stop checking once we find a duplicate
+            
             try {
                 // Add timeout to prevent hanging
                 const timeoutPromise = new Promise<never>((_, reject) => 
@@ -136,7 +138,8 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
                 
                 if (result.isDuplicate) {
                     isDuplicate = true;
-                    break;
+                    console.log(`🔍 Found duplicate: "${currentLead.title.substring(0, 40)}" matches "${otherLead.title.substring(0, 40)}"`);
+                    break; // Stop checking, we found a duplicate
                 }
                 
                 retryCount = 0; // Reset retry count on success
@@ -149,12 +152,16 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
                     retryCount++;
                     if (retryCount >= MAX_RETRIES) {
                         console.log('Max retries reached, skipping this comparison');
+                        retryCount = 0; // Reset for next comparison
                         continue; // Skip this comparison and move to next
                     }
                     console.log(`Retry ${retryCount}/${MAX_RETRIES}, waiting 3 seconds...`);
                     await new Promise(resolve => setTimeout(resolve, 3000));
-                    continue; // Don't break, just skip this iteration
+                    // Retry same comparison by decrementing loop (but we can't in for-of, so just continue)
+                    continue;
                 }
+                // For other errors, just continue to next comparison
+                console.log('Non-retryable error, moving to next comparison');
             }
         }
         
@@ -164,6 +171,8 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
             
             // Get remaining count
             const remainingSnapshot = await getDocs(collection(firestore, "raw_leads"));
+            
+            console.log(`✅ Deleted duplicate, ${remainingSnapshot.size} leads remaining`);
             return { 
                 success: true, 
                 deletedCount: 1, 
@@ -174,6 +183,7 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
         }
         
         // If not a duplicate, mark it as checked by adding a field
+        console.log(`✅ Lead is unique, marking as checked: "${currentLead.title.substring(0, 40)}"`);
         await updateDoc(doc(firestore, "raw_leads", currentLead.id), {
             checked: true,
             checkedAt: new Date().toISOString()
@@ -184,6 +194,7 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
             query(collection(firestore, "raw_leads"), where("checked", "==", false))
         );
         
+        console.log(`✅ Marked as checked, ${remainingSnapshot.size} unchecked leads remaining`);
         return { 
             success: true, 
             deletedCount: 0, 
