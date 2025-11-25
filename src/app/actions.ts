@@ -481,20 +481,33 @@ export async function checkExistingDraftsAction(): Promise<{ success: boolean; d
 
 // Utility action to clear all data for a fresh run
 export async function clearAllDataAction(): Promise<{ success: boolean; error?: string; }> {
-    const { firestore } = getFirebaseServices();
-    const batch = writeBatch(firestore);
-
     try {
+        console.log('🧹 clearAllDataAction: Starting...');
+        const { firestore } = getFirebaseServices();
+        console.log('✅ Firebase services initialized');
+        
         const collections = ["raw_leads", "draft_articles"];
+        let totalDeleted = 0;
+        
         for (const colName of collections) {
+            console.log(`📂 Fetching ${colName} collection...`);
             const snapshot = await getDocs(collection(firestore, colName));
-            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            console.log(`📊 Found ${snapshot.docs.length} documents in ${colName}`);
+            
+            if (snapshot.docs.length > 0) {
+                const batch = writeBatch(firestore);
+                snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                totalDeleted += snapshot.docs.length;
+                console.log(`✅ Deleted ${snapshot.docs.length} documents from ${colName}`);
+            }
         }
 
-        await batch.commit();
+        console.log(`✅ clearAllDataAction: Successfully deleted ${totalDeleted} documents`);
         return { success: true };
     } catch (error: any) {
-        console.error("clearAllDataAction failed:", error);
+        console.error("❌ clearAllDataAction failed:", error);
+        console.error("Error details:", error.message, error.stack);
         return { success: false, error: error.message };
     }
 }

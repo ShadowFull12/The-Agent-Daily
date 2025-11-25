@@ -18,24 +18,30 @@ let shouldStopWorkflow = false;
 
 export async function startWorkflowAction(isManualRun = false): Promise<{ success: boolean; message: string }> {
     try {
+        console.log('🚀 Starting workflow action...');
         // Reset stop flag
         shouldStopWorkflow = false;
         
         // Initialize workflow state
+        console.log('📋 Initializing workflow state...');
         await initializeWorkflowState();
+        console.log('✅ Workflow state initialized');
         
         // Run the workflow asynchronously (don't wait for it)
         runWorkflowInBackground(isManualRun).catch(error => {
-            console.error('Background workflow error:', error);
+            console.error('❌ Background workflow error:', error);
+            console.error('Error stack:', error.stack);
             updateWorkflowState({
                 status: 'error',
                 message: `Workflow failed: ${error.message}`
-            });
+            }).catch(e => console.error('Failed to update error state:', e));
         });
         
+        console.log('✅ Workflow started successfully');
         return { success: true, message: 'Workflow started successfully' };
     } catch (error: any) {
-        console.error('Failed to start workflow:', error);
+        console.error('❌ Failed to start workflow:', error);
+        console.error('Error stack:', error.stack);
         return { success: false, message: error.message };
     }
 }
@@ -53,9 +59,17 @@ async function checkShouldStop(): Promise<boolean> {
 
 async function runWorkflowInBackground(isManualRun: boolean) {
     try {
+        console.log('🔄 Running workflow in background...');
+        
         // Clear existing data
+        console.log('🧹 Clearing previous data...');
         await updateAgentProgress('scout', 'working', 'Clearing previous data...');
-        await clearAllDataAction();
+        
+        const clearResult = await clearAllDataAction();
+        if (!clearResult.success) {
+            throw new Error(`Failed to clear data: ${clearResult.error}`);
+        }
+        console.log('✅ Previous data cleared successfully');
         await sleep(2000);
 
         if (await checkShouldStop()) throw new Error('Workflow stopped by user');
@@ -67,11 +81,22 @@ async function runWorkflowInBackground(isManualRun: boolean) {
             if (await checkShouldStop()) throw new Error('Workflow stopped by user');
             
             attempt++;
+            console.log(`🔄 Starting attempt ${attempt}/3...`);
             
             // 1. Scout Agent
+            console.log(`🔍 Scout Agent starting (Attempt ${attempt}/3)...`);
             await updateAgentProgress('scout', 'working', `Scout is gathering news leads (Attempt ${attempt}/3)...`);
+            
             const scoutResult = await findLeadsAction();
-            if (!scoutResult.success) throw new Error(scoutResult.error || "Scout failed.");
+            console.log('📊 Scout result:', scoutResult);
+            
+            if (!scoutResult.success) {
+                const errorMsg = scoutResult.error || "Scout failed.";
+                console.error('❌ Scout failed:', errorMsg);
+                throw new Error(errorMsg);
+            }
+            
+            console.log(`✅ Scout found ${scoutResult.leadCount} leads`);
             await updateAgentProgress('scout', 'success', `Scout found ${scoutResult.leadCount} leads.`);
             await sleep(5000);
             
