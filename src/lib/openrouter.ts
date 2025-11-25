@@ -35,7 +35,7 @@ export async function callOpenRouter(
       'X-Title': 'The Daily Agent',
     },
     body: JSON.stringify({
-      model: options.model || 'moonshot/kimi-k2-thinking',
+      model: options.model || 'x-ai/grok-4.1-fast:free',
       messages,
       temperature: options.temperature || 0.7,
       max_tokens: options.maxTokens || 4000,
@@ -60,7 +60,7 @@ export async function callKimi(userPrompt: string, systemPrompt?: string): Promi
   
   messages.push({ role: 'user', content: userPrompt });
   
-  return callOpenRouter(messages, { model: 'moonshot/kimi-k2-thinking' });
+  return callOpenRouter(messages, { model: 'x-ai/grok-4.1-fast:free' });
 }
 
 // Legacy function for backward compatibility
