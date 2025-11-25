@@ -22,16 +22,7 @@ import {
   where
 } from "firebase/firestore";
 import type { RawLead, DraftArticle, Edition } from "@/lib/types";
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { firebaseConfig } from "@/firebase/config";
-
-// This function must only be called from within a server-side context (e.g., Server Actions)
-// It ensures a stable, new, or existing Firebase app instance is used for each server action.
-export function getFirebaseServices() {
-    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    const firestore = getFirestore(app);
-    return { firestore };
-}
+import { getFirebaseServices } from "@/lib/firebase-server";
 
 // 1. Scout Agent: Finds new leads
 export async function findLeadsAction(limitStories: number = 25): Promise<{ success: boolean; leadCount: number; error?: string; }> {
