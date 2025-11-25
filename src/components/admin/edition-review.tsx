@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Newspaper, Eye, Trash2, Loader2, ExternalLink } from "lucide-react";
+import { Newspaper, Eye, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Edition {
   id: string;
@@ -15,6 +16,8 @@ interface Edition {
   coverImageUrl: string;
   status: "draft" | "published";
   createdAt: any;
+  htmlContent: string;
+  headline?: string;
 }
 
 interface EditionReviewProps {
@@ -72,10 +75,6 @@ export function EditionReview({ onRefresh }: EditionReviewProps) {
     } finally {
       setDeleting(null);
     }
-  };
-
-  const handleView = (editionId: string) => {
-    window.open(`/editions/${editionId}`, "_blank");
   };
 
   if (loading) {
@@ -151,14 +150,31 @@ export function EditionReview({ onRefresh }: EditionReviewProps) {
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleView(edition.id)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-6xl h-[95vh] flex flex-col">
+                      <DialogHeader>
+                        <DialogTitle className="font-headline">
+                          Edition #{edition.editionNumber}
+                        </DialogTitle>
+                        <DialogDescription>
+                          {edition.headline || (edition.status === "draft" ? "Draft Edition" : "Published Edition")}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex-1 overflow-auto border rounded-md">
+                        <iframe
+                          srcDoc={edition.htmlContent}
+                          className="w-full h-full"
+                          title={`Edition #${edition.editionNumber}`}
+                        />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
