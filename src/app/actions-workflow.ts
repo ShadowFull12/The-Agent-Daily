@@ -50,7 +50,7 @@ async function checkShouldStop(): Promise<boolean> {
     if (shouldStopWorkflow) return true;
     
     const state = await getWorkflowState();
-    if (state?.status === 'stopping') {
+    if (state?.status === 'stopping' || state?.status === 'idle') {
         shouldStopWorkflow = true;
         return true;
     }
@@ -213,33 +213,14 @@ async function runWorkflowInBackground(isManualRun: boolean) {
 
 export async function stopWorkflowAction(): Promise<{ success: boolean; message: string }> {
     try {
+        await updateWorkflowState({
+            status: 'stopping',
+            message: 'Workflow stopping by user request...',
+        });
         shouldStopWorkflow = true;
-        
-        // Force set state to idle immediately (data preserved)
-        const { firestore } = getFirebaseServices();
-        const { doc, setDoc, Timestamp } = await import('firebase/firestore');
-        
-        const workflowDoc = doc(firestore, 'workflow_state', 'current_workflow');
-        await setDoc(workflowDoc, {
-            status: 'idle',
-            currentAgent: null,
-            message: 'Workflow force stopped - data preserved',
-            progress: {
-                scout: { status: 'idle', message: '' },
-                deduplicator: { status: 'idle', message: '', checked: 0, remaining: 0 },
-                journalist: { status: 'idle', message: '', drafted: 0, remaining: 0 },
-                validator: { status: 'idle', message: '' },
-                editor: { status: 'idle', message: '' },
-                publisher: { status: 'idle', message: '' },
-            },
-            startedAt: Timestamp.now(),
-            lastUpdated: Timestamp.now(),
-        }, { merge: false });
-        
-        return { success: true, message: 'Workflow stopped immediately - data preserved' };
+        console.log('🛑 Stop signal sent. Workflow will terminate shortly.');
+        return { success: true, message: 'Workflow stop signal sent. It will terminate after the current task.' };
     } catch (error: any) {
         return { success: false, message: error.message };
-    } finally {
-        shouldStopWorkflow = false;
     }
 }

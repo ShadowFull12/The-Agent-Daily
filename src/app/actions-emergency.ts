@@ -1,7 +1,6 @@
 'use server';
 
 import { clearAllDataAction } from "@/app/actions";
-import { clearWorkflowState } from "@/lib/workflow-state";
 import { getFirebaseServices } from "@/lib/firebase-server";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 

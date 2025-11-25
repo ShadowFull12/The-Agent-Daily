@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { publishLatestEditionAction, clearAllDataAction } from "@/app/actions";
 import { startWorkflowAction, stopWorkflowAction } from "@/app/actions-workflow";
+import { emergencyKillSwitch } from "@/app/actions-emergency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { WorkflowDiagram, type AgentName, type AgentStatus } from "./workflow-diagram";
-import { Play, Timer, CheckCircle, AlertTriangle, Square, RotateCcw, ChevronDown, ChevronUp, Loader2, XCircle, Clock } from 'lucide-react';
+import { Play, Timer, CheckCircle, AlertTriangle, Square, RotateCcw, ChevronDown, ChevronUp, Loader2, XCircle, Clock, ShieldAlert } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -135,7 +136,25 @@ export function MissionControl() {
         const result = await stopWorkflowAction();
         if (result.success) {
             toast({ 
-                title: "✅ Workflow Stopped", 
+                title: "✅ Workflow Stopping", 
+                description: result.message
+            });
+        } else {
+            toast({ 
+                variant: 'destructive', 
+                title: "Stop Failed", 
+                description: result.message 
+            });
+        }
+    };
+    
+    const handleKillSwitch = async () => {
+        setGlobalMessage("🚨 EMERGENCY KILL SWITCH - System resetting...");
+        const result = await emergencyKillSwitch();
+        if (result.success) {
+            toast({ 
+                variant: 'destructive',
+                title: "🚨 Emergency Stop Activated", 
                 description: result.message
             });
             resetWorkflow();
@@ -143,7 +162,7 @@ export function MissionControl() {
         } else {
             toast({ 
                 variant: 'destructive', 
-                title: "Stop Failed", 
+                title: "Kill Switch Failed", 
                 description: result.message 
             });
         }
@@ -181,7 +200,6 @@ export function MissionControl() {
                     setRunStatus(data.status || 'idle');
                     setGlobalMessage(data.message || 'System is idle');
                     
-                    // Update agent statuses and progress from Firestore
                     if (data.progress) {
                         const newStatuses: Record<AgentName, AgentStatus> = {
                             scout: data.progress.scout?.status as AgentStatus || 'idle',
@@ -193,7 +211,6 @@ export function MissionControl() {
                         };
                         setAgentStatuses(newStatuses);
                         
-                        // Store full progress data
                         setAgentProgress({
                             scout: data.progress.scout || { status: 'idle', message: '' },
                             deduplicator: data.progress.deduplicator || { status: 'idle', message: '', checked: 0, remaining: 0 },
@@ -202,10 +219,18 @@ export function MissionControl() {
                             editor: data.progress.editor || { status: 'idle', message: '' },
                             publisher: data.progress.publisher || { status: 'idle', message: '' },
                         });
+                    } else if (data.status === 'idle') {
+                        // If state is idle but progress is missing, reset it fully
+                        resetWorkflow();
                     }
+
+                } else {
+                    // Document doesn't exist, so we are idle
+                    resetWorkflow();
                 }
             }, (error) => {
                 console.error('Error listening to workflow state:', error);
+                resetWorkflow();
             });
 
             return () => unsubscribe();
@@ -385,7 +410,7 @@ export function MissionControl() {
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center gap-2 flex-wrap">
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 items-center gap-2 flex-wrap">
                     <Button onClick={handleRunWorkflow} disabled={runStatus === 'running' || runStatus === 'stopping'}>
                         <Play className="mr-2 h-4 w-4" />
                         Force Full Run
@@ -393,12 +418,12 @@ export function MissionControl() {
 
                     {(runStatus === 'running' || runStatus === 'stopping') && (
                         <Button 
-                            variant="destructive" 
-                            className="bg-red-600 hover:bg-red-700 border-red-700"
+                            variant="outline" 
+                            className="text-yellow-600 border-yellow-600 hover:bg-yellow-100/50 hover:text-yellow-700"
                             onClick={handleForceStop}
                         >
                             <Square className="mr-2 h-4 w-4" />
-                            ⚠️ Force Stop
+                            Force Stop
                         </Button>
                     )}
 
@@ -421,6 +446,28 @@ export function MissionControl() {
                                     router.refresh();
                                     toast({title: "System Reset", description: "All leads and drafts have been cleared."})
                                 }}>Confirm Reset</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" className="bg-red-600 hover:bg-red-700">
+                              <ShieldAlert className="mr-2 h-4 w-4" /> Emergency Kill Switch
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>🚨 Are you absolutely sure? 🚨</AlertDialogTitle>
+                                <AlertDialogDescription>This is an emergency action. It will immediately terminate ALL processes and clear ALL leads and drafts. This cannot be undone.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                    className="bg-red-600 hover:bg-red-700"
+                                    onClick={handleKillSwitch}>
+                                    Activate Kill Switch
+                                </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
