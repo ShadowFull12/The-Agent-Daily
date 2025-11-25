@@ -35,7 +35,7 @@ export async function callOpenRouter(
       'X-Title': 'The Daily Agent',
     },
     body: JSON.stringify({
-      model: options.model || 'x-ai/grok-4.1-fast',
+      model: options.model || 'moonshot/kimi-k2-thinking',
       messages,
       temperature: options.temperature || 0.7,
       max_tokens: options.maxTokens || 4000,
@@ -51,7 +51,7 @@ export async function callOpenRouter(
   return data.choices[0].message.content;
 }
 
-export async function callGrok(userPrompt: string, systemPrompt?: string): Promise<string> {
+export async function callKimi(userPrompt: string, systemPrompt?: string): Promise<string> {
   const messages: OpenRouterMessage[] = [];
   
   if (systemPrompt) {
@@ -60,5 +60,10 @@ export async function callGrok(userPrompt: string, systemPrompt?: string): Promi
   
   messages.push({ role: 'user', content: userPrompt });
   
-  return callOpenRouter(messages, { model: 'x-ai/grok-4.1-fast' });
+  return callOpenRouter(messages, { model: 'moonshot/kimi-k2-thinking' });
+}
+
+// Legacy function for backward compatibility
+export async function callGrok(userPrompt: string, systemPrompt?: string): Promise<string> {
+  return callKimi(userPrompt, systemPrompt);
 }

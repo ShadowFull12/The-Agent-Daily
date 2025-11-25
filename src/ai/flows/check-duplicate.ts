@@ -3,7 +3,7 @@
  * @fileOverview AI flow to check if two news article titles are essentially the same story.
  */
 
-import { callGrok } from '@/lib/openrouter';
+import { callKimi } from '@/lib/openrouter';
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
@@ -37,9 +37,9 @@ Return ONLY a JSON object with this exact format (no markdown, no extra text):
   const systemPrompt = `You are a news editor AI. Always respond with valid JSON only, no markdown formatting.`;
 
   try {
-    // Try Grok first
-    console.log('🤖 Trying Grok for duplicate check...');
-    const response = await callGrok(prompt, systemPrompt);
+    // Try Kimi K2 Thinking first
+    console.log('🤖 Trying Kimi K2 Thinking for duplicate check...');
+    const response = await callKimi(prompt, systemPrompt);
     
     // Clean response - remove markdown code blocks if present
     let cleanResponse = response.trim();
@@ -48,13 +48,13 @@ Return ONLY a JSON object with this exact format (no markdown, no extra text):
     }
     
     const parsed = JSON.parse(cleanResponse);
-    console.log('✅ Grok duplicate check successful');
+    console.log('✅ Kimi K2 Thinking duplicate check successful');
     return {
       isDuplicate: parsed.isDuplicate || false,
       reason: parsed.reason || 'No reason provided',
     };
-  } catch (grokError) {
-    console.warn('⚠️ Grok failed, falling back to Gemini 2.5 Pro:', grokError);
+  } catch (kimiError) {
+    console.warn('⚠️ Kimi K2 failed, falling back to Gemini 2.5 Pro:', kimiError);
     
     // Fallback to Gemini 2.5 Pro
     try {
@@ -72,7 +72,7 @@ Return ONLY a JSON object with this exact format (no markdown, no extra text):
       console.log('✅ Gemini 2.5 Pro duplicate check successful');
       return result.output!;
     } catch (geminiError) {
-      console.error('❌ Both Grok and Gemini failed:', geminiError);
+      console.error('❌ Both Kimi K2 and Gemini failed:', geminiError);
       // Default to not duplicate if both fail
       return {
         isDuplicate: false,

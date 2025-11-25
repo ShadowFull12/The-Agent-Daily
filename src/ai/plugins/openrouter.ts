@@ -16,7 +16,7 @@ export const openrouter: Plugin<[OpenRouterPluginParams] | []> = genkitPlugin(
     return {
       models: [
         {
-          name: 'openrouter/grok-beta',
+          name: 'openrouter/kimi-k2-thinking',
           supports: {
             multiturn: true,
             media: false,
@@ -41,7 +41,7 @@ export const openrouter: Plugin<[OpenRouterPluginParams] | []> = genkitPlugin(
                   'X-Title': 'The Daily Agent',
                 },
                 body: JSON.stringify({
-                  model: 'x-ai/grok-beta',
+                  model: 'moonshot/kimi-k2-thinking',
                   messages,
                   temperature: req.config?.temperature || 0.7,
                   max_tokens: req.config?.maxOutputTokens || 4000,

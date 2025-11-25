@@ -4,7 +4,7 @@
  * @fileOverview A flow for summarizing breaking news articles based on provided content.
  */
 
-import { callGrok } from '@/lib/openrouter';
+import { callKimi } from '@/lib/openrouter';
 
 export interface SummarizeBreakingNewsInput {
   url: string;
@@ -40,7 +40,7 @@ Return ONLY a JSON object with this exact format (no markdown, no extra text):
 
   const systemPrompt = `You are a professional journalist AI. Always respond with valid JSON only, no markdown formatting.`;
 
-  const response = await callGrok(prompt, systemPrompt);
+  const response = await callKimi(prompt, systemPrompt);
   
   // Clean response
   let cleanResponse = response.trim();
@@ -55,7 +55,7 @@ Return ONLY a JSON object with this exact format (no markdown, no extra text):
       headline: parsed.headline || input.title,
     };
   } catch (error) {
-    console.error('Failed to parse Grok response:', cleanResponse);
+    console.error('Failed to parse Kimi K2 response:', cleanResponse);
     return {
       summary: input.content.substring(0, 500),
       headline: input.title,
