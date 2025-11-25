@@ -3,6 +3,17 @@ import { initializeApp, getApps, getApp, App } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { firebaseConfig } from "@/firebase/config";
 
+// Timeout wrapper for Firestore operations in serverless environment
+export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000, operation: string = 'Operation'): Promise<T> {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+            reject(new Error(`${operation} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+    });
+    
+    return Promise.race([promise, timeoutPromise]);
+}
+
 // Global cache for Firebase services
 let firebaseServices: { firestore: Firestore; app: App } | null = null;
 

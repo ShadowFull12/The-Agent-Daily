@@ -27,13 +27,18 @@ import { getFirebaseServices } from "@/lib/firebase-server";
 // 1. Scout Agent: Finds new leads
 export async function findLeadsAction(limitStories: number = 25): Promise<{ success: boolean; leadCount: number; error?: string; }> {
   const { firestore } = getFirebaseServices();
+  const { withTimeout } = await import('@/lib/firebase-server');
   
   try {
     console.log('🔍 Scout Agent: Starting news search...');
     const topics = ["world", "technology", "business", "science", "politics", "entertainment", "sports"];
     console.log('📰 Scout Agent: Searching topics:', topics);
     
-    const searchResult = await searchBreakingNews({ topics, limit: limitStories });
+    const searchResult = await withTimeout(
+      searchBreakingNews({ topics, limit: limitStories }),
+      45000,
+      'News search'
+    );
     console.log('📊 Scout Agent: Search completed. Stories found:', searchResult.stories?.length || 0);
     
     if (!searchResult.stories || searchResult.stories.length === 0) {
@@ -73,8 +78,12 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
       batches.push(batch.commit());
     }
     
-    // Execute all batches in parallel
-    await Promise.all(batches);
+    // Execute all batches in parallel with timeout
+    await withTimeout(
+      Promise.all(batches),
+      30000,
+      'Firestore batch write'
+    );
     console.log('✅ Scout Agent: Successfully saved all stories to Firestore');
     return { success: true, leadCount: stories.length };
 
@@ -484,6 +493,7 @@ export async function clearAllDataAction(): Promise<{ success: boolean; error?: 
     try {
         console.log('🧹 clearAllDataAction: Starting...');
         const { firestore } = getFirebaseServices();
+        const { withTimeout } = await import('@/lib/firebase-server');
         console.log('✅ Firebase services initialized');
         
         const collections = ["raw_leads", "draft_articles"];
@@ -491,15 +501,32 @@ export async function clearAllDataAction(): Promise<{ success: boolean; error?: 
         
         for (const colName of collections) {
             console.log(`📂 Fetching ${colName} collection...`);
-            const snapshot = await getDocs(collection(firestore, colName));
-            console.log(`📊 Found ${snapshot.docs.length} documents in ${colName}`);
             
-            if (snapshot.docs.length > 0) {
-                const batch = writeBatch(firestore);
-                snapshot.docs.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
-                totalDeleted += snapshot.docs.length;
-                console.log(`✅ Deleted ${snapshot.docs.length} documents from ${colName}`);
+            try {
+                const snapshot = await withTimeout(
+                    getDocs(collection(firestore, colName)),
+                    20000,
+                    `Fetch ${colName} collection`
+                );
+                console.log(`📊 Found ${snapshot.docs.length} documents in ${colName}`);
+                
+                if (snapshot.docs.length > 0) {
+                    const batch = writeBatch(firestore);
+                    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                    
+                    await withTimeout(
+                        batch.commit(),
+                        20000,
+                        `Delete batch for ${colName}`
+                    );
+                    totalDeleted += snapshot.docs.length;
+                    console.log(`✅ Deleted ${snapshot.docs.length} documents from ${colName}`);
+                } else {
+                    console.log(`ℹ️ No documents to delete in ${colName}`);
+                }
+            } catch (error: any) {
+                console.error(`❌ Failed to process ${colName}:`, error.message);
+                // Continue with next collection even if one fails
             }
         }
 
