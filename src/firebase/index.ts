@@ -8,21 +8,17 @@ import { getFirestore } from 'firebase/firestore'
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
   if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
+    // For Vercel and other non-Firebase hosting, always use the config object
+    // Firebase App Hosting would provide environment variables, but we're on Vercel
     let firebaseApp;
+    
+    // Always use firebaseConfig for initialization
     try {
-      // Attempt to initialize via Firebase App Hosting environment variables
-      firebaseApp = initializeApp();
-    } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-      }
       firebaseApp = initializeApp(firebaseConfig);
+      console.log('✅ Firebase initialized with config');
+    } catch (e) {
+      console.error('❌ Failed to initialize Firebase:', e);
+      throw e;
     }
 
     return getSdks(firebaseApp);
