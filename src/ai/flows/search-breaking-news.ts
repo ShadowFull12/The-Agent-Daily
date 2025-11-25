@@ -43,7 +43,13 @@ async function fetchNewsForTopic(topic: string, size: number): Promise<any[]> {
     const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&language=en${categoryQuery}&size=${size}&prioritydomain=top`;
 
     try {
-        const response = await fetch(url);
+        console.log(`🔍 Fetching news for topic: ${topic}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+        
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         if (!response.ok) {
             console.error(`API request failed for topic ${topic} with status: ${response.status}`);
             const errorBody = await response.text();
@@ -51,9 +57,13 @@ async function fetchNewsForTopic(topic: string, size: number): Promise<any[]> {
             return [];
         }
         const data = await response.json();
+        console.log(`✅ Fetched ${data.results?.length || 0} stories for topic: ${topic}`);
         return data.results || [];
     } catch (error) {
         console.error(`Error fetching news for topic ${topic}:`, error);
+        if (error instanceof Error && error.name === 'AbortError') {
+            console.error(`⏱️ Request timed out for topic ${topic}`);
+        }
         return [];
     }
 }

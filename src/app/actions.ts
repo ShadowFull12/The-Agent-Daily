@@ -29,14 +29,20 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
   const { firestore } = getFirebaseServices();
   
   try {
+    console.log('🔍 Scout Agent: Starting news search...');
     const topics = ["world", "technology", "business", "science", "politics", "entertainment", "sports"];
+    console.log('📰 Scout Agent: Searching topics:', topics);
+    
     const searchResult = await searchBreakingNews({ topics, limit: limitStories });
+    console.log('📊 Scout Agent: Search completed. Stories found:', searchResult.stories?.length || 0);
     
     if (!searchResult.stories || searchResult.stories.length === 0) {
+      console.log('⚠️ Scout Agent: No stories found');
       return { success: true, leadCount: 0 };
     }
     
     const stories = searchResult.stories.slice(0, limitStories);
+    console.log(`💾 Scout Agent: Saving ${stories.length} stories to Firestore...`);
 
     const batch = writeBatch(firestore);
     const leadsCollection = collection(firestore, "raw_leads");
@@ -56,10 +62,12 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
     });
     
     await batch.commit();
+    console.log('✅ Scout Agent: Successfully saved all stories to Firestore');
     return { success: true, leadCount: stories.length };
 
   } catch (error: any) {
-    console.error("findLeadsAction failed:", error);
+    console.error("❌ Scout Agent failed:", error);
+    console.error("Error details:", error.message, error.stack);
     return { success: false, leadCount: 0, error: error.message };
   }
 }
