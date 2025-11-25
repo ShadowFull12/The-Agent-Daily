@@ -349,59 +349,12 @@ export async function executeNextWorkflowStep(): Promise<{
   }
 }
 
-// FULLY SERVER-SIDE workflow executor
-// Recursively executes ALL steps on the server without any client involvement
-async function executeAllStepsRecursively(): Promise<{ success: boolean; message: string; error?: string }> {
-  let stepsExecuted = 0;
-  const maxSteps = 20; // Safety limit to prevent infinite loops
-  
-  while (stepsExecuted < maxSteps) {
-    stepsExecuted++;
-    
-    // Check current state
-    const state = await getQueueState();
-    console.log(`🔄 [Step ${stepsExecuted}] Checking queue: ${state?.currentStep || 'none'}`);
-    
-    // Check if workflow is done or in error state
-    if (!state || state.currentStep === 'idle' || state.currentStep === 'complete') {
-      console.log(`✅ Workflow completed successfully after ${stepsExecuted} steps`);
-      return { success: true, message: `Workflow completed in ${stepsExecuted} steps` };
-    }
-    
-    if (state.currentStep === 'error') {
-      console.error(`❌ Workflow error: ${state.error}`);
-      return { success: false, message: state.error || 'Workflow error', error: state.error };
-    }
-    
-    // Execute next step
-    console.log(`⚡ [Step ${stepsExecuted}] Executing: ${state.currentStep}`);
-    const result = await executeNextWorkflowStep();
-    
-    if (!result.success) {
-      console.error(`❌ Step failed: ${result.error}`);
-      return { success: false, message: result.error || 'Step failed', error: result.error };
-    }
-    
-    if (result.completed) {
-      console.log(`✅ Workflow completed after ${stepsExecuted} steps`);
-      return { success: true, message: `Workflow completed successfully` };
-    }
-    
-    // Brief pause between steps to let database settle
-    await sleep(500);
-  }
-  
-  console.error(`❌ Maximum steps (${maxSteps}) exceeded. Possible infinite loop.`);
-  await updateQueueState({ currentStep: 'error', error: 'Maximum steps exceeded' });
-  return { success: false, message: 'Maximum steps exceeded', error: 'Possible infinite loop' };
-}
-
-// Start the workflow - Fully server-side recursive execution
+// Start the workflow - Only initializes queue, Vercel Cron executes steps
 export async function startChainedWorkflow(): Promise<{ success: boolean; message: string; error?: string }> {
   'use server';
   
   try {
-    console.log('🚀 Starting FULLY SERVER-SIDE chained workflow...');
+    console.log('🚀 Initializing chained workflow...');
     
     // Clear any previous queue state
     await clearQueueState();
@@ -409,7 +362,7 @@ export async function startChainedWorkflow(): Promise<{ success: boolean; messag
     // Initialize workflow state
     await updateWorkflowState({ 
       status: 'running',
-      message: 'Starting workflow...'
+      message: 'Workflow initialized. Waiting for cron to execute steps...'
     });
     
     // Set initial queue state
@@ -419,37 +372,15 @@ export async function startChainedWorkflow(): Promise<{ success: boolean; messag
     });
     
     console.log('✅ Queue initialized to: clear_data');
-    console.log('⚡ Executing ALL steps recursively on server...');
-    
-    // Execute ALL steps on the server without any client involvement
-    const result = await executeAllStepsRecursively();
-    
-    if (!result.success) {
-      console.error('❌ Workflow failed:', result.error);
-      await updateWorkflowState({ 
-        status: 'error', 
-        message: result.error || 'Workflow failed' 
-      });
-      await updateQueueState({ 
-        currentStep: 'error', 
-        error: result.error 
-      });
-      return { success: false, message: result.error || 'Workflow failed', error: result.error };
-    }
-    
-    console.log('✅ Workflow completed successfully!');
-    await updateWorkflowState({ 
-      status: 'idle', 
-      message: 'Workflow completed successfully' 
-    });
+    console.log('⏰ Vercel Cron will execute steps (separate function calls)');
     
     return { 
       success: true, 
-      message: 'Workflow completed successfully' 
+      message: 'Workflow initialized. Cron will execute each step as separate function call.' 
     };
     
   } catch (error: any) {
-    console.error('❌ Error starting workflow:', error);
+    console.error('❌ Error initializing workflow:', error);
     await updateWorkflowState({ status: 'error', message: error.message });
     await updateQueueState({ currentStep: 'error', error: error.message });
     return { success: false, message: error.message, error: error.message };
