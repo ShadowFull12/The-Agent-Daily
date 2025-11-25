@@ -13,7 +13,7 @@ import { updateAgentProgress, updateWorkflowState } from "@/lib/workflow-state";
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Step 1: Clear data and scout (completes in < 60s)
-export async function executeStep1_ClearAndScout(): Promise<{ success: boolean; message: string; error?: string }> {
+export async function executeStep1_ClearAndScout(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
   try {
     console.log('📋 Step 1: Clear data and scout');
     
@@ -37,10 +37,11 @@ export async function executeStep1_ClearAndScout(): Promise<{ success: boolean; 
       return { success: false, message: 'Scout failed', error: scoutResult.error };
     }
     
-    await updateAgentProgress('scout', 'success', `Scout found ${scoutResult.leadCount} leads.`);
+    await updateAgentProgress('scout', 'success', `Scout found ${scoutResult.leadCount} breaking news leads.`);
     await updateQueueState({ currentStep: 'dedup' });
     
-    return { success: true, message: `Found ${scoutResult.leadCount} leads. Proceeding to deduplication...` };
+    console.log('✅ Step 1 COMPLETE: Scout finished. Next step: Deduplication');
+    return { success: true, message: `Scout found ${scoutResult.leadCount} leads. Proceeding to deduplication...`, nextStep: 'dedup' };
   } catch (error: any) {
     await updateQueueState({ currentStep: 'error', error: error.message });
     return { success: false, message: 'Step 1 failed', error: error.message };
@@ -48,7 +49,7 @@ export async function executeStep1_ClearAndScout(): Promise<{ success: boolean; 
 }
 
 // Step 2: Deduplication (completes in < 30s)
-export async function executeStep2_Dedup(): Promise<{ success: boolean; message: string; error?: string }> {
+export async function executeStep2_Dedup(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
   try {
     console.log('📋 Step 2: Deduplication');
     
@@ -64,7 +65,8 @@ export async function executeStep2_Dedup(): Promise<{ success: boolean; message:
     await updateAgentProgress('deduplicator', 'success', `Removed ${dedupResult.deletedCount} duplicates. ${dedupResult.totalLeads} unique leads remain.`);
     await updateQueueState({ currentStep: 'journalist_1', draftsMade: 0 });
     
-    return { success: true, message: `Removed ${dedupResult.deletedCount} duplicates. Proceeding to journalist_1...` };
+    console.log('✅ Step 2 COMPLETE: Deduplication finished. Next step: Journalist 1');
+    return { success: true, message: `Removed ${dedupResult.deletedCount} duplicates. Proceeding to journalist_1...`, nextStep: 'journalist_1' };
   } catch (error: any) {
     await updateQueueState({ currentStep: 'error', error: error.message });
     return { success: false, message: 'Step 2 failed', error: error.message };
@@ -72,32 +74,32 @@ export async function executeStep2_Dedup(): Promise<{ success: boolean; message:
 }
 
 // Step 3.1: Journalist 1
-export async function executeStep3_Journalist1(): Promise<{ success: boolean; message: string; error?: string }> {
+export async function executeStep3_Journalist1(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
   return await executeSingleJournalist('journalist_1', 'journalist_2');
 }
 
 // Step 3.2: Journalist 2
-export async function executeStep3_Journalist2(): Promise<{ success: boolean; message: string; error?: string }> {
+export async function executeStep3_Journalist2(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
   return await executeSingleJournalist('journalist_2', 'journalist_3');
 }
 
 // Step 3.3: Journalist 3
-export async function executeStep3_Journalist3(): Promise<{ success: boolean; message: string; error?: string }> {
+export async function executeStep3_Journalist3(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
   return await executeSingleJournalist('journalist_3', 'journalist_4');
 }
 
 // Step 3.4: Journalist 4
-export async function executeStep3_Journalist4(): Promise<{ success: boolean; message: string; error?: string }> {
+export async function executeStep3_Journalist4(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
   return await executeSingleJournalist('journalist_4', 'journalist_5');
 }
 
 // Step 3.5: Journalist 5
-export async function executeStep3_Journalist5(): Promise<{ success: boolean; message: string; error?: string }> {
+export async function executeStep3_Journalist5(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
   return await executeSingleJournalist('journalist_5', 'validate');
 }
 
 // Execute a single journalist process
-async function executeSingleJournalist(journalistId: string, nextStep: string): Promise<{ success: boolean; message: string; error?: string }> {
+async function executeSingleJournalist(journalistId: string, nextStep: string): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
   try {
     console.log(`📋 Step: ${journalistId}`);
     
@@ -121,7 +123,8 @@ async function executeSingleJournalist(journalistId: string, nextStep: string): 
     
     await updateQueueState({ currentStep: nextStep as any, draftsMade: totalDrafts });
     
-    return { success: true, message: `${journalistId} drafted ${result.drafted} article(s). Total: ${totalDrafts}` };
+    console.log(`✅ ${journalistId} COMPLETE: Drafted ${result.drafted} articles. Total: ${totalDrafts}. Next step: ${nextStep}`);
+    return { success: true, message: `${journalistId} drafted ${result.drafted} article(s). Total: ${totalDrafts}`, nextStep };
     
   } catch (error: any) {
     await updateQueueState({ currentStep: 'error', error: error.message });
@@ -189,7 +192,7 @@ async function runJournalistProcess(journalistId: string): Promise<{ drafted: nu
 }
 
 // Step 4: Validate and Editor (completes in < 60s)
-export async function executeStep4_ValidateAndEdit(): Promise<{ success: boolean; message: string; error?: string }> {
+export async function executeStep4_ValidateAndEdit(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string; completed?: boolean }> {
   try {
     console.log('📋 Step 4: Validate and Editor');
     
@@ -223,7 +226,8 @@ export async function executeStep4_ValidateAndEdit(): Promise<{ success: boolean
       await updateQueueState({ currentStep: 'complete', validCount: validationResult.validCount });
       await updateWorkflowState({ status: 'success', message: 'Workflow completed successfully!' });
       
-      return { success: true, message: `Edition created with ${validationResult.validCount} articles!` };
+      console.log(`✅ Step 9 COMPLETE: Editor finished. Workflow complete with ${validationResult.validCount} articles!`);
+      return { success: true, message: `Edition created with ${validationResult.validCount} articles!`, completed: true };
       
     } else if ((state?.attempt || 1) < 3) {
       // Need more articles, retry from scout
@@ -234,7 +238,8 @@ export async function executeStep4_ValidateAndEdit(): Promise<{ success: boolean
         validCount: validationResult.validCount 
       });
       
-      return { success: true, message: `Only ${validationResult.validCount} articles. Retrying (${(state?.attempt || 1) + 1}/3)...` };
+      console.log(`⚠️ Only ${validationResult.validCount} articles. Retrying from Scout (attempt ${(state?.attempt || 1) + 1}/3)`);
+      return { success: true, message: `Only ${validationResult.validCount} articles. Retrying (${(state?.attempt || 1) + 1}/3)...`, nextStep: 'clear_data' };
       
     } else {
       // Failed after 3 attempts
@@ -276,42 +281,52 @@ export async function executeNextWorkflowStep(): Promise<{
       return { success: false, message: state.error || 'Unknown error', completed: true, error: state.error };
     }
     
-    console.log(`🎯 Executing workflow step: ${state.currentStep}`);
+    console.log(`🎯 ========================================`);
+    console.log(`🎯 STARTING STEP: ${state.currentStep}`);
+    console.log(`🎯 ========================================`);
     
     let result: any;
     
     switch (state.currentStep) {
       case 'clear_data':
       case 'scout':
+        console.log('📋 Executing: Step 1 - Clear & Scout');
         result = await executeStep1_ClearAndScout();
         break;
         
       case 'dedup':
+        console.log('📋 Executing: Step 2 - Deduplication');
         result = await executeStep2_Dedup();
         break;
         
       case 'journalist_1':
+        console.log('📋 Executing: Step 3.1 - Journalist 1');
         result = await executeStep3_Journalist1();
         break;
         
       case 'journalist_2':
+        console.log('📋 Executing: Step 3.2 - Journalist 2');
         result = await executeStep3_Journalist2();
         break;
         
       case 'journalist_3':
+        console.log('📋 Executing: Step 3.3 - Journalist 3');
         result = await executeStep3_Journalist3();
         break;
         
       case 'journalist_4':
+        console.log('📋 Executing: Step 3.4 - Journalist 4');
         result = await executeStep3_Journalist4();
         break;
         
       case 'journalist_5':
+        console.log('📋 Executing: Step 3.5 - Journalist 5');
         result = await executeStep3_Journalist5();
         break;
         
       case 'validate':
       case 'editor':
+        console.log('📋 Executing: Step 4 - Validate & Editor');
         result = await executeStep4_ValidateAndEdit();
         const nextState = await getQueueState();
         result.nextStep = nextState?.currentStep === 'clear_data' ? 'clear_data' : 'complete';
@@ -321,6 +336,10 @@ export async function executeNextWorkflowStep(): Promise<{
       default:
         return { success: false, message: 'Unknown step', error: 'Unknown workflow step' };
     }
+    
+    console.log(`✅ STEP COMPLETED: ${state.currentStep}`);
+    console.log(`📊 Result: success=${result.success}, nextStep=${result.nextStep || 'none'}, completed=${result.completed || false}`);
+    console.log(`🎯 ========================================\n`);
     
     // Return result - let client/executor call again for next step
     return result;
