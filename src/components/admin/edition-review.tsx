@@ -43,13 +43,45 @@ export function EditionReview({ onRefresh }: EditionReviewProps) {
   const fetchEditions = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/editions");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch("/api/editions", {
+        signal: controller.signal,
+        cache: 'no-store'
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const data = await response.json();
         setEditions(data.editions || []);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error("Failed to fetch editions:", response.status, errorData);
+        toast({
+          title: "Error Loading Editions",
+          description: `Failed to load editions: ${errorData.error || response.statusText}`,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Failed to fetch editions:", error);
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          toast({
+            title: "Request Timeout",
+            description: "The request to load editions took too long. Please try again.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Network Error",
+            description: "Failed to connect to the server. Please check your connection and try again.",
+            variant: "destructive",
+          });
+        }
+      }
     } finally {
       setLoading(false);
     }
