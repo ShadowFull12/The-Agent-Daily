@@ -392,7 +392,8 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
         const layout = await generateNewspaperLayout({ articles, editionNumber: newEditionNumber });
 
         const mainArticle = articles[0];
-        const coverImageUrl = mainArticle.imageUrl || `https://picsum.photos/seed/${newEditionNumber}/800/500`;
+        // Use article image if available, otherwise use a news-related placeholder
+        const coverImageUrl = mainArticle.imageUrl || `https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&h=500&fit=crop`;
 
         const editionData: Omit<Edition, 'id'> = {
             editionNumber: newEditionNumber,

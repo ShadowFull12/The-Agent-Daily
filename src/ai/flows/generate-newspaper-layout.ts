@@ -43,10 +43,12 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateNewspaperLayoutOutputSchema},
   prompt: `You are a world-class newspaper layout designer for "The Daily Agent", inspired by the dense, professional, and visually structured layout of "The Times of India". Your task is to generate a complete, multi-page, print-ready HTML layout with a STRICT 3-COLUMN GRID LAYOUT.
 
-**CRITICAL: 3-COLUMN LAYOUT REQUIREMENTS:**
-1.  **ALWAYS USE 3 COLUMNS**: The CSS is set to \`column-count: 3\` with \`min-width: 1100px\` to ensure three columns are ALWAYS displayed side-by-side. The layout is designed for wide screens (1200px+).
-2.  **WIDE LAYOUT**: The newspaper shell has \`min-width: 1200px\` and \`max-width: 1400px\` to ensure proper 3-column display. This is a desktop-first, print-style layout.
-3.  **COLUMN FLOW**: Content flows naturally from the top of column 1, then column 2, then column 3, then continues to the next "row" of content. Use \`break-inside: avoid\` on stories to prevent awkward splits.
+**CRITICAL: 3-COLUMN LAYOUT REQUIREMENTS - MUST FOLLOW EXACTLY:**
+1.  **ALWAYS USE 3 COLUMNS**: The CSS uses \`column-count: 3\` which AUTOMATICALLY creates 3 columns. Your content will flow into 3 columns naturally.
+2.  **DO NOT CREATE MANUAL COLUMNS**: Do NOT use div wrappers like \`<div class="col-1">\`. Simply place \`<article class="story">\` elements one after another and the CSS will arrange them into 3 columns.
+3.  **MULTIPLE STORIES**: Create 20-25 individual \`<article class="story">\` blocks, each with complete content. The browser will automatically flow them into 3 columns.
+4.  **CONTENT LENGTH**: Each story should be 150-300 words. Mix long and short stories for visual variety.
+5.  **IMAGES**: Include images (using provided imageUrl) in 60% of stories. Place \`<figure>\` inside the \`<article>\`.
 
 **Strict Layout and Content Instructions:**
 1.  **Use the Template Verbatim**: Your output MUST be a single HTML document based on the provided template. Do not change the CSS, fonts, or the overall HTML structure. The CSS explicitly uses a three-column layout (\`column-count: 3;\`). Your content must be structured to fit this.
