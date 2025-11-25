@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { publishLatestEditionAction } from '@/app/actions';
 
-// Vercel Cron job that PUBLISHES the edition (3:00 AM IST daily)
+// Vercel Cron job that PUBLISHES the edition (5:40 AM IST daily)
 export async function GET(request: NextRequest) {
   try {
-    console.log('📰 Daily publish trigger at 3:00 AM IST');
+    console.log('📰 Daily publish trigger at 5:40 AM IST');
     
     // Verify cron authorization
     const authHeader = request.headers.get('authorization');

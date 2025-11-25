@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { startChainedWorkflow } from '@/app/actions-workflow-chained';
 
-// Vercel Cron job that STARTS the workflow (2:30 AM IST daily)
+// Vercel Cron job that STARTS the workflow (5:00 AM IST daily)
 // This only initializes the queue, then workflow-step cron takes over
 export async function GET(request: NextRequest) {
   try {
-    console.log('🌅 Daily workflow trigger at 2:30 AM IST');
+    console.log('🌅 Daily workflow trigger at 5:00 AM IST');
     
     // Verify cron authorization
     const authHeader = request.headers.get('authorization');

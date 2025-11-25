@@ -31,24 +31,24 @@ const getNext8PmIst = () => {
     const now = new Date();
     const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
     const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
-    const next230Am = new Date(nowIst);
-    next230Am.setHours(2, 30, 0, 0);
-    if (nowIst.getHours() >= 2 && nowIst.getMinutes() >= 30) {
-        next230Am.setDate(next230Am.getDate() + 1);
+    const next5Am = new Date(nowIst);
+    next5Am.setHours(5, 0, 0, 0);
+    if (nowIst.getHours() >= 5) {
+        next5Am.setDate(next5Am.getDate() + 1);
     }
-    return next230Am;
+    return next5Am;
 };
 
 const getNext830PmIst = () => {
     const now = new Date();
     const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
     const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
-    const next3Am = new Date(nowIst);
-    next3Am.setHours(3, 0, 0, 0);
-    if (nowIst.getHours() >= 3) {
-        next3Am.setDate(next3Am.getDate() + 1);
+    const next540Am = new Date(nowIst);
+    next540Am.setHours(5, 40, 0, 0);
+    if (nowIst.getHours() > 5 || (nowIst.getHours() === 5 && nowIst.getMinutes() >= 40)) {
+        next540Am.setDate(next540Am.getDate() + 1);
     }
-    return next3Am;
+    return next540Am;
 };
 
 type RunStatus = "idle" | "running" | "success" | "error" | "stopping";
@@ -250,12 +250,12 @@ export function MissionControl() {
         if (!mounted) return;
         
         const timerId = setInterval(() => {
-            const next230Am = getNext8PmIst(); // Function name kept for compatibility but returns 2:30 AM
+            const next5Am = getNext8PmIst(); // Function name kept for compatibility but returns 5:00 AM
             const now = new Date();
-            const diff = next230Am.getTime() - now.getTime();
+            const diff = next5Am.getTime() - now.getTime();
             setCountdown(formatCountdown(diff));
             
-            // Note: Auto-trigger now handled by Vercel Cron at 2:30 AM IST
+            // Note: Auto-trigger now handled by Vercel Cron at 5:00 AM IST
             // No client-side trigger needed for automated runs
         }, 1000);
 
@@ -267,12 +267,12 @@ export function MissionControl() {
         if (!mounted) return;
         
         const timerId = setInterval(() => {
-            const next3Am = getNext830PmIst(); // Function name kept for compatibility but returns 3:00 AM
+            const next540Am = getNext830PmIst(); // Function name kept for compatibility but returns 5:40 AM
             const now = new Date();
-            const diff = next3Am.getTime() - now.getTime();
+            const diff = next540Am.getTime() - now.getTime();
             setPublishCountdown(formatCountdown(diff));
             
-            // Note: Auto-publish now handled by Vercel Cron at 3:00 AM IST
+            // Note: Auto-publish now handled by Vercel Cron at 5:40 AM IST
             // No client-side trigger needed for automated publish
         }, 1000);
 
@@ -289,18 +289,18 @@ export function MissionControl() {
                    <div className="space-y-1.5 flex-1">
                      <CardTitle>Automated Workflow (Hybrid)</CardTitle>
                      <CardDescription>
-                        Manual runs: Instant execution via client. Auto runs: 2:30 AM IST daily via Vercel Cron. Publishes at 3:00 AM IST. Each step = separate function call (&lt;300s). 25 leads, 20+ articles target.
+                        Manual runs: Instant execution via client. Auto runs: 5:00 AM IST daily via Cron-Job.org. Publishes at 5:40 AM IST. Each step = separate function call (&lt;300s). 25 leads, 20+ articles target.
                      </CardDescription>
                    </div>
                <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Next Auto Run (2:30 AM IST)</p>
+                    <p className="text-sm text-muted-foreground">Next Auto Run (5:00 AM IST)</p>
                     <p className="text-2xl font-bold font-mono text-primary">
                       {mounted ? countdown : "00:00:00"}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Next Auto Publish (3:00 AM IST)</p>
+                    <p className="text-sm text-muted-foreground">Next Auto Publish (5:40 AM IST)</p>
                     <p className="text-2xl font-bold font-mono text-green-600">
                       {mounted ? publishCountdown : "00:00:00"}
                     </p>
