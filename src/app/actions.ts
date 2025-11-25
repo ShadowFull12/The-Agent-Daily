@@ -238,11 +238,10 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
 export async function draftArticleAction(journalistId?: string): Promise<{ success: boolean; articleId?: string; headline?: string; error?: string; remaining: number; journalistId?: string }> {
     const { firestore } = getFirebaseServices();
     try {
-        // 1. Fetch leads that are NOT being processed
+        // 1. Fetch leads (we'll filter in memory for unprocessed ones)
         const leadsQuery = query(
             collection(firestore, "raw_leads"),
-            where("processingBy", "==", null),
-            limit(10)
+            limit(20)
         );
         const leadsSnapshot = await getDocs(leadsQuery);
         
@@ -250,14 +249,20 @@ export async function draftArticleAction(journalistId?: string): Promise<{ succe
              return { success: true, remaining: 0, journalistId }; // No more leads to process
         }
 
-        // Sort in memory to get the oldest one
-        const sortedDocs = leadsSnapshot.docs.sort((a, b) => {
-            const aTime = a.data().createdAt?.toMillis() || 0;
-            const bTime = b.data().createdAt?.toMillis() || 0;
-            return aTime - bTime;
-        });
+        // Filter for leads that are not being processed and sort by oldest
+        const unprocessedDocs = leadsSnapshot.docs
+            .filter(doc => !doc.data().processingBy)
+            .sort((a, b) => {
+                const aTime = a.data().createdAt?.toMillis() || 0;
+                const bTime = b.data().createdAt?.toMillis() || 0;
+                return aTime - bTime;
+            });
         
-        const leadDoc = sortedDocs[0];
+        if (unprocessedDocs.length === 0) {
+            return { success: true, remaining: 0, journalistId }; // No unprocessed leads
+        }
+        
+        const leadDoc = unprocessedDocs[0];
         const lead = { id: leadDoc.id, ...leadDoc.data() } as RawLead;
         
         // 2. Lock this lead by marking it as being processed
@@ -292,15 +297,16 @@ export async function draftArticleAction(journalistId?: string): Promise<{ succe
         // 6. Get count of remaining unprocessed leads
         const remainingQuery = query(
             collection(firestore, "raw_leads"),
-            where("processingBy", "==", null)
+            limit(50)
         );
         const remainingSnapshot = await getDocs(remainingQuery);
+        const unprocessedCount = remainingSnapshot.docs.filter(doc => !doc.data().processingBy).length;
 
         return { 
             success: true, 
             articleId: newDraftRef.id,
             headline: summaryResult.headline,
-            remaining: remainingSnapshot.size,
+            remaining: unprocessedCount,
             journalistId
         };
     } catch (error: any) {
@@ -310,10 +316,11 @@ export async function draftArticleAction(journalistId?: string): Promise<{ succe
             const { firestore } = getFirebaseServices();
             const remainingQuery = query(
                 collection(firestore, "raw_leads"),
-                where("processingBy", "==", null)
+                limit(50)
             );
             const remainingSnapshot = await getDocs(remainingQuery);
-            return { success: false, error: error.message, remaining: remainingSnapshot.size, journalistId };
+            const unprocessedCount = remainingSnapshot.docs.filter(doc => !doc.data().processingBy).length;
+            return { success: false, error: error.message, remaining: unprocessedCount, journalistId };
         } catch (countError: any) {
             return { success: false, error: error.message, remaining: 0, journalistId };
         }

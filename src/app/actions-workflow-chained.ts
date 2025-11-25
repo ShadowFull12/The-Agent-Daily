@@ -124,29 +124,55 @@ export async function executeStep3_Journalist(): Promise<{ success: boolean; mes
 async function runJournalistProcess(journalistId: string): Promise<{ drafted: number }> {
   let drafted = 0;
   let hasMoreLeads = true;
+  let consecutiveErrors = 0;
   
   console.log(`📰 ${journalistId} starting...`);
   
-  while (hasMoreLeads) {
-    const result = await draftArticleAction(journalistId);
-    
-    if (result.articleId) {
-      drafted++;
-      await updateAgentProgress(journalistId as any, 'working', `Drafted ${drafted} article${drafted > 1 ? 's' : ''}`, { 
-        drafted 
-      });
-      console.log(`📰 ${journalistId} drafted article: ${result.headline} (${result.remaining} leads left)`);
-    }
-    
-    // Check if more leads remain
-    if (result.remaining === 0) {
-      hasMoreLeads = false;
-      await updateAgentProgress(journalistId as any, 'success', `Completed ${drafted} article${drafted > 1 ? 's' : ''}`, { 
-        drafted 
-      });
-      console.log(`✅ ${journalistId} completed with ${drafted} articles`);
-    } else {
-      await sleep(200); // Brief pause between drafts
+  while (hasMoreLeads && consecutiveErrors < 3) {
+    try {
+      const result = await draftArticleAction(journalistId);
+      
+      if (result.success && result.articleId) {
+        drafted++;
+        consecutiveErrors = 0; // Reset error counter on success
+        await updateAgentProgress(journalistId as any, 'working', `Drafted ${drafted} article${drafted > 1 ? 's' : ''}`, { 
+          drafted 
+        });
+        console.log(`📰 ${journalistId} drafted article: ${result.headline} (${result.remaining} leads left)`);
+        
+        // Check if more leads remain
+        if (result.remaining === 0) {
+          hasMoreLeads = false;
+          await updateAgentProgress(journalistId as any, 'success', `Completed ${drafted} article${drafted > 1 ? 's' : ''}`, { 
+            drafted 
+          });
+          console.log(`✅ ${journalistId} completed with ${drafted} articles`);
+        } else {
+          await sleep(200); // Brief pause between drafts
+        }
+      } else if (result.remaining === 0) {
+        // No more leads, exit gracefully
+        hasMoreLeads = false;
+        await updateAgentProgress(journalistId as any, 'success', `Completed ${drafted} article${drafted > 1 ? 's' : ''}`, { 
+          drafted 
+        });
+        console.log(`✅ ${journalistId} completed with ${drafted} articles (no more leads)`);
+      } else if (result.error) {
+        consecutiveErrors++;
+        console.error(`❌ ${journalistId} error (${consecutiveErrors}/3):`, result.error);
+        if (consecutiveErrors < 3) {
+          await sleep(1000); // Wait before retry
+        }
+      }
+    } catch (error: any) {
+      consecutiveErrors++;
+      console.error(`❌ ${journalistId} exception (${consecutiveErrors}/3):`, error.message);
+      if (consecutiveErrors < 3) {
+        await sleep(1000);
+      } else {
+        await updateAgentProgress(journalistId as any, 'error', `Failed after 3 errors`, { drafted });
+        break;
+      }
     }
   }
   
