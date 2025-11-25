@@ -100,7 +100,8 @@ async function runWorkflowInBackground(isManualRun: boolean) {
             console.log(`🔍 Scout Agent starting (Attempt ${attempt}/3)...`);
             await updateAgentProgress('scout', 'working', `Scout is gathering news leads (Attempt ${attempt}/3)...`);
             
-            const scoutResult = await findLeadsAction();
+            // Reduce to 15 leads for faster processing within Vercel timeout
+            const scoutResult = await findLeadsAction(15);
             console.log('📊 Scout result:', scoutResult);
             
             if (!scoutResult.success) {
@@ -111,7 +112,7 @@ async function runWorkflowInBackground(isManualRun: boolean) {
             
             console.log(`✅ Scout found ${scoutResult.leadCount} leads`);
             await updateAgentProgress('scout', 'success', `Scout found ${scoutResult.leadCount} leads.`);
-            await sleep(5000);
+            await sleep(2000);
             
             if (await checkShouldStop()) throw new Error('Workflow stopped by user');
             await updateAgentProgress('scout', 'cooldown', '');
@@ -143,9 +144,16 @@ async function runWorkflowInBackground(isManualRun: boolean) {
             await updateAgentProgress('journalist', 'working', 'Journalist is drafting articles...');
             let remaining = -1;
             let draftsMade = 0;
+            const maxDrafts = 15; // Limit to prevent timeout
             
             do {
                 if (await checkShouldStop()) throw new Error('Workflow stopped by user');
+                
+                // Stop if we've hit the max draft limit
+                if (draftsMade >= maxDrafts) {
+                    console.log(`⏱️ Reached max drafts limit (${maxDrafts}), stopping journalist`);
+                    break;
+                }
                 
                 const draftResult = await draftArticleAction();
                 if (!draftResult.success && draftResult.error) {
@@ -155,15 +163,15 @@ async function runWorkflowInBackground(isManualRun: boolean) {
                     await updateAgentProgress('journalist', 'working', `Journalist drafted ${draftsMade} articles. ${draftResult.remaining} leads left.`, { drafted: draftsMade, remaining: draftResult.remaining });
                 }
                 remaining = draftResult.remaining;
-                if (remaining > 0) {
-                    await sleep(2000);
+                if (remaining > 0 && draftsMade < maxDrafts) {
+                    await sleep(1000); // Reduced from 2000ms
                 }
-            } while (remaining > 0);
+            } while (remaining > 0 && draftsMade < maxDrafts);
             
             if (await checkShouldStop()) throw new Error('Workflow stopped by user');
             
             await updateAgentProgress('journalist', 'success', `Journalist drafted a total of ${draftsMade} articles.`, { drafted: draftsMade, remaining: 0 });
-            await sleep(5000);
+            await sleep(2000);
             await updateAgentProgress('journalist', 'cooldown', '', { drafted: 0, remaining: 0 });
 
             // 4. Validator
@@ -175,12 +183,14 @@ async function runWorkflowInBackground(isManualRun: boolean) {
             
             await updateAgentProgress('validator', 'working', `Validator approved ${validationResult.validCount} articles, discarded ${validationResult.discardedCount}.`);
             
-            if (validationResult.validCount >= 15) {
+            // Reduced from 15 to 10 for faster completion within timeout
+            const requiredArticles = 10;
+            if (validationResult.validCount >= requiredArticles) {
                 requiredArticlesMet = true;
                 await updateAgentProgress('validator', 'success', `Article count sufficient (${validationResult.validCount}). Proceeding to layout.`);
             } else {
-                await updateAgentProgress('validator', 'error', `Article count (${validationResult.validCount}) is below 15. Rerunning scout...`);
-                await sleep(5000);
+                await updateAgentProgress('validator', 'error', `Article count (${validationResult.validCount}) is below ${requiredArticles}. Rerunning scout...`);
+                await sleep(3000);
             }
         }
 
