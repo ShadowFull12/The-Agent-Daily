@@ -1,31 +1,55 @@
-# Vercel Cron-Based Workflow Architecture
+# Hybrid Workflow Architecture
 
 ## Overview
-The workflow now uses **Vercel Cron Jobs** to execute each step as a **separate function call**, ensuring each stays under the 300-second Vercel Hobby limit.
+The workflow uses a **hybrid approach**:
+- **Manual runs**: Client-side executor provides instant step execution
+- **Automated runs**: Vercel Cron Jobs execute steps (no client needed)
+- **Each step** = Separate function call (stays under 300s Vercel Hobby limit)
 
 ## How It Works
 
-### Architecture
+### Manual Runs (Instant Execution)
 ```
-8:00 PM IST Daily
+User clicks "Start Workflow"
     ↓
-daily-workflow cron (initializes queue)
+startChainedWorkflow() initializes queue
+    ↓
+WorkflowChainExecutor (client) detects work
+    ↓
+Immediately calls executeNextWorkflowStep()
+    ↓
+Step 1 executes → completes → queue updates
+    ↓
+Client detects change (1-second polling)
+    ↓
+Immediately calls next step
+    ↓
+Repeats until all 9 steps complete (~5-8 minutes)
+```
+
+### Automated Runs (2:30 AM IST Daily - No Client Needed)
+```
+2:30 AM IST Daily
+    ↓
+daily-workflow cron initializes queue
     ↓
 workflow-step cron (runs every minute)
     ↓
 Checks queue → Executes ONE step → Updates queue → Exits
     ↓
-Next minute: workflow-step cron runs again
+Next minute: cron runs again → next step
     ↓
-Checks queue → Executes next step → Updates queue → Exits
+Repeats until workflow complete (~9-10 minutes with cron delays)
     ↓
-Repeats until workflow complete
+3:00 AM IST Daily
+    ↓
+daily-publish cron publishes edition
 ```
 
-### Cron Jobs
+## Cron Jobs
 
-1. **`/api/cron/daily-workflow`** - Runs at 8:00 PM IST daily
-   - Schedule: `30 14 * * *` (UTC: 2:30 PM = IST: 8:00 PM)
+1. **`/api/cron/daily-workflow`** - Runs at 2:30 AM IST daily
+   - Schedule: `0 21 * * *` (UTC: 9:00 PM = IST: 2:30 AM)
    - Action: Calls `startChainedWorkflow()` to initialize queue
    - Sets queue to `'clear_data'`
    - Returns immediately
@@ -35,6 +59,12 @@ Repeats until workflow complete
    - Action: Checks queue state and executes ONE step
    - Each execution is a separate Vercel function call (separate 300s limit)
    - Updates queue to next step
+   - Returns immediately
+
+3. **`/api/cron/daily-publish`** - Runs at 3:00 AM IST daily
+   - Schedule: `30 21 * * *` (UTC: 9:30 PM = IST: 3:00 AM)
+   - Action: Publishes the latest edition
+   - Runs independently of workflow
    - Returns immediately
 
 ### Workflow Steps (9 total)
@@ -48,7 +78,22 @@ Repeats until workflow complete
 8. `validate` → Validation (30s)
 9. `editor` → Editor + Publish (60s)
 
-**Total Time**: ~9 minutes (each step is a separate function call)
+**Total Time**: 
+- Manual run: ~5-8 minutes (instant step transitions)
+- Automated run: ~9-10 minutes (includes 1-minute cron delays)
+
+## Components
+
+### Client-Side (Manual Runs Only)
+- **WorkflowChainExecutor**: React component that polls queue every 1-3 seconds
+- Only active when user has Mission Control open
+- Provides instant feedback and step progression
+- Not needed for automated runs
+
+### Server-Side (Both Manual & Automated)
+- **Server Actions**: Individual step functions (Scout, Dedup, Journalists, Validate, Editor)
+- **Cron Endpoints**: API routes that Vercel triggers on schedule
+- **Firestore Queue**: Tracks current workflow step and state
 
 ## Deployment Setup
 
@@ -71,8 +116,9 @@ openssl rand -base64 32
 
 ### 3. Verify Cron Jobs
 After deployment, Vercel Dashboard → Settings → Cron Jobs should show:
-- ✅ `/api/cron/daily-workflow` - Daily at 8:00 PM IST
+- ✅ `/api/cron/daily-workflow` - Daily at 2:30 AM IST (9:00 PM UTC)
 - ✅ `/api/cron/workflow-step` - Every minute
+- ✅ `/api/cron/daily-publish` - Daily at 3:00 AM IST (9:30 PM UTC)
 
 ## Manual Testing
 
@@ -93,30 +139,25 @@ Just click the "Start Workflow" button - it calls `startChainedWorkflow()` which
 
 ## Benefits
 
+✅ **Manual runs: Instant execution**
+   - Client executor provides immediate step transitions
+   - ~5-8 minute total completion time
+   - Real-time UI feedback
+
+✅ **Automated runs: No client needed**
+   - Runs at 2:30 AM IST via Vercel Cron
+   - Works when browser is closed
+   - Publishes automatically at 3:00 AM IST
+
 ✅ **Each step = Separate function call**
    - Scout runs → completes → exits
-   - Cron triggers again → Dedup runs → completes → exits
-   - Cron triggers again → Journalist 1 runs → completes → exits
-   - And so on...
-
-✅ **No timeout issues**
-   - Each step completes in <60s
-   - Well under 300s Vercel Hobby limit
-   - No long-running processes
-
-✅ **Works without browser**
-   - Fully server-side
-   - Cron triggers automatically
-   - No client needed
-
-✅ **Automatic continuation**
-   - Each step updates queue to next step
-   - Cron picks up next step within 1 minute
-   - Workflow progresses automatically
+   - Cron/Client triggers next step
+   - Each step <60s, well under 300s limit
+   - No timeout issues
 
 ✅ **Error handling**
    - If step fails, queue set to 'error'
-   - Cron stops executing
+   - Execution stops automatically
    - Error visible in Mission Control
 
 ## Vercel Limits

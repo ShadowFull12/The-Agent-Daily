@@ -16,6 +16,7 @@ import { getFirestore } from "firebase/firestore";
 import { initializeApp, getApps } from "firebase/app";
 import { firebaseConfig } from "@/firebase/config";
 import { Badge } from "@/components/ui/badge";
+import { WorkflowChainExecutor } from "@/components/workflow-chain-executor";
 
 const formatCountdown = (ms: number) => {
     if (ms < 0) return "00:00:00";
@@ -30,24 +31,24 @@ const getNext8PmIst = () => {
     const now = new Date();
     const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
     const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
-    const next8Pm = new Date(nowIst);
-    next8Pm.setHours(20, 0, 0, 0);
-    if (nowIst.getHours() > 20 || (nowIst.getHours() === 20 && nowIst.getMinutes() >= 0)) {
-        next8Pm.setDate(next8Pm.getDate() + 1);
+    const next230Am = new Date(nowIst);
+    next230Am.setHours(2, 30, 0, 0);
+    if (nowIst.getHours() >= 2 && nowIst.getMinutes() >= 30) {
+        next230Am.setDate(next230Am.getDate() + 1);
     }
-    return next8Pm;
+    return next230Am;
 };
 
 const getNext830PmIst = () => {
     const now = new Date();
     const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
     const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
-    const next830Pm = new Date(nowIst);
-    next830Pm.setHours(20, 30, 0, 0);
-    if (nowIst.getHours() > 20 || (nowIst.getHours() === 20 && nowIst.getMinutes() >= 30)) {
-        next830Pm.setDate(next830Pm.getDate() + 1);
+    const next3Am = new Date(nowIst);
+    next3Am.setHours(3, 0, 0, 0);
+    if (nowIst.getHours() >= 3) {
+        next3Am.setDate(next3Am.getDate() + 1);
     }
-    return next830Pm;
+    return next3Am;
 };
 
 type RunStatus = "idle" | "running" | "success" | "error" | "stopping";
@@ -249,19 +250,13 @@ export function MissionControl() {
         if (!mounted) return;
         
         const timerId = setInterval(() => {
-            const next8Pm = getNext8PmIst();
+            const next230Am = getNext8PmIst(); // Function name kept for compatibility but returns 2:30 AM
             const now = new Date();
-            const diff = next8Pm.getTime() - now.getTime();
+            const diff = next230Am.getTime() - now.getTime();
             setCountdown(formatCountdown(diff));
             
-            // Trigger the cycle if we are very close to 8 PM
-            if (diff > 0 && diff < 1000 && runStatus === 'idle') {
-                startChainedWorkflow().then(result => {
-                    if (result.success) {
-                        toast({ title: "Automated Run Started", description: "The daily newspaper generation process has begun (server-side)." });
-                    }
-                });
-            }
+            // Note: Auto-trigger now handled by Vercel Cron at 2:30 AM IST
+            // No client-side trigger needed for automated runs
         }, 1000);
 
         return () => clearInterval(timerId);
@@ -272,23 +267,13 @@ export function MissionControl() {
         if (!mounted) return;
         
         const timerId = setInterval(() => {
-            const next830Pm = getNext830PmIst();
+            const next3Am = getNext830PmIst(); // Function name kept for compatibility but returns 3:00 AM
             const now = new Date();
-            const diff = next830Pm.getTime() - now.getTime();
+            const diff = next3Am.getTime() - now.getTime();
             setPublishCountdown(formatCountdown(diff));
             
-            // Trigger the publication if we are very close to 8:30 PM
-            if (diff > 0 && diff < 1000) {
-                toast({title: "Publication Time!", description: "Publishing the latest edition."});
-                publishLatestEditionAction().then(res => {
-                    if(res.success){
-                        toast({title: "Published!", description: res.message});
-                        router.refresh();
-                    } else {
-                        toast({variant: 'destructive', title: "Publication Failed", description: res.error});
-                    }
-                });
-            }
+            // Note: Auto-publish now handled by Vercel Cron at 3:00 AM IST
+            // No client-side trigger needed for automated publish
         }, 1000);
 
         return () => clearInterval(timerId);
@@ -296,23 +281,26 @@ export function MissionControl() {
 
     return (
         <>
+            {/* Client executor for manual runs - instant execution */}
+            <WorkflowChainExecutor />
+            
             <Card className="overflow-hidden">
                 <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                    <div className="space-y-1.5 flex-1">
-                     <CardTitle>Automated Workflow (Vercel Cron)</CardTitle>
+                     <CardTitle>Automated Workflow (Hybrid)</CardTitle>
                      <CardDescription>
-                        Each step runs as a separate Vercel function call (&lt;300s). Vercel Cron triggers steps every minute. Works with auto-trigger at 8 PM IST (no client needed). 25 leads, 20+ articles target.
+                        Manual runs: Instant execution via client. Auto runs: 2:30 AM IST daily via Vercel Cron. Publishes at 3:00 AM IST. Each step = separate function call (&lt;300s). 25 leads, 20+ articles target.
                      </CardDescription>
                    </div>
                <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Next Auto Run</p>
+                    <p className="text-sm text-muted-foreground">Next Auto Run (2:30 AM IST)</p>
                     <p className="text-2xl font-bold font-mono text-primary">
                       {mounted ? countdown : "00:00:00"}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Next Auto Publish</p>
+                    <p className="text-sm text-muted-foreground">Next Auto Publish (3:00 AM IST)</p>
                     <p className="text-2xl font-bold font-mono text-green-600">
                       {mounted ? publishCountdown : "00:00:00"}
                     </p>

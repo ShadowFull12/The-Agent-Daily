@@ -7,11 +7,15 @@
   "crons": [
     {
       "path": "/api/cron/daily-workflow",
-      "schedule": "30 14 * * *"
+      "schedule": "0 21 * * *"
     },
     {
       "path": "/api/cron/workflow-step",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/daily-publish",
+      "schedule": "30 21 * * *"
     }
   ],
   "rewrites": [
