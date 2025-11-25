@@ -218,10 +218,7 @@ export async function stopWorkflowAction(): Promise<{ success: boolean; message:
     try {
         shouldStopWorkflow = true;
         
-        // Immediately clear all data
-        await clearAllDataAction();
-        
-        // Force set state to idle immediately
+        // Force set state to idle immediately (data preserved)
         const { firestore } = getFirebaseServices();
         const { doc, setDoc, Timestamp } = await import('firebase/firestore');
         
@@ -229,7 +226,7 @@ export async function stopWorkflowAction(): Promise<{ success: boolean; message:
         await setDoc(workflowDoc, {
             status: 'idle',
             currentAgent: null,
-            message: 'Workflow stopped by user',
+            message: 'Workflow force stopped - data preserved',
             progress: {
                 scout: { status: 'idle', message: '' },
                 deduplicator: { status: 'idle', message: '', checked: 0, remaining: 0 },
@@ -242,7 +239,7 @@ export async function stopWorkflowAction(): Promise<{ success: boolean; message:
             lastUpdated: Timestamp.now(),
         }, { merge: false });
         
-        return { success: true, message: 'Workflow stopped immediately and data cleared' };
+        return { success: true, message: 'Workflow stopped immediately - data preserved' };
     } catch (error: any) {
         return { success: false, message: error.message };
     } finally {

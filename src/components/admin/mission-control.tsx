@@ -4,11 +4,10 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { publishLatestEditionAction, clearAllDataAction } from "@/app/actions";
 import { startWorkflowAction, stopWorkflowAction } from "@/app/actions-workflow";
-import { emergencyKillSwitch } from "@/app/actions-emergency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { WorkflowDiagram, type AgentName, type AgentStatus } from "./workflow-diagram";
-import { Play, Timer, CheckCircle, AlertTriangle, Square, RotateCcw, Skull } from 'lucide-react';
+import { Play, Timer, CheckCircle, AlertTriangle, Square, RotateCcw } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -92,31 +91,19 @@ export function MissionControl() {
     };
 
     const handleForceStop = async () => {
-        if (runStatus === "running") {
-            setRunStatus("stopping");
-            setGlobalMessage("Workflow termination requested...");
-            const result = await stopWorkflowAction();
-            if (result.success) {
-                toast({ title: "Stopping Workflow", description: result.message });
-            }
-        }
-    };
-
-    const handleEmergencyKill = async () => {
-        setGlobalMessage("🚨 EMERGENCY STOP - Terminating all processes...");
-        const result = await emergencyKillSwitch();
+        setGlobalMessage("⚠️ Force stopping workflow - data preserved...");
+        const result = await stopWorkflowAction();
         if (result.success) {
             toast({ 
-                title: "🚨 Emergency Kill Switch Activated", 
-                description: result.message,
-                variant: "destructive"
+                title: "✅ Workflow Stopped", 
+                description: result.message
             });
             resetWorkflow();
             router.refresh();
         } else {
             toast({ 
                 variant: 'destructive', 
-                title: "Emergency Stop Failed", 
+                title: "Stop Failed", 
                 description: result.message 
             });
         }
@@ -278,21 +265,13 @@ export function MissionControl() {
                     </Button>
 
                     {(runStatus === 'running' || runStatus === 'stopping') && (
-                        <Button variant="destructive" onClick={handleForceStop}>
-                            <Square className="mr-2 h-4 w-4" />
-                            Force Stop
-                        </Button>
-                    )}
-
-                    {/* Emergency Kill Switch - Single Click */}
-                    {(runStatus === 'running' || runStatus === 'stopping') && (
                         <Button 
                             variant="destructive" 
                             className="bg-red-600 hover:bg-red-700 border-red-700"
-                            onClick={handleEmergencyKill}
+                            onClick={handleForceStop}
                         >
-                            <Skull className="mr-2 h-4 w-4" />
-                            🚨 EMERGENCY KILL
+                            <Square className="mr-2 h-4 w-4" />
+                            ⚠️ Force Stop
                         </Button>
                     )}
 
