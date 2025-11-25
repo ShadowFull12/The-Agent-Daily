@@ -343,15 +343,15 @@ export function MissionControl() {
                                                 {progress.status}
                                             </Badge>
                                             
-                                            {agent === 'deduplicator' && progress.checked !== undefined && (
+                                            {agent === 'deduplicator' && (progress.checked !== undefined || progress.status === 'working') && (
                                                 <span className="text-xs text-muted-foreground">
-                                                    {progress.checked} checked, {progress.remaining} remaining
+                                                    {progress.checked || 0} checked, {progress.remaining || 0} remaining
                                                 </span>
                                             )}
                                             
-                                            {agent === 'journalist' && progress.drafted !== undefined && (
+                                            {agent === 'journalist' && (progress.drafted !== undefined || progress.status === 'working') && (
                                                 <span className="text-xs text-muted-foreground">
-                                                    {progress.drafted} drafted, {progress.remaining} remaining
+                                                    {progress.drafted || 0} drafted, {progress.remaining || 0} remaining
                                                 </span>
                                             )}
                                         </div>
