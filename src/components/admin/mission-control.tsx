@@ -1,60 +1,18 @@
-
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import {
-    findLeadsAction,
-    deduplicateLeadsAction,
-    draftArticleAction,
-    validateArticlesAction,
-    createPreviewEditionAction,
-    publishLatestEditionAction,
-    clearAllDataAction,
-    checkExistingDraftsAction
-} from "@/app/actions";
+import { publishLatestEditionAction, clearAllDataAction } from "@/app/actions";
+import { startWorkflowAction, stopWorkflowAction } from "@/app/actions-workflow";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { WorkflowDiagram, type AgentName, type AgentStatus } from "./workflow-diagram";
-import { Play, RotateCcw, Rss, FileCheck, PenSquare, CopyCheck, Newspaper, UploadCloud, Timer, CheckCircle, AlertTriangle, Square } from 'lucide-react';
+import { Play, Timer, CheckCircle, AlertTriangle, Square, RotateCcw } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
-
-// --- Time Helper Functions ---
-const getNext5AmIst = () => {
-    const now = new Date();
-    const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-    const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
-
-    // Test mode: 8:00 PM today (20:00)
-    const next5AmIst = new Date(nowIst);
-    next5AmIst.setHours(20, 0, 0, 0);
-
-    // If already past 8:00 PM, set for tomorrow
-    if (nowIst.getHours() > 20 || (nowIst.getHours() === 20 && nowIst.getMinutes() >= 0)) {
-        next5AmIst.setDate(next5AmIst.getDate() + 1);
-    }
-    
-    return next5AmIst;
-};
-
-const getNext6AmIst = () => {
-    const now = new Date();
-    const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-    const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
-
-    // Test mode: 8:30 PM today (20:30)
-    const next6AmIst = new Date(nowIst);
-    next6AmIst.setHours(20, 30, 0, 0);
-    
-    // If already past 8:30 PM, set for tomorrow
-    if(nowIst.getHours() > 20 || (nowIst.getHours() === 20 && nowIst.getMinutes() >= 10)){
-        next6AmIst.setDate(next6AmIst.getDate() + 1);
-    }
-
-    return next6AmIst;
-};
-
+import { doc, onSnapshot } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps } from "firebase/app";
 
 const formatCountdown = (ms: number) => {
     if (ms < 0) return "00:00:00";
@@ -65,15 +23,48 @@ const formatCountdown = (ms: number) => {
     return `${hours}:${minutes}:${seconds}`;
 };
 
+const getNext8PmIst = () => {
+    const now = new Date();
+    const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
+    const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
+    const next8Pm = new Date(nowIst);
+    next8Pm.setHours(20, 0, 0, 0);
+    if (nowIst.getHours() > 20 || (nowIst.getHours() === 20 && nowIst.getMinutes() >= 0)) {
+        next8Pm.setDate(next8Pm.getDate() + 1);
+    }
+    return next8Pm;
+};
+
+const getNext830PmIst = () => {
+    const now = new Date();
+    const nowUtc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
+    const nowIst = new Date(nowUtc.getTime() + 330 * 60000);
+    const next830Pm = new Date(nowIst);
+    next830Pm.setHours(20, 30, 0, 0);
+    if (nowIst.getHours() > 20 || (nowIst.getHours() === 20 && nowIst.getMinutes() >= 30)) {
+        next830Pm.setDate(next830Pm.getDate() + 1);
+    }
+    return next830Pm;
+};
+
 type RunStatus = "idle" | "running" | "success" | "error" | "stopping";
+
+// Initialize Firebase client
+const getFirestoreClient = () => {
+    if (getApps().length === 0) {
+        const app = initializeApp({
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "the-daily-agent"
+        });
+        return getFirestore(app);
+    }
+    return getFirestore();
+};
 
 export function MissionControl() {
     const [runStatus, setRunStatus] = useState<RunStatus>("idle");
     const [countdown, setCountdown] = useState("00:00:00");
     const [publishCountdown, setPublishCountdown] = useState("00:00:00");
     const [mounted, setMounted] = useState(false);
-    const isStoppingRef = useRef(false);
-
     const { toast } = useToast();
     const router = useRouter();
 
@@ -87,11 +78,6 @@ export function MissionControl() {
     });
     const [globalMessage, setGlobalMessage] = useState("System is idle. Ready for the next run.");
 
-    const setAgentStatus = (agent: AgentName, status: AgentStatus, message?: string) => {
-        setAgentStatuses(prev => ({ ...prev, [agent]: status }));
-        if (message) setGlobalMessage(message);
-    };
-    
     const resetWorkflow = () => {
         setAgentStatuses({
             scout: 'idle',
@@ -103,203 +89,72 @@ export function MissionControl() {
         });
         setGlobalMessage("System is idle. Ready for the next run.");
         setRunStatus('idle');
-        isStoppingRef.current = false;
     };
-    
-    const handleForceStop = () => {
+
+    const handleForceStop = async () => {
         if (runStatus === "running") {
-            isStoppingRef.current = true;
             setRunStatus("stopping");
-            setGlobalMessage("Workflow termination requested. Finishing current step...");
-            toast({ title: "Stopping Workflow", description: "The workflow will stop after the current agent finishes its task." });
+            setGlobalMessage("Workflow termination requested...");
+            const result = await stopWorkflowAction();
+            if (result.success) {
+                toast({ title: "Stopping Workflow", description: result.message });
+            }
         }
     };
 
-
-    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-    const handleRunWorkflow = useCallback(async (isManualRun = false) => {
+    const handleRunWorkflow = async () => {
         if (runStatus === "running") {
             toast({ title: "Workflow in Progress", description: "An automated workflow is already running." });
             return;
         }
 
         setRunStatus("running");
-        resetWorkflow();
-        setRunStatus("running"); // resetWorkflow sets it to idle, so set it back
+        setGlobalMessage("Starting workflow...");
         
-        // Always clear all data on workflow start (both manual and automated)
-        setGlobalMessage("Clearing previous data for a fresh start...");
-        await clearAllDataAction();
-        router.refresh();
-        await sleep(2000);
-        
-        if(isManualRun){
-            setGlobalMessage("Manual workflow initiated...");
-            toast({ title: "Manual Run Started", description: "Starting fresh workflow." });
+        const result = await startWorkflowAction(true);
+        if (result.success) {
+            toast({ title: "Manual Run Started", description: result.message });
         } else {
-             setGlobalMessage("Automated daily workflow initiated...");
-             toast({ title: "Automated Run Started", description: "The daily newspaper generation process has begun." });
+            toast({ variant: 'destructive', title: "Failed to Start", description: result.message });
+            setRunStatus("idle");
         }
+    };
 
-
-        let requiredArticlesMet = false;
-        let attempts = 0;
+    // Listen to workflow state from Firestore
+    useEffect(() => {
+        if (!mounted) return;
 
         try {
-            while (!requiredArticlesMet && attempts < 3) {
-                if (isStoppingRef.current) throw new Error("Workflow manually stopped.");
-                attempts++;
-                
-                // 1. Scout
-                setAgentStatus('scout', 'working', `Finding new leads (Attempt ${attempts})...`);
-                const leadsResult = await findLeadsAction(25);
-                if (isStoppingRef.current) throw new Error("Workflow manually stopped.");
-                if (!leadsResult.success) throw new Error(leadsResult.error || "Scout agent failed.");
-                setAgentStatus('scout', 'success', `Scout found ${leadsResult.leadCount} new leads.`);
-                await sleep(10000);
-                setAgentStatus('scout', 'cooldown');
-
-                // 2. Deduplicator (AI-powered, checks one lead at a time)
-                if (isStoppingRef.current) throw new Error("Workflow manually stopped.");
-                setAgentStatus('deduplicator', 'working', "AI is checking for duplicate stories...");
-                let dedupRemaining = -1;
-                let totalDeleted = 0;
-                let dedupChecks = 0;
-                let totalLeads = 0;
-                
-                do {
-                    if (isStoppingRef.current) throw new Error("Workflow manually stopped during deduplication.");
-                    const dedupResult = await deduplicateLeadsAction();
-                    
-                    if (dedupResult.totalLeads) {
-                        totalLeads = dedupResult.totalLeads;
-                    }
-                    
-                    if (!dedupResult.success && dedupResult.error) {
-                        console.warn("Deduplication failed for one lead:", dedupResult.error);
-                        // If rate limited, wait longer
-                        if (dedupResult.error.includes('quota') || dedupResult.error.includes('rate limit')) {
-                            setGlobalMessage(`Rate limited. Waiting 5 seconds before retry...`);
-                            await sleep(5000);
-                            continue; // Retry without counting this attempt
-                        }
-                        break; // Exit loop on other errors
-                    }
-                    dedupChecks++;
-                    totalDeleted += dedupResult.deletedCount;
-                    dedupRemaining = dedupResult.remaining;
-                    
-                    if (dedupResult.checkedTitle) {
-                        const status = dedupResult.deletedCount > 0 ? "duplicate found!" : "unique";
-                        const checkedCount = totalLeads - dedupRemaining;
-                        setGlobalMessage(`Deduplicator: Checked ${checkedCount} of ${totalLeads} leads - "${dedupResult.checkedTitle.substring(0, 40)}..." ${status}`);
-                    }
-                    
-                    if (dedupRemaining > 0) {
-                        await sleep(1500); // Cooldown between checks
-                    }
-                } while (dedupRemaining > 1); // Continue until only 1 or 0 leads left
-                
-                setAgentStatus('deduplicator', 'success', `AI checked ${dedupChecks} leads and removed ${totalDeleted} duplicates.`);
-                await sleep(5000);
-                setAgentStatus('deduplicator', 'cooldown');
-
-                // 3. Journalist
-                if (isStoppingRef.current) throw new Error("Workflow manually stopped.");
-                setAgentStatus('journalist', 'working', "Journalist is drafting articles...");
-                let remaining = -1;
-                let draftsMade = 0;
-                do {
-                    if (isStoppingRef.current) throw new Error("Workflow manually stopped during drafting.");
-                    const draftResult = await draftArticleAction();
-                    if (!draftResult.success && draftResult.error) {
-                       console.warn("Drafting failed for one article:", draftResult.error);
-                    } else if (draftResult.articleId) {
-                       draftsMade++;
-                       setGlobalMessage(`Journalist drafted ${draftsMade} articles. ${draftResult.remaining} leads left.`);
-                    }
-                    remaining = draftResult.remaining;
-                    if(remaining > 0) {
-                        await sleep(2000); // Cooldown between each draft
-                    }
-                } while (remaining > 0);
-                setAgentStatus('journalist', 'success', `Journalist drafted a total of ${draftsMade} articles.`);
-                await sleep(5000);
-                setAgentStatus('journalist', 'cooldown');
-
-                // 4. Validator
-                if (isStoppingRef.current) throw new Error("Workflow manually stopped.");
-                setAgentStatus('validator', 'working', "Validating article quality and count...");
-                const validationResult = await validateArticlesAction();
-                if (!validationResult.success) throw new Error(validationResult.error || "Validation failed.");
-                setGlobalMessage(`Validator approved ${validationResult.validCount} articles, discarded ${validationResult.discardedCount}.`);
-                
-                if (validationResult.validCount >= 15) {
-                    requiredArticlesMet = true;
-                    setAgentStatus('validator', 'success', `Article count sufficient (${validationResult.validCount}). Proceeding to layout.`);
-                } else {
-                    setAgentStatus('validator', 'error', `Article count (${validationResult.validCount}) is below 15. Rerunning scout...`);
-                    await sleep(5000); // Wait before re-running
-                }
-            }
-
-            if (isStoppingRef.current) throw new Error("Workflow manually stopped.");
-
-            if (!requiredArticlesMet) {
-                throw new Error("Failed to gather enough articles after 3 attempts.");
-            }
-
-            // 5. Editor
-            setAgentStatus('editor', 'working', "Chief Editor is designing the newspaper layout...");
-            const previewResult = await createPreviewEditionAction();
-            if (!previewResult.success) throw new Error(previewResult.error || "Edition creation failed.");
-            setAgentStatus('editor', 'success', "Newspaper edition created and is ready for review.");
-            router.refresh();
-            await sleep(5000);
-            setAgentStatus('editor', 'cooldown');
-
-            // 6. Publisher
-            setAgentStatus('publisher', 'working', "Edition is scheduled. Awaiting 6 AM IST for automatic publication.");
+            const firestore = getFirestoreClient();
+            const workflowDoc = doc(firestore, 'workflow_state', 'current_workflow');
             
-            toast({
-                title: "Workflow Complete: Ready for Review",
-                description: "Today's edition is ready. It will be published automatically at 8:10 PM IST.",
-                duration: 10000,
-            });
-            setRunStatus("success");
-
-
-        } catch (error: any) {
-            console.error("Workflow failed:", error);
-            const isStopped = error.message.includes("manually stopped");
-            if (isStopped) {
-                toast({ variant: 'default', title: "Workflow Stopped", description: "The workflow has been stopped by the user." });
-                setGlobalMessage(`Workflow stopped.`);
-                setRunStatus("idle");
-            } else {
-                toast({ variant: 'destructive', title: "Workflow Failed", description: error.message });
-                setGlobalMessage(`Workflow failed: ${error.message}`);
-                setRunStatus("error");
-            }
-            // Set all 'working' agents to 'error' status
-            setAgentStatuses(prev => {
-                const newStatuses = {...prev};
-                Object.keys(newStatuses).forEach(key => {
-                    const agent = key as AgentName;
-                    if (newStatuses[agent] === 'working') {
-                        newStatuses[agent] = 'error';
+            const unsubscribe = onSnapshot(workflowDoc, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    setRunStatus(data.status || 'idle');
+                    setGlobalMessage(data.message || 'System is idle');
+                    
+                    // Update agent statuses from progress
+                    if (data.progress) {
+                        setAgentStatuses({
+                            scout: data.progress.scout?.status as AgentStatus || 'idle',
+                            deduplicator: data.progress.deduplicator?.status as AgentStatus || 'idle',
+                            journalist: data.progress.journalist?.status as AgentStatus || 'idle',
+                            validator: data.progress.validator?.status as AgentStatus || 'idle',
+                            editor: data.progress.editor?.status as AgentStatus || 'idle',
+                            publisher: data.progress.publisher?.status as AgentStatus || 'idle',
+                        });
                     }
-                });
-                return newStatuses;
+                }
+            }, (error) => {
+                console.error('Error listening to workflow state:', error);
             });
-        } finally {
-            isStoppingRef.current = false;
-             if (runStatus !== 'error' && runStatus !== 'success') {
-                setRunStatus('idle');
-             }
+
+            return () => unsubscribe();
+        } catch (error) {
+            console.error('Failed to setup Firestore listener:', error);
         }
-    }, [runStatus]);
+    }, [mounted]);
 
     // Set mounted state
     useEffect(() => {
@@ -311,32 +166,35 @@ export function MissionControl() {
         if (!mounted) return;
         
         const timerId = setInterval(() => {
-            const next5Am = getNext5AmIst();
+            const next8Pm = getNext8PmIst();
             const now = new Date();
-            const diff = next5Am.getTime() - now.getTime();
+            const diff = next8Pm.getTime() - now.getTime();
             setCountdown(formatCountdown(diff));
             
-            // Trigger the cycle if we are very close to 5 AM
-            if (diff > 0 && diff < 1000) {
-                handleRunWorkflow();
+            // Trigger the cycle if we are very close to 8 PM
+            if (diff > 0 && diff < 1000 && runStatus === 'idle') {
+                startWorkflowAction(false).then(result => {
+                    if (result.success) {
+                        toast({ title: "Automated Run Started", description: "The daily newspaper generation process has begun." });
+                    }
+                });
             }
-
         }, 1000);
 
         return () => clearInterval(timerId);
-    }, [handleRunWorkflow, mounted]);
+    }, [mounted, runStatus, toast]);
 
     // Timer for the next publication
     useEffect(() => {
         if (!mounted) return;
         
         const timerId = setInterval(() => {
-            const next6Am = getNext6AmIst();
+            const next830Pm = getNext830PmIst();
             const now = new Date();
-            const diff = next6Am.getTime() - now.getTime();
+            const diff = next830Pm.getTime() - now.getTime();
             setPublishCountdown(formatCountdown(diff));
             
-            // Trigger the publication if we are very close to 6 AM
+            // Trigger the publication if we are very close to 8:30 PM
             if (diff > 0 && diff < 1000) {
                 toast({title: "Publication Time!", description: "Publishing the latest edition."});
                 publishLatestEditionAction().then(res => {
@@ -353,14 +211,13 @@ export function MissionControl() {
         return () => clearInterval(timerId);
     }, [toast, router, mounted]);
 
-
     return (
         <Card className="overflow-hidden">
             <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                <div className="space-y-1.5 flex-1">
                  <CardTitle>Automated Workflow</CardTitle>
                  <CardDescription>
-                    The system runs a full cycle daily at 5 AM IST. You can also trigger it manually.
+                    The system runs a full cycle daily at 8 PM IST. You can also trigger it manually.
                  </CardDescription>
                </div>
                <div className="flex items-center gap-4">
@@ -395,7 +252,7 @@ export function MissionControl() {
 
                 {/* Controls */}
                 <div className="flex items-center gap-2">
-                    <Button onClick={() => handleRunWorkflow(true)} disabled={runStatus === 'running' || runStatus === 'stopping'}>
+                    <Button onClick={handleRunWorkflow} disabled={runStatus === 'running' || runStatus === 'stopping'}>
                         <Play className="mr-2 h-4 w-4" />
                         Force Full Run
                     </Button>
