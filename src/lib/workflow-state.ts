@@ -11,6 +11,11 @@ export interface WorkflowState {
     scout: { status: string; message: string };
     deduplicator: { status: string; message: string; checked: number; remaining: number };
     journalist: { status: string; message: string; drafted: number; remaining: number };
+    journalist_1: { status: string; message: string; drafted: number };
+    journalist_2: { status: string; message: string; drafted: number };
+    journalist_3: { status: string; message: string; drafted: number };
+    journalist_4: { status: string; message: string; drafted: number };
+    journalist_5: { status: string; message: string; drafted: number };
     validator: { status: string; message: string };
     editor: { status: string; message: string };
     publisher: { status: string; message: string };
@@ -48,6 +53,12 @@ export async function initializeWorkflowState(): Promise<void> {
     progress: {
       scout: { status: 'idle', message: '' },
       deduplicator: { status: 'idle', message: '', checked: 0, remaining: 0 },
+      journalist: { status: 'idle', message: '', drafted: 0, remaining: 0 },
+      journalist_1: { status: 'idle', message: '', drafted: 0 },
+      journalist_2: { status: 'idle', message: '', drafted: 0 },
+      journalist_3: { status: 'idle', message: '', drafted: 0 },
+      journalist_4: { status: 'idle', message: '', drafted: 0 },
+      journalist_5: { status: 'idle', message: '', drafted: 0 },
       journalist: { status: 'idle', message: '', drafted: 0, remaining: 0 },
       validator: { status: 'idle', message: '' },
       editor: { status: 'idle', message: '' },
@@ -115,6 +126,11 @@ export async function clearWorkflowState(): Promise<void> {
         scout: { status: 'idle', message: '' },
         deduplicator: { status: 'idle', message: '', checked: 0, remaining: 0 },
         journalist: { status: 'idle', message: '', drafted: 0, remaining: 0 },
+        journalist_1: { status: 'idle', message: '', drafted: 0 },
+        journalist_2: { status: 'idle', message: '', drafted: 0 },
+        journalist_3: { status: 'idle', message: '', drafted: 0 },
+        journalist_4: { status: 'idle', message: '', drafted: 0 },
+        journalist_5: { status: 'idle', message: '', drafted: 0 },
         validator: { status: 'idle', message: '' },
         editor: { status: 'idle', message: '' },
         publisher: { status: 'idle', message: '' },

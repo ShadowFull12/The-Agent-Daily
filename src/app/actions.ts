@@ -235,15 +235,19 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
 
 
 // 3. Journalist Agent: Drafts a single article (REWRITTEN FROM SCRATCH)
-export async function draftArticleAction(): Promise<{ success: boolean; articleId?: string; headline?: string; error?: string; remaining: number }> {
+export async function draftArticleAction(journalistId?: string): Promise<{ success: boolean; articleId?: string; headline?: string; error?: string; remaining: number; journalistId?: string }> {
     const { firestore } = getFirebaseServices();
     try {
-        // 1. Fetch leads from the database without status filter to avoid index requirement
-        const leadsQuery = query(collection(firestore, "raw_leads"), limit(10));
+        // 1. Fetch leads that are NOT being processed
+        const leadsQuery = query(
+            collection(firestore, "raw_leads"),
+            where("processingBy", "==", null),
+            limit(10)
+        );
         const leadsSnapshot = await getDocs(leadsQuery);
         
         if (leadsSnapshot.empty) {
-             return { success: true, remaining: 0 }; // No more leads to process
+             return { success: true, remaining: 0, journalistId }; // No more leads to process
         }
 
         // Sort in memory to get the oldest one
@@ -255,8 +259,15 @@ export async function draftArticleAction(): Promise<{ success: boolean; articleI
         
         const leadDoc = sortedDocs[0];
         const lead = { id: leadDoc.id, ...leadDoc.data() } as RawLead;
+        
+        // 2. Lock this lead by marking it as being processed
+        await updateDoc(doc(firestore, "raw_leads", lead.id), {
+            processingBy: journalistId || 'journalist',
+            processingAt: Timestamp.now()
+        });
 
         // 2. Use the lead as input to generate the article.
+        // 3. Use the lead as input to generate the article.
         const summaryResult = await summarizeBreakingNews({ url: lead.url, title: lead.title, topic: lead.topic, content: lead.content });
         
         const draft: Omit<DraftArticle, 'id'|'createdAt'> = {
@@ -267,19 +278,22 @@ export async function draftArticleAction(): Promise<{ success: boolean; articleI
             status: 'drafted',
         };
         
-        // 3. Use a batch to ensure atomicity (draft created + lead deleted)
+        // 4. Use a batch to ensure atomicity (draft created + lead deleted)
         const batch = writeBatch(firestore);
         
         const newDraftRef = doc(collection(firestore, "draft_articles"));
         batch.set(newDraftRef, { ...draft, createdAt: Timestamp.now() });
         
-        // 4. IMPORTANT: Delete the lead that was just processed.
+        // 5. IMPORTANT: Delete the lead that was just processed.
         batch.delete(doc(firestore, "raw_leads", lead.id));
         
         await batch.commit();
         
-        // 5. Correctly get the count of remaining leads for the UI *after* deletion.
-        const remainingQuery = query(collection(firestore, "raw_leads"));
+        // 6. Get count of remaining unprocessed leads
+        const remainingQuery = query(
+            collection(firestore, "raw_leads"),
+            where("processingBy", "==", null)
+        );
         const remainingSnapshot = await getDocs(remainingQuery);
 
         return { 
@@ -287,16 +301,21 @@ export async function draftArticleAction(): Promise<{ success: boolean; articleI
             articleId: newDraftRef.id,
             headline: summaryResult.headline,
             remaining: remainingSnapshot.size,
+            journalistId
         };
     } catch (error: any) {
-        console.error("--- DRAFT ARTICLE ACTION FAILED ---", error);
+        console.error(`--- DRAFT ARTICLE ACTION FAILED (${journalistId || 'journalist'}) ---`, error);
         // Attempt to get a remaining count even if the action failed, for UI consistency
         try {
-            const remainingQuery = query(collection(firestore, "raw_leads"));
+            const { firestore } = getFirebaseServices();
+            const remainingQuery = query(
+                collection(firestore, "raw_leads"),
+                where("processingBy", "==", null)
+            );
             const remainingSnapshot = await getDocs(remainingQuery);
-            return { success: false, error: error.message, remaining: remainingSnapshot.size };
+            return { success: false, error: error.message, remaining: remainingSnapshot.size, journalistId };
         } catch (countError: any) {
-            return { success: false, error: error.message, remaining: 0 };
+            return { success: false, error: error.message, remaining: 0, journalistId };
         }
     }
 }

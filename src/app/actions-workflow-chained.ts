@@ -74,56 +74,83 @@ export async function executeStep2_Dedup(): Promise<{ success: boolean; message:
 // Step 3: Journalist - drafts ALL articles with 5 parallel workers (completes in ~50-80s)
 export async function executeStep3_Journalist(): Promise<{ success: boolean; message: string; error?: string }> {
   try {
-    console.log('📋 Step 3: Journalist (5 parallel workers)');
+    console.log('📋 Step 3: Journalist (5 separate processes)');
     
-    await updateAgentProgress('journalist', 'working', 'Journalist team (5 workers) is drafting articles...');
-    let draftsMade = 0;
+    await updateAgentProgress('journalist', 'working', 'Starting 5 journalist processes...');
     
-    // Process leads in parallel batches of 5
-    let hasMoreLeads = true;
-    
-    while (hasMoreLeads) {
-      // Create 5 parallel draft promises
-      const draftPromises = Array(5).fill(null).map(() => draftArticleAction());
-      
-      // Wait for all 5 to complete
-      const results = await Promise.all(draftPromises);
-      
-      // Count successes
-      let batchSuccess = 0;
-      let remainingCount = 0;
-      
-      results.forEach(result => {
-        if (result.articleId) {
-          batchSuccess++;
-          draftsMade++;
-        }
-        remainingCount = result.remaining;
-      });
-      
-      console.log(`📰 Batch completed: ${batchSuccess} articles drafted, ${remainingCount} leads remaining`);
-      
-      await updateAgentProgress('journalist', 'working', `Journalist team drafted ${draftsMade} articles. ${remainingCount} leads left.`, { 
-        drafted: draftsMade, 
-        remaining: remainingCount 
-      });
-      
-      // Check if more leads remain
-      if (remainingCount === 0) {
-        hasMoreLeads = false;
-      } else {
-        await sleep(500); // Brief pause between batches
-      }
+    // Initialize all 5 journalists
+    for (let i = 1; i <= 5; i++) {
+      await updateAgentProgress(`journalist_${i}` as any, 'working', 'Starting...', { drafted: 0 });
     }
     
-    await updateAgentProgress('journalist', 'success', `Journalist team drafted ${draftsMade} articles with 5 parallel workers.`);
-    await updateQueueState({ currentStep: 'validate', draftsMade });
+    let totalDrafts = 0;
     
-    return { success: true, message: `Drafted ${draftsMade} articles using parallel processing. Proceeding to validation...` };
+    // Start all 5 journalist processes as separate function calls
+    const journalist1Promise = runJournalistProcess('journalist_1');
+    const journalist2Promise = runJournalistProcess('journalist_2');
+    const journalist3Promise = runJournalistProcess('journalist_3');
+    const journalist4Promise = runJournalistProcess('journalist_4');
+    const journalist5Promise = runJournalistProcess('journalist_5');
+    
+    // Wait for all to complete
+    const results = await Promise.all([
+      journalist1Promise,
+      journalist2Promise,
+      journalist3Promise,
+      journalist4Promise,
+      journalist5Promise
+    ]);
+    
+    // Sum up total drafts
+    results.forEach((result: { drafted: number }) => {
+      totalDrafts += result.drafted;
+    });
+    
+    await updateAgentProgress('journalist', 'success', `All 5 journalists completed. ${totalDrafts} articles drafted.`, { 
+      drafted: totalDrafts, 
+      remaining: 0 
+    });
+    
+    await updateQueueState({ currentStep: 'validate', draftsMade: totalDrafts });
+    
+    return { success: true, message: `Drafted ${totalDrafts} articles with 5 separate journalists. Proceeding to validation...` };
   } catch (error: any) {
     await updateQueueState({ currentStep: 'error', error: error.message });
     return { success: false, message: 'Step 3 failed', error: error.message };
   }
+}
+
+// Individual journalist worker process
+async function runJournalistProcess(journalistId: string): Promise<{ drafted: number }> {
+  let drafted = 0;
+  let hasMoreLeads = true;
+  
+  console.log(`📰 ${journalistId} starting...`);
+  
+  while (hasMoreLeads) {
+    const result = await draftArticleAction(journalistId);
+    
+    if (result.articleId) {
+      drafted++;
+      await updateAgentProgress(journalistId as any, 'working', `Drafted ${drafted} article${drafted > 1 ? 's' : ''}`, { 
+        drafted 
+      });
+      console.log(`📰 ${journalistId} drafted article: ${result.headline} (${result.remaining} leads left)`);
+    }
+    
+    // Check if more leads remain
+    if (result.remaining === 0) {
+      hasMoreLeads = false;
+      await updateAgentProgress(journalistId as any, 'success', `Completed ${drafted} article${drafted > 1 ? 's' : ''}`, { 
+        drafted 
+      });
+      console.log(`✅ ${journalistId} completed with ${drafted} articles`);
+    } else {
+      await sleep(200); // Brief pause between drafts
+    }
+  }
+  
+  return { drafted };
 }
 
 // Step 4: Validate and Editor (completes in < 60s)

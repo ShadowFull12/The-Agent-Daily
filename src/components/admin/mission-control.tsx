@@ -89,10 +89,15 @@ export function MissionControl() {
         publisher: 'idle'
     });
     
-    const [agentProgress, setAgentProgress] = useState<Record<AgentName, AgentProgress>>({
+    const [agentProgress, setAgentProgress] = useState<Record<string, AgentProgress>>({
         scout: { status: 'idle', message: '' },
         deduplicator: { status: 'idle', message: '', checked: 0, remaining: 0 },
         journalist: { status: 'idle', message: '', drafted: 0, remaining: 0 },
+        journalist_1: { status: 'idle', message: '', drafted: 0 },
+        journalist_2: { status: 'idle', message: '', drafted: 0 },
+        journalist_3: { status: 'idle', message: '', drafted: 0 },
+        journalist_4: { status: 'idle', message: '', drafted: 0 },
+        journalist_5: { status: 'idle', message: '', drafted: 0 },
         validator: { status: 'idle', message: '' },
         editor: { status: 'idle', message: '' },
         publisher: { status: 'idle', message: '' }
@@ -125,6 +130,11 @@ export function MissionControl() {
             scout: { status: 'idle', message: '' },
             deduplicator: { status: 'idle', message: '', checked: 0, remaining: 0 },
             journalist: { status: 'idle', message: '', drafted: 0, remaining: 0 },
+            journalist_1: { status: 'idle', message: '', drafted: 0 },
+            journalist_2: { status: 'idle', message: '', drafted: 0 },
+            journalist_3: { status: 'idle', message: '', drafted: 0 },
+            journalist_4: { status: 'idle', message: '', drafted: 0 },
+            journalist_5: { status: 'idle', message: '', drafted: 0 },
             validator: { status: 'idle', message: '' },
             editor: { status: 'idle', message: '' },
             publisher: { status: 'idle', message: '' }
@@ -218,6 +228,11 @@ export function MissionControl() {
                             scout: data.progress.scout || { status: 'idle', message: '' },
                             deduplicator: data.progress.deduplicator || { status: 'idle', message: '', checked: 0, remaining: 0 },
                             journalist: data.progress.journalist || { status: 'idle', message: '', drafted: 0, remaining: 0 },
+                            journalist_1: data.progress.journalist_1 || { status: 'idle', message: '', drafted: 0 },
+                            journalist_2: data.progress.journalist_2 || { status: 'idle', message: '', drafted: 0 },
+                            journalist_3: data.progress.journalist_3 || { status: 'idle', message: '', drafted: 0 },
+                            journalist_4: data.progress.journalist_4 || { status: 'idle', message: '', drafted: 0 },
+                            journalist_5: data.progress.journalist_5 || { status: 'idle', message: '', drafted: 0 },
                             validator: data.progress.validator || { status: 'idle', message: '' },
                             editor: data.progress.editor || { status: 'idle', message: '' },
                             publisher: data.progress.publisher || { status: 'idle', message: '' },
@@ -382,8 +397,8 @@ export function MissionControl() {
                                             )}
                                             
                                             {agent === 'journalist' && (progress.drafted !== undefined || progress.status === 'working') && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    {progress.drafted || 0} drafted, {progress.remaining || 0} remaining
+                                                <span className="text-xs text-muted-foreground font-semibold">
+                                                    Total: {progress.drafted || 0} drafted
                                                 </span>
                                             )}
                                         </div>
@@ -403,9 +418,34 @@ export function MissionControl() {
                                                 </div>
                                             )}
                                             {agent === 'journalist' && (
-                                                <div className="mt-2 flex gap-4 text-xs">
-                                                    <span>Drafted: <strong>{progress.drafted || 0}</strong></span>
-                                                    <span>Remaining: <strong>{progress.remaining || 0}</strong></span>
+                                                <div className="mt-3 space-y-2">
+                                                    <div className="text-xs font-medium text-muted-foreground mb-1">Individual Journalists:</div>
+                                                    {[1, 2, 3, 4, 5].map((num) => {
+                                                        const journalistKey = `journalist_${num}` as any;
+                                                        const journalistProgress = agentProgress[journalistKey] || { status: 'idle', message: '', drafted: 0 };
+                                                        return (
+                                                            <div key={num} className="flex items-center justify-between py-1.5 px-2 bg-white dark:bg-gray-800 rounded border">
+                                                                <div className="flex items-center gap-2">
+                                                                    {journalistProgress.status === 'idle' && <Clock className="h-3 w-3 text-gray-400" />}
+                                                                    {journalistProgress.status === 'working' && <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />}
+                                                                    {journalistProgress.status === 'success' && <CheckCircle className="h-3 w-3 text-green-500" />}
+                                                                    <span className="text-xs font-medium">Journalist {num}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="text-xs text-muted-foreground">{journalistProgress.message}</span>
+                                                                    <Badge variant="outline" className="text-xs">
+                                                                        {journalistProgress.drafted || 0} articles
+                                                                    </Badge>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    <div className="mt-2 pt-2 border-t">
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="font-medium">Total Drafted:</span>
+                                                            <span className="font-bold">{progress.drafted || 0} articles</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
