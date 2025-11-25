@@ -44,12 +44,19 @@ async function fetchNewsForTopic(topic: string, size: number): Promise<any[]> {
     const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&language=en${categoryQuery}&size=${size}&prioritydomain=top`;
 
     try {
-        console.log(`🔍 Fetching news for topic: ${topic}`);
+        console.log(`🔍 Fetching news for topic: ${topic} from URL: ${url.replace(apiKey, 'HIDDEN')}`);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+        const timeoutId = setTimeout(() => {
+            console.log(`⏱️ Timeout triggered for topic: ${topic}`);
+            controller.abort();
+        }, 30000); // 30 second timeout (increased from 15)
         
+        const startTime = Date.now();
         const response = await fetch(url, { signal: controller.signal });
+        const fetchTime = Date.now() - startTime;
         clearTimeout(timeoutId);
+        
+        console.log(`📡 Response received for ${topic} in ${fetchTime}ms, status: ${response.status}`);
         
         if (!response.ok) {
             console.error(`API request failed for topic ${topic} with status: ${response.status}`);
@@ -61,9 +68,9 @@ async function fetchNewsForTopic(topic: string, size: number): Promise<any[]> {
         console.log(`✅ Fetched ${data.results?.length || 0} stories for topic: ${topic}`);
         return data.results || [];
     } catch (error) {
-        console.error(`Error fetching news for topic ${topic}:`, error);
+        console.error(`❌ Error fetching news for topic ${topic}:`, error);
         if (error instanceof Error && error.name === 'AbortError') {
-            console.error(`⏱️ Request timed out for topic ${topic}`);
+            console.error(`⏱️ Request timed out for topic ${topic} after 30 seconds`);
         }
         return [];
     }
