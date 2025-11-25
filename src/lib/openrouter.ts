@@ -35,7 +35,7 @@ export async function callOpenRouter(
       'X-Title': 'The Daily Agent',
     },
     body: JSON.stringify({
-      model: options.model || 'x-ai/grok-beta',
+      model: options.model || 'x-ai/grok-4.1-fast',
       messages,
       temperature: options.temperature || 0.7,
       max_tokens: options.maxTokens || 4000,
