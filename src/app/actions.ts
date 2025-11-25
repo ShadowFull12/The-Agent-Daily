@@ -88,9 +88,16 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
 export async function deduplicateLeadsAction(): Promise<{ success: boolean; deletedCount: number; remaining: number; totalLeads: number; checkedTitle?: string; error?: string; }> {
     const { firestore } = getFirebaseServices();
     try {
-        // Fetch all leads to check against
-        const leadsSnapshot = await getDocs(collection(firestore, "raw_leads"));
-        const totalLeads = leadsSnapshot.size;
+        // Fetch only unchecked leads
+        const leadsQuery = query(
+            collection(firestore, "raw_leads"),
+            where("checked", "!=", true)
+        );
+        const leadsSnapshot = await getDocs(leadsQuery);
+        
+        // Get total leads (including checked ones) for progress tracking
+        const totalLeadsSnapshot = await getDocs(collection(firestore, "raw_leads"));
+        const totalLeads = totalLeadsSnapshot.size;
         
         if (leadsSnapshot.empty || leadsSnapshot.size === 1) {
             return { success: true, deletedCount: 0, remaining: leadsSnapshot.size, totalLeads };
@@ -162,10 +169,17 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
             };
         }
         
-        // Mark this lead as checked by deleting and re-adding at end
-        // For now, just mark it as processed by moving to a different collection temporarily
-        // Or just continue - the lead stays and we move to next iteration
-        const remainingSnapshot = await getDocs(collection(firestore, "raw_leads"));
+        // If not a duplicate, mark it as checked by adding a field
+        await updateDoc(doc(firestore, "raw_leads", currentLead.id), {
+            checked: true,
+            checkedAt: new Date().toISOString()
+        });
+        
+        // Get remaining count (only unchecked leads)
+        const remainingSnapshot = await getDocs(
+            query(collection(firestore, "raw_leads"), where("checked", "!=", true))
+        );
+        
         return { 
             success: true, 
             deletedCount: 0, 
