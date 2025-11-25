@@ -8,12 +8,18 @@ import {
     createPreviewEditionAction,
     clearAllDataAction,
 } from "@/app/actions";
-import { initializeWorkflowState, updateWorkflowState, updateAgentProgress, clearWorkflowState } from "@/lib/workflow-state";
+import { initializeWorkflowState, updateWorkflowState, updateAgentProgress, clearWorkflowState, getWorkflowState } from "@/lib/workflow-state";
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Global flag to track if workflow should stop
+let shouldStopWorkflow = false;
+
 export async function startWorkflowAction(isManualRun = false): Promise<{ success: boolean; message: string }> {
     try {
+        // Reset stop flag
+        shouldStopWorkflow = false;
+        
         // Initialize workflow state
         await initializeWorkflowState();
         
@@ -33,6 +39,17 @@ export async function startWorkflowAction(isManualRun = false): Promise<{ succes
     }
 }
 
+async function checkShouldStop(): Promise<boolean> {
+    if (shouldStopWorkflow) return true;
+    
+    const state = await getWorkflowState();
+    if (state?.status === 'stopping') {
+        shouldStopWorkflow = true;
+        return true;
+    }
+    return false;
+}
+
 async function runWorkflowInBackground(isManualRun: boolean) {
     try {
         // Clear existing data
@@ -40,10 +57,14 @@ async function runWorkflowInBackground(isManualRun: boolean) {
         await clearAllDataAction();
         await sleep(2000);
 
+        if (await checkShouldStop()) throw new Error('Workflow stopped by user');
+
         let requiredArticlesMet = false;
         let attempt = 0;
 
         while (!requiredArticlesMet && attempt < 3) {
+            if (await checkShouldStop()) throw new Error('Workflow stopped by user');
+            
             attempt++;
             
             // 1. Scout Agent
@@ -52,6 +73,8 @@ async function runWorkflowInBackground(isManualRun: boolean) {
             if (!scoutResult.success) throw new Error(scoutResult.error || "Scout failed.");
             await updateAgentProgress('scout', 'success', `Scout found ${scoutResult.leadCount} leads.`);
             await sleep(5000);
+            
+            if (await checkShouldStop()) throw new Error('Workflow stopped by user');
             await updateAgentProgress('scout', 'cooldown', '');
 
             // 2. Deduplicator Agent
@@ -62,6 +85,8 @@ async function runWorkflowInBackground(isManualRun: boolean) {
             let totalLeads = 0;
             
             do {
+                if (await checkShouldStop()) throw new Error('Workflow stopped by user');
+                
                 const dedupResult = await deduplicateLeadsAction();
                 
                 if (dedupResult.totalLeads) {
@@ -93,16 +118,22 @@ async function runWorkflowInBackground(isManualRun: boolean) {
                 }
             } while (dedupRemaining > 1);
             
+            if (await checkShouldStop()) throw new Error('Workflow stopped by user');
+            
             await updateAgentProgress('deduplicator', 'success', `AI checked ${dedupChecks} leads and removed ${totalDeleted} duplicates.`, { checked: dedupChecks, remaining: 0 });
             await sleep(5000);
             await updateAgentProgress('deduplicator', 'cooldown', '', { checked: 0, remaining: 0 });
 
             // 3. Journalist
+            if (await checkShouldStop()) throw new Error('Workflow stopped by user');
+            
             await updateAgentProgress('journalist', 'working', 'Journalist is drafting articles...');
             let remaining = -1;
             let draftsMade = 0;
             
             do {
+                if (await checkShouldStop()) throw new Error('Workflow stopped by user');
+                
                 const draftResult = await draftArticleAction();
                 if (!draftResult.success && draftResult.error) {
                     console.warn("Drafting failed for one article:", draftResult.error);
@@ -116,11 +147,15 @@ async function runWorkflowInBackground(isManualRun: boolean) {
                 }
             } while (remaining > 0);
             
+            if (await checkShouldStop()) throw new Error('Workflow stopped by user');
+            
             await updateAgentProgress('journalist', 'success', `Journalist drafted a total of ${draftsMade} articles.`, { drafted: draftsMade, remaining: 0 });
             await sleep(5000);
             await updateAgentProgress('journalist', 'cooldown', '', { drafted: 0, remaining: 0 });
 
             // 4. Validator
+            if (await checkShouldStop()) throw new Error('Workflow stopped by user');
+            
             await updateAgentProgress('validator', 'working', 'Validating article quality and count...');
             const validationResult = await validateArticlesAction();
             if (!validationResult.success) throw new Error(validationResult.error || "Validation failed.");
@@ -135,6 +170,8 @@ async function runWorkflowInBackground(isManualRun: boolean) {
                 await sleep(5000);
             }
         }
+
+        if (await checkShouldStop()) throw new Error('Workflow stopped by user');
 
         if (!requiredArticlesMet) {
             throw new Error("Failed to gather enough articles after 3 attempts.");
@@ -157,20 +194,46 @@ async function runWorkflowInBackground(isManualRun: boolean) {
 
     } catch (error: any) {
         console.error('Workflow error:', error);
-        await updateWorkflowState({
-            status: 'error',
-            message: `Workflow failed: ${error.message}`,
-        });
+        
+        // If stopped by user, clear all data and reset
+        if (error.message.includes('stopped by user')) {
+            await clearAllDataAction();
+            await updateWorkflowState({
+                status: 'idle',
+                message: 'Workflow stopped and reverted by user',
+            });
+        } else {
+            await updateWorkflowState({
+                status: 'error',
+                message: `Workflow failed: ${error.message}`,
+            });
+        }
+    } finally {
+        shouldStopWorkflow = false;
     }
 }
 
 export async function stopWorkflowAction(): Promise<{ success: boolean; message: string }> {
     try {
+        shouldStopWorkflow = true;
+        
         await updateWorkflowState({
             status: 'stopping',
-            message: 'Workflow stop requested...',
+            message: 'Stopping workflow immediately and reverting changes...',
         });
-        return { success: true, message: 'Workflow will stop after current step' };
+        
+        // Clear all data immediately
+        await clearAllDataAction();
+        
+        // Set to idle after a short delay
+        setTimeout(async () => {
+            await updateWorkflowState({
+                status: 'idle',
+                message: 'Workflow stopped and all changes reverted',
+            });
+        }, 2000);
+        
+        return { success: true, message: 'Workflow stopped immediately and data cleared' };
     } catch (error: any) {
         return { success: false, message: error.message };
     }
