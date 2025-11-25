@@ -44,7 +44,7 @@ const prompt = ai.definePrompt({
   prompt: `You are a world-class newspaper layout designer for "The Daily Agent", inspired by the dense, professional, and visually structured layout of "The Times of India". Your task is to generate a complete, multi-page, print-ready HTML layout. You must follow the exact structure and styling provided in the template below.
 
 **Strict Layout and Content Instructions:**
-1.  **Use the Template Verbatim**: Your output MUST be a single HTML document based on the provided template. Do not change the CSS, fonts, or the overall HTML structure.
+1.  **Use the Template Verbatim**: Your output MUST be a single HTML document based on the provided template. Do not change the CSS, fonts, or the overall HTML structure. The CSS explicitly uses a three-column layout (\`column-count: 3;\`). Your content must be structured to fit this.
 2.  **Perfect Content Placement & Flow**:
     *   Take the articles provided and place them into the \`<article class="story">\` elements. Text MUST flow naturally from one column to the next.
     *   To make text flow, you must manually split long articles. End one \`<article>\` block with a paragraph like \`<p class="story-continued">Continued on Col. X...</p>\` and start a new \`<article class="story continued">\` block in the next column with the rest of the text.

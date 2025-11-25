@@ -1,6 +1,8 @@
 
 import type { Timestamp } from 'firebase/firestore';
 
+export type AgentStatus = 'idle' | 'working' | 'cooldown' | 'success' | 'error' | 'disabled';
+
 export interface RawLead {
     id: string;
     topic: string;
@@ -9,6 +11,7 @@ export interface RawLead {
     url: string;
     imageUrl: string;
     createdAt: Timestamp;
+    status: 'pending' | 'processed';
 }
 
 export interface DraftArticle {
@@ -18,6 +21,7 @@ export interface DraftArticle {
     content: string;
     imageUrl: string;
     createdAt: Timestamp;
+    status: 'drafted' | 'validated' | 'published';
 }
 
 export interface Article {
@@ -33,6 +37,6 @@ export interface Edition {
     htmlContent: string;
     publicationDate: Timestamp;
     coverImageUrl: string;
-    headline: string;
+headline: string;
     isPublished: boolean; // Added to control visibility
 }

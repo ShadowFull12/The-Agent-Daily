@@ -16,6 +16,7 @@ const SearchBreakingNewsInputSchema = z.object({
   topics: z
     .array(z.string())
     .describe('An array of topics (categories) to search for breaking news about. See Newsdata.io docs for available categories.'),
+  limit: z.number().optional().default(10).describe('The number of stories to return per topic.'),
 });
 export type SearchBreakingNewsInput = z.infer<typeof SearchBreakingNewsInputSchema>;
 
@@ -32,12 +33,14 @@ const SearchBreakingNewsOutputSchema = z.object({
 });
 export type SearchBreakingNewsOutput = z.infer<typeof SearchBreakingNewsOutputSchema>;
 
-async function fetchNewsForTopic(topic: string): Promise<any[]> {
+async function fetchNewsForTopic(topic: string, size: number): Promise<any[]> {
     const apiKey = process.env.NEWSDATA_API_KEY;
     if (!apiKey) {
         throw new Error("NEWSDATA_API_KEY is not set in the environment variables.");
     }
-    const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&language=en&category=${topic.toLowerCase()}&size=5&prioritydomain=top`;
+    // Use 'top' as a general priority topic, and specific categories otherwise
+    const categoryQuery = topic.toLowerCase() === 'top' ? '' : `&category=${topic.toLowerCase()}`;
+    const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&language=en${categoryQuery}&size=${size}&prioritydomain=top`;
 
     try {
         const response = await fetch(url);
@@ -60,8 +63,11 @@ export async function searchBreakingNews(input: SearchBreakingNewsInput): Promis
   const allStories: SearchBreakingNewsOutput['stories'] = [];
   const topicsToSearch = ["top", ...input.topics];
 
+  // Distribute the limit across the topics
+  const limitPerTopic = Math.ceil(input.limit! / topicsToSearch.length);
+
   for (const topic of topicsToSearch) {
-    const apiResults = await fetchNewsForTopic(topic);
+    const apiResults = await fetchNewsForTopic(topic, limitPerTopic);
     const storiesForTopic = apiResults.map(story => ({
       topic: story.category?.[0] || topic, // Use the category from the result if available
       title: story.title,
@@ -85,5 +91,5 @@ export async function searchBreakingNews(input: SearchBreakingNewsInput): Promis
   const uniqueStories = Array.from(new Map(allStories.map(s => [s.url, s])).values());
 
 
-  return { stories: uniqueStories };
+  return { stories: uniqueStories.slice(0, input.limit) };
 }

@@ -20,7 +20,7 @@ export type SummarizeBreakingNewsInput = z.infer<
 const SummarizeBreakingNewsOutputSchema = z.object({
   summary: z
     .string()
-    .describe('A detailed, objective news report of 400-500 words based on the provided content.'),
+    .describe('A detailed, objective news report of approximately 250 words based on the provided content.'),
   headline: z
     .string()
     .describe('A compelling, newspaper-style headline for the article.')
@@ -42,7 +42,7 @@ const summarizeBreakingNewsPrompt = ai.definePrompt({
   prompt: `You are an expert journalist. Your task is to rewrite the provided article content into a detailed and objective news report.
 
   **Instructions:**
-  1.  **Write a Detailed Report**: Based *only* on the 'Article Content' provided, write a comprehensive news report of approximately 400-500 words. Do not make it a short summary. Elaborate on the key points, provide context, and structure it like a professional news article.
+  1.  **Write a Detailed Report**: Based *only* on the 'Article Content' provided, write a comprehensive news report of approximately 250 words. Do not make it a short summary. Elaborate on the key points, provide context, and structure it like a professional news article.
   2.  **Create a Headline**: Write a new, compelling, newspaper-style headline that accurately reflects the main point of the story.
   3.  **Objective Tone**: Maintain a neutral, objective, and factual tone throughout the report. Do not inject personal opinions or biases.
   4.  **No External Info**: Do not access the provided URL or any other external sources. Your entire output must be generated from the text provided in the 'Article Content' field.
@@ -73,3 +73,5 @@ const summarizeBreakingNewsFlow = ai.defineFlow(
     return output;
   }
 );
+
+    
