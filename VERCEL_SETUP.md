@@ -67,8 +67,17 @@ If scout or AI features fail:
 
 ## Vercel Plan Requirements
 
-- **Hobby (Free)**: 10-second function timeout (may not be enough for full workflow)
-- **Pro**: 60-second function timeout (recommended)
-- **Enterprise**: 900-second function timeout
+⚠️ **IMPORTANT: This app requires a Vercel Pro or Enterprise plan**
 
-This app is configured for 300-second timeout, which works best on **Pro or Enterprise** plans.
+- **Hobby (Free)**: ❌ 10-second function timeout (NOT sufficient)
+- **Pro**: ✅ Up to 900-second (15-minute) function timeout (RECOMMENDED)
+- **Enterprise**: ✅ Up to 900-second (15-minute) function timeout
+
+This app is configured for **900-second (15-minute) timeout**, which is necessary for the full workflow:
+- Scout: ~30-45s
+- Deduplication: ~10-30s  
+- Journalist (25 articles): ~250-400s
+- Validator + Editor: ~30-60s
+- **Total**: ~320-535 seconds (5-9 minutes)
+
+**The Hobby plan will NOT work for this application.**
