@@ -22,6 +22,7 @@ export function WorkflowChainExecutor() {
         
         if (!state || state.currentStep === 'idle' || state.currentStep === 'complete' || state.currentStep === 'error') {
           // No work to do, stop checking
+          console.log(`✋ Workflow not active (state: ${state?.currentStep || 'none'}). Stopping executor.`);
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = undefined;
@@ -41,11 +42,10 @@ export function WorkflowChainExecutor() {
             intervalRef.current = undefined;
           }
         } else if (result.success && result.nextStep) {
-          console.log(`➡️ Step completed. Next: ${result.nextStep}. Message: ${result.message}`);
-          // Immediately trigger next step check
-          setTimeout(checkAndExecute, 1000);
+          console.log(`➡️ Step completed. Next: ${result.nextStep}. Scheduling next check...`);
+          // Continue polling for next step
         } else if (!result.success) {
-          console.error(`❌ Step failed: ${result.error}`);
+          console.error(`❌ Step failed: ${result.error}. Stopping executor.`);
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = undefined;

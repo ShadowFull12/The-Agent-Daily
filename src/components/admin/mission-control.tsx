@@ -5,11 +5,10 @@ import { useToast } from "@/hooks/use-toast";
 import { publishLatestEditionAction, clearAllDataAction } from "@/app/actions";
 import { startWorkflowAction, stopWorkflowAction } from "@/app/actions-workflow";
 import { startChainedWorkflow, stopChainedWorkflow } from "@/app/actions-workflow-chained";
-import { emergencyKillSwitch } from "@/app/actions-emergency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { WorkflowDiagram, type AgentName, type AgentStatus } from "./workflow-diagram";
-import { Play, Timer, CheckCircle, AlertTriangle, Square, RotateCcw, ChevronDown, ChevronUp, Loader2, XCircle, Clock, ShieldAlert } from 'lucide-react';
+import { Play, Timer, CheckCircle, AlertTriangle, Square, RotateCcw, ChevronDown, ChevronUp, Loader2, XCircle, Clock } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -144,37 +143,21 @@ export function MissionControl() {
     };
 
     const handleForceStop = async () => {
-        setGlobalMessage("⚠️ Force stopping workflow - data preserved...");
+        setGlobalMessage("🛑 Stopping workflow - preserving data...");
+        setRunStatus('stopping');
+        
         const result = await stopChainedWorkflow();
+        
         if (result.success) {
             toast({ 
                 title: "✅ Workflow Stopped", 
                 description: result.message
             });
+            resetWorkflow();
         } else {
             toast({ 
                 variant: 'destructive', 
                 title: "Stop Failed", 
-                description: result.message 
-            });
-        }
-    };
-    
-    const handleKillSwitch = async () => {
-        setGlobalMessage("🚨 EMERGENCY KILL SWITCH - System resetting...");
-        const result = await emergencyKillSwitch();
-        if (result.success) {
-            toast({ 
-                variant: 'destructive',
-                title: "🚨 Emergency Stop Activated", 
-                description: result.message
-            });
-            resetWorkflow();
-            router.refresh();
-        } else {
-            toast({ 
-                variant: 'destructive', 
-                title: "Kill Switch Failed", 
                 description: result.message 
             });
         }
@@ -457,21 +440,41 @@ export function MissionControl() {
                 </div>
 
                 {/* Controls */}
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 items-center gap-2 flex-wrap">
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 items-center gap-2 flex-wrap">
                     <Button onClick={handleRunWorkflow} disabled={runStatus === 'running' || runStatus === 'stopping'}>
                         <Play className="mr-2 h-4 w-4" />
                         Force Full Run
                     </Button>
 
                     {(runStatus === 'running' || runStatus === 'stopping') && (
-                        <Button 
-                            variant="outline" 
-                            className="text-yellow-600 border-yellow-600 hover:bg-yellow-100/50 hover:text-yellow-700"
-                            onClick={handleForceStop}
-                        >
-                            <Square className="mr-2 h-4 w-4" />
-                            Force Stop
-                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button 
+                                    variant="destructive" 
+                                    className="bg-red-600 hover:bg-red-700"
+                                >
+                                    <Square className="mr-2 h-4 w-4" />
+                                    Force Stop Workflow
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Stop Workflow?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will immediately stop the workflow. All data (leads and drafts) will be preserved.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                        className="bg-red-600 hover:bg-red-700"
+                                        onClick={handleForceStop}
+                                    >
+                                        Stop Workflow
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     )}
 
                     <AlertDialog>
@@ -493,28 +496,6 @@ export function MissionControl() {
                                     router.refresh();
                                     toast({title: "System Reset", description: "All leads and drafts have been cleared."})
                                 }}>Confirm Reset</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="bg-red-600 hover:bg-red-700">
-                              <ShieldAlert className="mr-2 h-4 w-4" /> Emergency Kill Switch
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>🚨 Are you absolutely sure? 🚨</AlertDialogTitle>
-                                <AlertDialogDescription>This is an emergency action. It will immediately terminate ALL processes and clear ALL leads and drafts. This cannot be undone.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                    className="bg-red-600 hover:bg-red-700"
-                                    onClick={handleKillSwitch}>
-                                    Activate Kill Switch
-                                </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>

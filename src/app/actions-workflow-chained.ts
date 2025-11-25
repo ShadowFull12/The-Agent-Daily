@@ -381,9 +381,34 @@ export async function startChainedWorkflow(): Promise<{ success: boolean; messag
   }
 }
 
-// Stop the workflow
+// Stop the workflow immediately
 export async function stopChainedWorkflow(): Promise<{ success: boolean; message: string }> {
-  await clearQueueState();
-  await updateWorkflowState({ status: 'idle', message: 'Workflow stopped' });
-  return { success: true, message: 'Workflow stopped' };
+  try {
+    console.log('🛑 STOPPING WORKFLOW - Clearing queue and resetting state...');
+    
+    // Clear queue state to stop any pending steps
+    await clearQueueState();
+    
+    // Reset workflow state to idle
+    await updateWorkflowState({ status: 'idle', message: 'Workflow stopped by user' });
+    
+    // Clear all agent progress
+    await updateAgentProgress('scout', 'idle', '');
+    await updateAgentProgress('deduplicator', 'idle', '', { checked: 0, remaining: 0 });
+    await updateAgentProgress('journalist', 'idle', '', { drafted: 0, remaining: 0 });
+    await updateAgentProgress('journalist_1', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_2', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_3', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_4', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_5', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('validator', 'idle', '');
+    await updateAgentProgress('editor', 'idle', '');
+    await updateAgentProgress('publisher', 'idle', '');
+    
+    console.log('✅ Workflow stopped successfully. Data preserved.');
+    return { success: true, message: 'Workflow stopped. All data preserved.' };
+  } catch (error: any) {
+    console.error('❌ Error stopping workflow:', error);
+    return { success: false, message: `Failed to stop: ${error.message}` };
+  }
 }
