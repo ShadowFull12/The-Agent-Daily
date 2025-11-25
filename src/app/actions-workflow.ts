@@ -28,18 +28,30 @@ export async function startWorkflowAction(isManualRun = false): Promise<{ succes
         await initializeWorkflowState();
         console.log('✅ Workflow state initialized');
         
-        // Run the workflow asynchronously (don't wait for it)
-        runWorkflowInBackground(isManualRun).catch(error => {
-            console.error('❌ Background workflow error:', error);
-            console.error('Error stack:', error.stack);
-            updateWorkflowState({
-                status: 'error',
-                message: `Workflow failed: ${error.message}`
-            }).catch(e => console.error('Failed to update error state:', e));
-        });
+        // In Vercel/serverless, we need to keep the function alive until work is done
+        // We'll run the first critical steps synchronously, then let it continue
+        const isServerless = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
         
-        console.log('✅ Workflow started successfully');
-        return { success: true, message: 'Workflow started successfully' };
+        if (isServerless) {
+            console.log('🌐 Running in serverless mode - executing workflow synchronously');
+            // Run synchronously to keep function alive
+            await runWorkflowInBackground(isManualRun);
+            return { success: true, message: 'Workflow completed' };
+        } else {
+            console.log('💻 Running in local mode - executing workflow in background');
+            // Local development - run in background
+            runWorkflowInBackground(isManualRun).catch(error => {
+                console.error('❌ Background workflow error:', error);
+                console.error('Error stack:', error.stack);
+                updateWorkflowState({
+                    status: 'error',
+                    message: `Workflow failed: ${error.message}`
+                }).catch(e => console.error('Failed to update error state:', e));
+            });
+            
+            console.log('✅ Workflow started successfully');
+            return { success: true, message: 'Workflow started successfully' };
+        }
     } catch (error: any) {
         console.error('❌ Failed to start workflow:', error);
         console.error('Error stack:', error.stack);
