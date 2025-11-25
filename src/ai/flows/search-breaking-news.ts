@@ -33,41 +33,10 @@ const SearchBreakingNewsOutputSchema = z.object({
 });
 export type SearchBreakingNewsOutput = z.infer<typeof SearchBreakingNewsOutputSchema>;
 
-// Mock data fallback for when API is unavailable
-function getMockNewsForTopic(topic: string, size: number): any[] {
-    console.log(`📰 Using mock data for topic: ${topic}`);
-    const mockStories = [
-        {
-            title: `Breaking: Major ${topic} development announced today`,
-            link: `https://example.com/${topic}/story1`,
-            image_url: `https://picsum.photos/seed/${topic}1/400/300`,
-            description: `Latest ${topic} news: Important developments in the ${topic} sector that are making headlines worldwide.`,
-            category: [topic],
-        },
-        {
-            title: `${topic} update: New trends emerging globally`,
-            link: `https://example.com/${topic}/story2`,
-            image_url: `https://picsum.photos/seed/${topic}2/400/300`,
-            description: `Experts analyze the latest ${topic} trends and their impact on the global landscape.`,
-            category: [topic],
-        },
-        {
-            title: `Exclusive ${topic} report reveals key insights`,
-            link: `https://example.com/${topic}/story3`,
-            image_url: `https://picsum.photos/seed/${topic}3/400/300`,
-            description: `In-depth coverage of critical ${topic} events that are shaping the future.`,
-            category: [topic],
-        },
-    ];
-    
-    return mockStories.slice(0, size);
-}
-
 async function fetchNewsForTopic(topic: string, size: number): Promise<any[]> {
     const apiKey = process.env.NEWSDATA_API_KEY;
     if (!apiKey) {
-        console.warn("⚠️ NEWSDATA_API_KEY not set, using mock data");
-        return getMockNewsForTopic(topic, size);
+        throw new Error("NEWSDATA_API_KEY is not set in the environment variables.");
     }
     
     // Use 'top' as a general priority topic, and specific categories otherwise
@@ -86,10 +55,7 @@ async function fetchNewsForTopic(topic: string, size: number): Promise<any[]> {
             console.error(`API request failed for topic ${topic} with status: ${response.status}`);
             const errorBody = await response.text();
             console.error('Error Body:', errorBody);
-            
-            // Return mock data on API failure (429 or other errors)
-            console.log(`⚠️ Falling back to mock data for topic: ${topic}`);
-            return getMockNewsForTopic(topic, size);
+            return [];
         }
         const data = await response.json();
         console.log(`✅ Fetched ${data.results?.length || 0} stories for topic: ${topic}`);
@@ -99,9 +65,7 @@ async function fetchNewsForTopic(topic: string, size: number): Promise<any[]> {
         if (error instanceof Error && error.name === 'AbortError') {
             console.error(`⏱️ Request timed out for topic ${topic}`);
         }
-        // Return mock data on any error
-        console.log(`⚠️ Falling back to mock data for topic: ${topic}`);
-        return getMockNewsForTopic(topic, size);
+        return [];
     }
 }
 
