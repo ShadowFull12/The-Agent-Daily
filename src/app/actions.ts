@@ -64,7 +64,8 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
           createdAt: timestamp,
           title: story.title,
           content: story.content || '',
-          status: 'pending'
+          status: 'pending',
+          checked: false
         };
         batch.set(newLeadRef, leadData);
       });
@@ -91,7 +92,7 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
         // Fetch only unchecked leads
         const leadsQuery = query(
             collection(firestore, "raw_leads"),
-            where("checked", "!=", true)
+            where("checked", "==", false)
         );
         const leadsSnapshot = await getDocs(leadsQuery);
         
@@ -177,7 +178,7 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
         
         // Get remaining count (only unchecked leads)
         const remainingSnapshot = await getDocs(
-            query(collection(firestore, "raw_leads"), where("checked", "!=", true))
+            query(collection(firestore, "raw_leads"), where("checked", "==", false))
         );
         
         return { 

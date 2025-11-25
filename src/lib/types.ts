@@ -12,6 +12,7 @@ export interface RawLead {
     imageUrl: string;
     createdAt: Timestamp;
     status: 'pending' | 'processed';
+    checked?: boolean;
 }
 
 export interface DraftArticle {
