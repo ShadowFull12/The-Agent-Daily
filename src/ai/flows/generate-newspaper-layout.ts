@@ -41,7 +41,12 @@ const prompt = ai.definePrompt({
   name: 'generateNewspaperLayoutPrompt',
   input: {schema: GenerateNewspaperLayoutInputSchema},
   output: {schema: GenerateNewspaperLayoutOutputSchema},
-  prompt: `You are a world-class newspaper layout designer for "The Daily Agent", inspired by the dense, professional, and visually structured layout of "The Times of India". Your task is to generate a complete, multi-page, print-ready HTML layout. You must follow the exact structure and styling provided in the template below.
+  prompt: `You are a world-class newspaper layout designer for "The Daily Agent", inspired by the dense, professional, and visually structured layout of "The Times of India". Your task is to generate a complete, multi-page, print-ready HTML layout with a STRICT 3-COLUMN GRID LAYOUT.
+
+**CRITICAL: 3-COLUMN LAYOUT REQUIREMENTS:**
+1.  **ALWAYS USE 3 COLUMNS**: The CSS is set to \`column-count: 3\` with \`min-width: 1100px\` to ensure three columns are ALWAYS displayed side-by-side. The layout is designed for wide screens (1200px+).
+2.  **WIDE LAYOUT**: The newspaper shell has \`min-width: 1200px\` and \`max-width: 1400px\` to ensure proper 3-column display. This is a desktop-first, print-style layout.
+3.  **COLUMN FLOW**: Content flows naturally from the top of column 1, then column 2, then column 3, then continues to the next "row" of content. Use \`break-inside: avoid\` on stories to prevent awkward splits.
 
 **Strict Layout and Content Instructions:**
 1.  **Use the Template Verbatim**: Your output MUST be a single HTML document based on the provided template. Do not change the CSS, fonts, or the overall HTML structure. The CSS explicitly uses a three-column layout (\`column-count: 3;\`). Your content must be structured to fit this.
@@ -113,7 +118,8 @@ const prompt = ai.definePrompt({
         }
 
         .newspaper-shell {
-            max-width: 1280px;
+            max-width: 1400px;
+            min-width: 1200px;
             margin: 0 auto 6rem;
             padding: 2.5rem 2rem 4rem;
             background: var(--paper);
@@ -211,11 +217,12 @@ const prompt = ai.definePrompt({
                 0 1px 3px rgba(26, 22, 20, 0.06),
                 0 10px 30px rgba(26, 22, 20, 0.08);
             column-count: 3;
-            column-gap: 2.2rem;
-            column-fill: balance;
+            column-gap: 2.5rem;
+            column-fill: auto;
             column-rule: 1px solid var(--border);
             position: relative;
             page-break-inside: avoid;
+            min-width: 1100px;
         }
 
         .page:not(:first-of-type) {
@@ -385,10 +392,9 @@ const prompt = ai.definePrompt({
             margin: 0.3rem 0;
         }
 
-        @media (max-width: 1180px) {
+        @media print {
             .page {
-                column-count: 2;
-                column-gap: 2.5rem;
+                page-break-after: always;
             }
         }
 

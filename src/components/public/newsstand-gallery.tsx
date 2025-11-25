@@ -6,7 +6,10 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import type { Edition } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { useState } from "react";
+import { Maximize2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,8 +20,18 @@ import {
 } from "@/components/ui/dialog";
 
 function EditionCard({ edition }: { edition: Edition }) {
+    const [isOpen, setIsOpen] = useState(false);
+    
+    const handleFullscreen = () => {
+        const newWindow = window.open('', '_blank', 'width=1400,height=900');
+        if (newWindow) {
+            newWindow.document.write(edition.htmlContent);
+            newWindow.document.close();
+        }
+    };
+    
     return (
-        <Dialog>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
                 <div className="group cursor-pointer">
                     <div className="aspect-[2/3] relative rounded-lg overflow-hidden border">
@@ -37,16 +50,30 @@ function EditionCard({ edition }: { edition: Edition }) {
                     <p className="text-xs text-muted-foreground">Published on {new Date(edition.publicationDate.seconds * 1000).toLocaleDateString()}</p>
                 </div>
             </DialogTrigger>
-            <DialogContent className="max-w-6xl h-[95vh] flex flex-col">
+            <DialogContent className="max-w-[95vw] h-[95vh] flex flex-col">
                 <DialogHeader>
-                    <DialogTitle className="font-headline">Edition #{edition.editionNumber}</DialogTitle>
-                    <DialogDescription>{edition.headline}</DialogDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <DialogTitle className="font-headline">Edition #{edition.editionNumber}</DialogTitle>
+                            <DialogDescription>{edition.headline}</DialogDescription>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleFullscreen}
+                            title="Open in fullscreen window"
+                        >
+                            <Maximize2 className="h-4 w-4 mr-2" />
+                            Fullscreen
+                        </Button>
+                    </div>
                 </DialogHeader>
-                <div className="flex-1 overflow-auto border rounded-md">
+                <div className="flex-1 overflow-auto border rounded-md bg-gray-50">
                    <iframe 
                       srcDoc={edition.htmlContent} 
                       className="w-full h-full"
                       title={`Edition #${edition.editionNumber}`}
+                      style={{ minHeight: '100%' }}
                    />
                 </div>
             </DialogContent>

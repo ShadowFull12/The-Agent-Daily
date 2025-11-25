@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Newspaper, Eye, Trash2, Loader2 } from "lucide-react";
+import { Newspaper, Eye, Trash2, Loader2, Maximize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -28,7 +28,17 @@ export function EditionReview({ onRefresh }: EditionReviewProps) {
   const [editions, setEditions] = useState<Edition[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [viewingEdition, setViewingEdition] = useState<Edition | null>(null);
   const { toast } = useToast();
+
+  const handleFullscreen = () => {
+    if (!viewingEdition) return;
+    const newWindow = window.open('', '_blank', 'width=1400,height=900');
+    if (newWindow) {
+      newWindow.document.write(viewingEdition.htmlContent);
+      newWindow.document.close();
+    }
+  };
 
   const fetchEditions = async () => {
     setLoading(true);
@@ -150,27 +160,41 @@ export function EditionReview({ onRefresh }: EditionReviewProps) {
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Dialog>
+                  <Dialog onOpenChange={(open) => setViewingEdition(open ? edition : null)}>
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4 mr-2" />
                         View
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-6xl h-[95vh] flex flex-col">
+                    <DialogContent className="max-w-[95vw] h-[95vh] flex flex-col">
                       <DialogHeader>
-                        <DialogTitle className="font-headline">
-                          Edition #{edition.editionNumber}
-                        </DialogTitle>
-                        <DialogDescription>
-                          {edition.headline || (edition.status === "draft" ? "Draft Edition" : "Published Edition")}
-                        </DialogDescription>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <DialogTitle className="font-headline">
+                              Edition #{edition.editionNumber}
+                            </DialogTitle>
+                            <DialogDescription>
+                              {edition.headline || (edition.status === "draft" ? "Draft Edition" : "Published Edition")}
+                            </DialogDescription>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleFullscreen}
+                            title="Open in fullscreen window"
+                          >
+                            <Maximize2 className="h-4 w-4 mr-2" />
+                            Fullscreen
+                          </Button>
+                        </div>
                       </DialogHeader>
-                      <div className="flex-1 overflow-auto border rounded-md">
+                      <div className="flex-1 overflow-auto border rounded-md bg-gray-50">
                         <iframe
                           srcDoc={edition.htmlContent}
                           className="w-full h-full"
                           title={`Edition #${edition.editionNumber}`}
+                          style={{ minHeight: '100%' }}
                         />
                       </div>
                     </DialogContent>
