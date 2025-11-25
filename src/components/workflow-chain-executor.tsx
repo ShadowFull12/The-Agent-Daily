@@ -7,6 +7,7 @@ import { getQueueState } from '@/app/workflow-queue';
 export function WorkflowChainExecutor() {
   const isExecutingRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout>();
+  const immediateTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     const checkAndExecute = async () => {
@@ -17,23 +18,30 @@ export function WorkflowChainExecutor() {
       }
 
       try {
+        isExecutingRef.current = true;
+        
         // Check if there's work to do
         const state = await getQueueState();
+        console.log(`📊 Queue State Check: currentStep="${state?.currentStep || 'none'}"`);
         
         if (!state || state.currentStep === 'idle' || state.currentStep === 'complete' || state.currentStep === 'error') {
           // No work to do, stop checking
-          console.log(`✋ Workflow not active (state: ${state?.currentStep || 'none'}). Stopping executor.`);
+          console.log(`✋ Workflow not active. Stopping executor.`);
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = undefined;
           }
+          if (immediateTimeoutRef.current) {
+            clearTimeout(immediateTimeoutRef.current);
+            immediateTimeoutRef.current = undefined;
+          }
+          isExecutingRef.current = false;
           return;
         }
 
-        console.log(`🔄 Executor checking queue: ${state.currentStep} - Executing...`);
-        isExecutingRef.current = true;
-        
+        console.log(`🔄 Executing step: ${state.currentStep}`);
         const result = await executeNextWorkflowStep();
+        console.log(`📋 Step result: success=${result.success}, nextStep=${result.nextStep}, completed=${result.completed}`);
         
         if (result.completed) {
           console.log(`✅ Workflow completed: ${result.message}`);
@@ -41,12 +49,23 @@ export function WorkflowChainExecutor() {
             clearInterval(intervalRef.current);
             intervalRef.current = undefined;
           }
+          if (immediateTimeoutRef.current) {
+            clearTimeout(immediateTimeoutRef.current);
+            immediateTimeoutRef.current = undefined;
+          }
         } else if (result.success && result.nextStep) {
-          console.log(`➡️ Step completed. Next: ${result.nextStep}. Immediately checking next step...`);
-          // Immediately trigger next step check (after brief delay for state to settle)
-          isExecutingRef.current = false;
-          setTimeout(() => checkAndExecute(), 500);
-          return; // Exit to prevent the finally block from resetting the flag
+          console.log(`➡️ Step completed successfully. Next step: ${result.nextStep}. Triggering immediate check in 1 second...`);
+          // Clear any existing immediate timeout
+          if (immediateTimeoutRef.current) {
+            clearTimeout(immediateTimeoutRef.current);
+          }
+          // Schedule immediate next step execution
+          immediateTimeoutRef.current = setTimeout(() => {
+            console.log('⚡ Immediate trigger executing...');
+            isExecutingRef.current = false;
+            checkAndExecute();
+          }, 1000);
+          return; // Don't reset flag yet - timeout will do it
         } else if (!result.success) {
           console.error(`❌ Step failed: ${result.error}. Stopping executor.`);
           if (intervalRef.current) {
@@ -54,8 +73,7 @@ export function WorkflowChainExecutor() {
             intervalRef.current = undefined;
           }
         } else {
-          // No nextStep but also not completed or failed - continue polling
-          console.log(`⏸️ Step finished but no nextStep indicated. Continuing to poll...`);
+          console.log(`⏸️ Step returned without nextStep. Result:`, result);
         }
         
       } catch (error) {
@@ -65,15 +83,21 @@ export function WorkflowChainExecutor() {
       }
     };
 
+    console.log('🎬 WorkflowChainExecutor started - polling every 3 seconds');
+    
     // Check every 3 seconds for pending work
     intervalRef.current = setInterval(checkAndExecute, 3000);
     
-    // Also check immediately
+    // Also check immediately on mount
     checkAndExecute();
 
     return () => {
+      console.log('🛑 WorkflowChainExecutor unmounting - cleaning up');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+      }
+      if (immediateTimeoutRef.current) {
+        clearTimeout(immediateTimeoutRef.current);
       }
     };
   }, []);
