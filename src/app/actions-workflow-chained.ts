@@ -71,40 +71,55 @@ export async function executeStep2_Dedup(): Promise<{ success: boolean; message:
   }
 }
 
-// Step 3: Journalist - drafts ALL articles (completes in < 250s for ~20 articles)
+// Step 3: Journalist - drafts ALL articles with 5 parallel workers (completes in ~50-80s)
 export async function executeStep3_Journalist(): Promise<{ success: boolean; message: string; error?: string }> {
   try {
-    console.log('📋 Step 3: Journalist');
+    console.log('📋 Step 3: Journalist (5 parallel workers)');
     
-    await updateAgentProgress('journalist', 'working', 'Journalist is drafting articles...');
-    let remaining = -1;
+    await updateAgentProgress('journalist', 'working', 'Journalist team (5 workers) is drafting articles...');
     let draftsMade = 0;
     
-    // Process all leads
-    do {
-      const draftResult = await draftArticleAction();
-      
-      if (!draftResult.success && draftResult.error) {
-        console.warn('Draft failed:', draftResult.error);
-      } else if (draftResult.articleId) {
-        draftsMade++;
-        await updateAgentProgress('journalist', 'working', `Journalist drafted ${draftsMade} articles. ${draftResult.remaining} leads left.`, { 
-          drafted: draftsMade, 
-          remaining: draftResult.remaining 
-        });
-      }
-      
-      remaining = draftResult.remaining;
-      
-      if (remaining > 0) {
-        await sleep(1000); // Brief pause between drafts
-      }
-    } while (remaining > 0);
+    // Process leads in parallel batches of 5
+    let hasMoreLeads = true;
     
-    await updateAgentProgress('journalist', 'success', `Journalist drafted ${draftsMade} articles.`);
+    while (hasMoreLeads) {
+      // Create 5 parallel draft promises
+      const draftPromises = Array(5).fill(null).map(() => draftArticleAction());
+      
+      // Wait for all 5 to complete
+      const results = await Promise.all(draftPromises);
+      
+      // Count successes
+      let batchSuccess = 0;
+      let remainingCount = 0;
+      
+      results.forEach(result => {
+        if (result.articleId) {
+          batchSuccess++;
+          draftsMade++;
+        }
+        remainingCount = result.remaining;
+      });
+      
+      console.log(`📰 Batch completed: ${batchSuccess} articles drafted, ${remainingCount} leads remaining`);
+      
+      await updateAgentProgress('journalist', 'working', `Journalist team drafted ${draftsMade} articles. ${remainingCount} leads left.`, { 
+        drafted: draftsMade, 
+        remaining: remainingCount 
+      });
+      
+      // Check if more leads remain
+      if (remainingCount === 0) {
+        hasMoreLeads = false;
+      } else {
+        await sleep(500); // Brief pause between batches
+      }
+    }
+    
+    await updateAgentProgress('journalist', 'success', `Journalist team drafted ${draftsMade} articles with 5 parallel workers.`);
     await updateQueueState({ currentStep: 'validate', draftsMade });
     
-    return { success: true, message: `Drafted ${draftsMade} articles. Proceeding to validation...` };
+    return { success: true, message: `Drafted ${draftsMade} articles using parallel processing. Proceeding to validation...` };
   } catch (error: any) {
     await updateQueueState({ currentStep: 'error', error: error.message });
     return { success: false, message: 'Step 3 failed', error: error.message };
@@ -174,6 +189,7 @@ export async function executeStep4_ValidateAndEdit(): Promise<{ success: boolean
 }
 
 // Main orchestrator - checks queue and executes next step
+// Now fully server-side: each step triggers the next automatically
 export async function executeNextWorkflowStep(): Promise<{ 
   success: boolean; 
   message: string; 
@@ -200,33 +216,47 @@ export async function executeNextWorkflowStep(): Promise<{
     
     console.log(`🎯 Executing workflow step: ${state.currentStep}`);
     
+    let result: any;
+    let shouldContinue = false;
+    
     switch (state.currentStep) {
       case 'clear_data':
       case 'scout':
-        const result1 = await executeStep1_ClearAndScout();
-        return { ...result1, nextStep: 'dedup' };
+        result = await executeStep1_ClearAndScout();
+        shouldContinue = result.success;
+        break;
         
       case 'dedup':
-        const result2 = await executeStep2_Dedup();
-        return { ...result2, nextStep: 'journalist' };
+        result = await executeStep2_Dedup();
+        shouldContinue = result.success;
+        break;
         
       case 'journalist':
-        const result3 = await executeStep3_Journalist();
-        return { ...result3, nextStep: 'validate' };
+        result = await executeStep3_Journalist();
+        shouldContinue = result.success;
+        break;
         
       case 'validate':
       case 'editor':
-        const result4 = await executeStep4_ValidateAndEdit();
+        result = await executeStep4_ValidateAndEdit();
         const nextState = await getQueueState();
-        return { 
-          ...result4, 
-          nextStep: nextState?.currentStep === 'clear_data' ? 'clear_data' : 'complete',
-          completed: nextState?.currentStep === 'complete'
-        };
+        result.nextStep = nextState?.currentStep === 'clear_data' ? 'clear_data' : 'complete';
+        result.completed = nextState?.currentStep === 'complete';
+        shouldContinue = result.success && nextState?.currentStep === 'clear_data';
+        break;
         
       default:
         return { success: false, message: 'Unknown step', error: 'Unknown workflow step' };
     }
+    
+    // Server-side auto-chaining: if successful and not completed, execute next step
+    if (shouldContinue && !result.completed) {
+      console.log(`➡️ Auto-executing next step: ${result.nextStep}`);
+      await sleep(1000); // Brief pause
+      return await executeNextWorkflowStep(); // Recursive call for next step
+    }
+    
+    return result;
     
   } catch (error: any) {
     console.error('Workflow step execution error:', error);
@@ -235,25 +265,32 @@ export async function executeNextWorkflowStep(): Promise<{
   }
 }
 
-// Start the workflow
+// Start the workflow - FULLY SERVER-SIDE
+// Executes all steps recursively on the server, no client needed
 export async function startChainedWorkflow(): Promise<{ success: boolean; message: string }> {
   try {
-    console.log('🚀 Starting chained workflow...');
+    console.log('🚀 Starting FULLY server-side chained workflow...');
     await clearQueueState();
     await updateQueueState({ currentStep: 'clear_data', attempt: 1, draftsMade: 0 });
     await updateWorkflowState({ status: 'running', message: 'Workflow started' });
     
-    // Execute the first step immediately instead of waiting for the client executor
-    console.log('⚡ Executing first step immediately...');
-    const firstStepResult = await executeNextWorkflowStep();
+    // Execute ALL steps server-side recursively
+    console.log('⚡ Executing complete workflow server-side...');
+    const finalResult = await executeNextWorkflowStep();
     
-    if (!firstStepResult.success) {
-      return { success: false, message: `First step failed: ${firstStepResult.error}` };
+    if (!finalResult.success) {
+      return { success: false, message: `Workflow failed: ${finalResult.error}` };
     }
     
-    return { success: true, message: `Workflow started. First step: ${firstStepResult.message}` };
+    if (finalResult.completed) {
+      return { success: true, message: `Workflow completed successfully! ${finalResult.message}` };
+    }
+    
+    return { success: true, message: `Workflow in progress: ${finalResult.message}` };
   } catch (error: any) {
     console.error('❌ Failed to start workflow:', error);
+    await updateQueueState({ currentStep: 'error', error: error.message });
+    await updateWorkflowState({ status: 'error', message: error.message });
     return { success: false, message: error.message };
   }
 }

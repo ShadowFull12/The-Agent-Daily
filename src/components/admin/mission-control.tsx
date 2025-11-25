@@ -259,9 +259,9 @@ export function MissionControl() {
             
             // Trigger the cycle if we are very close to 8 PM
             if (diff > 0 && diff < 1000 && runStatus === 'idle') {
-                startWorkflowAction(false).then(result => {
+                startChainedWorkflow().then(result => {
                     if (result.success) {
-                        toast({ title: "Automated Run Started", description: "The daily newspaper generation process has begun." });
+                        toast({ title: "Automated Run Started", description: "The daily newspaper generation process has begun (server-side)." });
                     }
                 });
             }
