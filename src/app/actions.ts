@@ -167,9 +167,11 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
         
         if (isDuplicate) {
             // Delete the current lead (keep the other one)
+            console.log(`🗑️ Deleting duplicate lead: "${currentLead.title.substring(0, 40)}"`);
             await deleteDoc(doc(firestore, "raw_leads", currentLead.id));
             
             // Get remaining count
+            console.log('📊 Getting remaining count after deletion...');
             const remainingSnapshot = await getDocs(collection(firestore, "raw_leads"));
             
             console.log(`✅ Deleted duplicate, ${remainingSnapshot.size} leads remaining`);
@@ -184,12 +186,14 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
         
         // If not a duplicate, mark it as checked by adding a field
         console.log(`✅ Lead is unique, marking as checked: "${currentLead.title.substring(0, 40)}"`);
+        console.log('📝 Updating Firestore document...');
         await updateDoc(doc(firestore, "raw_leads", currentLead.id), {
             checked: true,
             checkedAt: new Date().toISOString()
         });
         
         // Get remaining count (only unchecked leads)
+        console.log('📊 Querying for remaining unchecked leads...');
         const remainingSnapshot = await getDocs(
             query(collection(firestore, "raw_leads"), where("checked", "==", false))
         );
