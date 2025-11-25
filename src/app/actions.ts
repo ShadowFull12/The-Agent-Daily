@@ -86,22 +86,43 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
         const { checkDuplicate } = await import('@/ai/flows/check-duplicate');
         
         let isDuplicate = false;
+        let retryCount = 0;
+        const MAX_RETRIES = 3;
+        
         for (const otherLead of otherLeads) {
             try {
-                const result = await checkDuplicate({
+                // Add timeout to prevent hanging
+                const timeoutPromise = new Promise<never>((_, reject) => 
+                    setTimeout(() => reject(new Error('AI check timeout')), 15000)
+                );
+                
+                const checkPromise = checkDuplicate({
                     title1: currentLead.title,
                     title2: otherLead.title,
                 });
+                
+                const result = await Promise.race([checkPromise, timeoutPromise]);
                 
                 if (result.isDuplicate) {
                     isDuplicate = true;
                     break;
                 }
+                
+                retryCount = 0; // Reset retry count on success
+                
             } catch (error: any) {
-                // If rate limited or error, skip this comparison and continue
-                if (error.message?.includes('quota') || error.message?.includes('rate limit')) {
-                    console.log('Rate limited, will retry on next iteration');
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                console.error('Deduplication check error:', error.message);
+                
+                // If timeout or error, retry up to MAX_RETRIES times
+                if (error.message?.includes('timeout') || error.message?.includes('quota') || error.message?.includes('rate limit')) {
+                    retryCount++;
+                    if (retryCount >= MAX_RETRIES) {
+                        console.log('Max retries reached, skipping this comparison');
+                        continue; // Skip this comparison and move to next
+                    }
+                    console.log(`Retry ${retryCount}/${MAX_RETRIES}, waiting 3 seconds...`);
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    continue; // Don't break, just skip this iteration
                 }
             }
         }
@@ -121,8 +142,9 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
             };
         }
         
-        // Mark this lead as checked by deleting and re-adding at end (or just continue)
-        // For now, we'll just move to next iteration
+        // Mark this lead as checked by deleting and re-adding at end
+        // For now, just mark it as processed by moving to a different collection temporarily
+        // Or just continue - the lead stays and we move to next iteration
         const remainingSnapshot = await getDocs(collection(firestore, "raw_leads"));
         return { 
             success: true, 

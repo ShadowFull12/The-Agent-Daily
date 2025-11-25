@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { publishLatestEditionAction, clearAllDataAction } from "@/app/actions";
 import { startWorkflowAction, stopWorkflowAction } from "@/app/actions-workflow";
+import { emergencyKillSwitch } from "@/app/actions-emergency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { WorkflowDiagram, type AgentName, type AgentStatus } from "./workflow-diagram";
-import { Play, Timer, CheckCircle, AlertTriangle, Square, RotateCcw } from 'lucide-react';
+import { Play, Timer, CheckCircle, AlertTriangle, Square, RotateCcw, Skull } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -98,6 +99,26 @@ export function MissionControl() {
             if (result.success) {
                 toast({ title: "Stopping Workflow", description: result.message });
             }
+        }
+    };
+
+    const handleEmergencyKill = async () => {
+        setGlobalMessage("🚨 EMERGENCY STOP - Terminating all processes...");
+        const result = await emergencyKillSwitch();
+        if (result.success) {
+            toast({ 
+                title: "🚨 Emergency Kill Switch Activated", 
+                description: result.message,
+                variant: "destructive"
+            });
+            resetWorkflow();
+            router.refresh();
+        } else {
+            toast({ 
+                variant: 'destructive', 
+                title: "Emergency Stop Failed", 
+                description: result.message 
+            });
         }
     };
 
@@ -250,7 +271,7 @@ export function MissionControl() {
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <Button onClick={handleRunWorkflow} disabled={runStatus === 'running' || runStatus === 'stopping'}>
                         <Play className="mr-2 h-4 w-4" />
                         Force Full Run
@@ -262,6 +283,21 @@ export function MissionControl() {
                             Force Stop
                         </Button>
                     )}
+
+                    {/* Emergency Kill Switch - Triple Click to Activate */}
+                    <Button 
+                        variant="outline" 
+                        className="border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                        onClick={(e) => {
+                            if (e.detail === 3) {
+                                handleEmergencyKill();
+                            }
+                        }}
+                        title="Triple-click to activate emergency kill switch"
+                    >
+                        <Skull className="mr-2 h-4 w-4" />
+                        🚨 Kill Switch
+                    </Button>
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
