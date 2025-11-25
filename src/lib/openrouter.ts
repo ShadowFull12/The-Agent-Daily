@@ -51,14 +51,14 @@ export async function callOpenRouter(
   return data.choices[0].message.content;
 }
 
-export async function callGrok(prompt: string, systemPrompt?: string): Promise<string> {
+export async function callGrok(userPrompt: string, systemPrompt?: string): Promise<string> {
   const messages: OpenRouterMessage[] = [];
   
   if (systemPrompt) {
     messages.push({ role: 'system', content: systemPrompt });
   }
   
-  messages.push({ role: 'user', content: prompt });
+  messages.push({ role: 'user', content: userPrompt });
   
-  return callOpenRouter(messages, { model: 'x-ai/grok-4-1-fast-reasoning' });
+  return callOpenRouter(messages, { model: 'x-ai/grok-4.1-fast' });
 }

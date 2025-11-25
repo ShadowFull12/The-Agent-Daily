@@ -44,24 +44,36 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
     const stories = searchResult.stories.slice(0, limitStories);
     console.log(`💾 Scout Agent: Saving ${stories.length} stories to Firestore...`);
 
-    const batch = writeBatch(firestore);
     const leadsCollection = collection(firestore, "raw_leads");
-
-    stories.forEach(story => {
-        const newLeadRef = doc(leadsCollection); // Create a new doc reference
+    const timestamp = Timestamp.now();
+    
+    // Process in batches of 10 for better performance
+    const batchSize = 10;
+    const batches = [];
+    
+    for (let i = 0; i < stories.length; i += batchSize) {
+      const batch = writeBatch(firestore);
+      const batchStories = stories.slice(i, i + batchSize);
+      
+      batchStories.forEach(story => {
+        const newLeadRef = doc(leadsCollection);
         const leadData: Omit<RawLead, 'id'> = {
           topic: story.topic,
           url: story.url,
           imageUrl: story.imageUrl || '',
-          createdAt: Timestamp.now(),
+          createdAt: timestamp,
           title: story.title,
           content: story.content || '',
           status: 'pending'
         };
         batch.set(newLeadRef, leadData);
-    });
+      });
+      
+      batches.push(batch.commit());
+    }
     
-    await batch.commit();
+    // Execute all batches in parallel
+    await Promise.all(batches);
     console.log('✅ Scout Agent: Successfully saved all stories to Firestore');
     return { success: true, leadCount: stories.length };
 
