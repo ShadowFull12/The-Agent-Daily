@@ -69,8 +69,9 @@ type RunStatus = "idle" | "running" | "success" | "error" | "stopping";
 
 export function MissionControl() {
     const [runStatus, setRunStatus] = useState<RunStatus>("idle");
-    const [countdown, setCountdown] = useState("");
-    const [publishCountdown, setPublishCountdown] = useState("");
+    const [countdown, setCountdown] = useState("00:00:00");
+    const [publishCountdown, setPublishCountdown] = useState("00:00:00");
+    const [mounted, setMounted] = useState(false);
     const isStoppingRef = useRef(false);
 
     const { toast } = useToast();
@@ -300,8 +301,15 @@ export function MissionControl() {
         }
     }, [runStatus]);
 
+    // Set mounted state
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     // Timer for the next automated run
     useEffect(() => {
+        if (!mounted) return;
+        
         const timerId = setInterval(() => {
             const next5Am = getNext5AmIst();
             const now = new Date();
@@ -316,10 +324,12 @@ export function MissionControl() {
         }, 1000);
 
         return () => clearInterval(timerId);
-    }, [handleRunWorkflow]);
+    }, [handleRunWorkflow, mounted]);
 
     // Timer for the next publication
     useEffect(() => {
+        if (!mounted) return;
+        
         const timerId = setInterval(() => {
             const next6Am = getNext6AmIst();
             const now = new Date();
@@ -341,7 +351,7 @@ export function MissionControl() {
         }, 1000);
 
         return () => clearInterval(timerId);
-    }, [toast, router]);
+    }, [toast, router, mounted]);
 
 
     return (
