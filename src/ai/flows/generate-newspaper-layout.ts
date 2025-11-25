@@ -39,6 +39,7 @@ export async function generateNewspaperLayout(input: GenerateNewspaperLayoutInpu
 
 const prompt = ai.definePrompt({
   name: 'generateNewspaperLayoutPrompt',
+  model: 'googleai/gemini-2.5-pro', // Using Gemini 2.5 Pro for superior HTML generation
   input: {schema: GenerateNewspaperLayoutInputSchema},
   output: {schema: GenerateNewspaperLayoutOutputSchema},
   prompt: `You are a world-class newspaper layout designer for "The Daily Agent", inspired by the dense, professional, and visually structured layout of "The Times of India". Your task is to generate a complete, multi-page, print-ready HTML layout with a STRICT 3-COLUMN GRID LAYOUT.
