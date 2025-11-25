@@ -16,7 +16,6 @@ import { getFirestore } from "firebase/firestore";
 import { initializeApp, getApps } from "firebase/app";
 import { firebaseConfig } from "@/firebase/config";
 import { Badge } from "@/components/ui/badge";
-import { WorkflowChainExecutor } from "@/components/workflow-chain-executor";
 
 const formatCountdown = (ms: number) => {
     if (ms < 0) return "00:00:00";
@@ -297,15 +296,12 @@ export function MissionControl() {
 
     return (
         <>
-            {/* Auto-executor for chained workflow */}
-            <WorkflowChainExecutor />
-            
             <Card className="overflow-hidden">
                 <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                    <div className="space-y-1.5 flex-1">
-                     <CardTitle>Automated Workflow (Chained Mode)</CardTitle>
+                     <CardTitle>Automated Workflow (Fully Server-Side)</CardTitle>
                      <CardDescription>
-                        Workflow runs in chained steps. Each step completes in &lt;5 min. Steps auto-continue. 25 leads, 20+ articles target.
+                        Workflow runs completely on server. Each step completes in &lt;5 min. All steps execute sequentially. Works with auto-trigger (no client needed). 25 leads, 20+ articles target.
                      </CardDescription>
                    </div>
                <div className="flex items-center gap-4">
