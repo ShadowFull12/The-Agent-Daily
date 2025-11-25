@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { publishLatestEditionAction, clearAllDataAction } from "@/app/actions";
 import { startWorkflowAction, stopWorkflowAction } from "@/app/actions-workflow";
+import { startChainedWorkflow, stopChainedWorkflow } from "@/app/actions-workflow-chained";
 import { emergencyKillSwitch } from "@/app/actions-emergency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -16,6 +17,7 @@ import { getFirestore } from "firebase/firestore";
 import { initializeApp, getApps } from "firebase/app";
 import { firebaseConfig } from "@/firebase/config";
 import { Badge } from "@/components/ui/badge";
+import { WorkflowChainExecutor } from "@/components/workflow-chain-executor";
 
 const formatCountdown = (ms: number) => {
     if (ms < 0) return "00:00:00";
@@ -133,10 +135,10 @@ export function MissionControl() {
 
     const handleForceStop = async () => {
         setGlobalMessage("⚠️ Force stopping workflow - data preserved...");
-        const result = await stopWorkflowAction();
+        const result = await stopChainedWorkflow();
         if (result.success) {
             toast({ 
-                title: "✅ Workflow Stopping", 
+                title: "✅ Workflow Stopped", 
                 description: result.message
             });
         } else {
@@ -175,11 +177,12 @@ export function MissionControl() {
         }
 
         setRunStatus("running");
-        setGlobalMessage("Starting workflow...");
+        setGlobalMessage("Starting chained workflow...");
         
-        const result = await startWorkflowAction(true);
+        // Use chained workflow for Vercel Hobby plan compatibility
+        const result = await startChainedWorkflow();
         if (result.success) {
-            toast({ title: "Manual Run Started", description: result.message });
+            toast({ title: "Chained Workflow Started", description: "Steps will auto-execute. Each completes in <5 min." });
         } else {
             toast({ variant: 'destructive', title: "Failed to Start", description: result.message });
             setRunStatus("idle");
@@ -295,14 +298,18 @@ export function MissionControl() {
     }, [toast, router, mounted]);
 
     return (
-        <Card className="overflow-hidden">
-            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-               <div className="space-y-1.5 flex-1">
-                 <CardTitle>Automated Workflow</CardTitle>
-                 <CardDescription>
-                    The system runs a full cycle daily at 8 PM IST. You can also trigger it manually.
-                 </CardDescription>
-               </div>
+        <>
+            {/* Auto-executor for chained workflow */}
+            <WorkflowChainExecutor />
+            
+            <Card className="overflow-hidden">
+                <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                   <div className="space-y-1.5 flex-1">
+                     <CardTitle>Automated Workflow (Chained Mode)</CardTitle>
+                     <CardDescription>
+                        Workflow runs in chained steps. Each step completes in &lt;5 min. Steps auto-continue. 25 leads, 20+ articles target.
+                     </CardDescription>
+                   </div>
                <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Next Auto Run</p>
@@ -474,5 +481,6 @@ export function MissionControl() {
                 </div>
             </CardContent>
         </Card>
+        </>
     );
 }

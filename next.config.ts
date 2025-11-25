@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
-      maxDuration: 900, // Maximum 15 minutes for server actions
+      maxDuration: 300, // Match Vercel Hobby limit
     },
   },
 };
