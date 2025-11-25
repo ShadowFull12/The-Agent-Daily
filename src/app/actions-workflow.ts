@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -104,6 +105,7 @@ async function runWorkflowInBackground(isManualRun: boolean) {
             await updateAgentProgress('scout', 'cooldown', '');
 
             // 2. Deduplicator Agent - NEW BATCH PROCESSING
+            if (await checkShouldStop()) throw new Error('Workflow stopped by user');
             await updateAgentProgress('deduplicator', 'working', 'AI Deduplicator is analyzing all leads in one batch...');
             
             const { deduplicateLeadsActionBatch } = await import('@/app/actions-dedup-new');
@@ -121,6 +123,7 @@ async function runWorkflowInBackground(isManualRun: boolean) {
             }
             
             await updateAgentProgress('deduplicator', 'success', `AI checked all leads and removed ${dedupResult.deletedCount} duplicates in one batch.`, { checked: dedupResult.totalLeads, remaining: 0 });
+            await sleep(2000); // Cooldown
 
             // 3. Journalist
             if (await checkShouldStop()) throw new Error('Workflow stopped by user');
@@ -176,6 +179,7 @@ async function runWorkflowInBackground(isManualRun: boolean) {
         }
 
         // 5. Editor
+        if (await checkShouldStop()) throw new Error('Workflow stopped by user');
         await updateAgentProgress('editor', 'working', 'Chief Editor is designing the newspaper layout...');
         const editorResult = await createPreviewEditionAction();
         if (!editorResult.success) throw new Error(editorResult.error || "Editor failed.");
@@ -183,6 +187,9 @@ async function runWorkflowInBackground(isManualRun: boolean) {
         await updateAgentProgress('editor', 'success', `Chief Editor created edition: ${editorResult.editionId}`);
         await sleep(5000);
         await updateAgentProgress('editor', 'cooldown', '');
+
+        // Final check before success
+        if (await checkShouldStop()) throw new Error('Workflow stopped by user');
 
         // Success
         await updateWorkflowState({
