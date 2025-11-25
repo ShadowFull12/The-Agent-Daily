@@ -111,7 +111,10 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
         
         // Pick the first lead to check
         const currentLead = leads[0];
-        const otherLeads = leads.slice(1);
+        // Only compare against a sample of other leads (not all) for performance
+        const otherLeads = leads.slice(1, Math.min(6, leads.length)); // Check against max 5 others
+        
+        console.log(`🔍 Checking "${currentLead.title.substring(0, 40)}" against ${otherLeads.length} other leads`);
         
         // Use AI to check if current lead is duplicate of any other lead
         const { checkDuplicate } = await import('@/ai/flows/check-duplicate');
@@ -164,6 +167,8 @@ export async function deduplicateLeadsAction(): Promise<{ success: boolean; dele
                 console.log('Non-retryable error, moving to next comparison');
             }
         }
+        
+        console.log(`🎯 For loop completed! isDuplicate=${isDuplicate}, checked ${otherLeads.length} other leads`);
         
         if (isDuplicate) {
             // Delete the current lead (keep the other one)
