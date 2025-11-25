@@ -4,7 +4,7 @@
  */
 
 import { callGrok } from '@/lib/openrouter';
-import { generate } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 export interface CheckDuplicateInput {
@@ -58,7 +58,7 @@ Return ONLY a JSON object with this exact format (no markdown, no extra text):
     
     // Fallback to Gemini 2.5 Pro
     try {
-      const result = await generate({
+      const result = await ai.generate({
         model: 'googleai/gemini-2.5-pro',
         prompt: prompt,
         output: {

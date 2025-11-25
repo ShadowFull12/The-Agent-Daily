@@ -7,13 +7,14 @@ import { startWorkflowAction, stopWorkflowAction } from "@/app/actions-workflow"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { WorkflowDiagram, type AgentName, type AgentStatus } from "./workflow-diagram";
-import { Play, Timer, CheckCircle, AlertTriangle, Square, RotateCcw } from 'lucide-react';
+import { Play, Timer, CheckCircle, AlertTriangle, Square, RotateCcw, ChevronDown, ChevronUp, Loader2, XCircle, Clock } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
 import { initializeApp, getApps } from "firebase/app";
 import { firebaseConfig } from "@/firebase/config";
+import { Badge } from "@/components/ui/badge";
 
 const formatCountdown = (ms: number) => {
     if (ms < 0) return "00:00:00";
@@ -50,6 +51,14 @@ const getNext830PmIst = () => {
 
 type RunStatus = "idle" | "running" | "success" | "error" | "stopping";
 
+interface AgentProgress {
+    status: string;
+    message: string;
+    checked?: number;
+    remaining?: number;
+    drafted?: number;
+}
+
 // Initialize Firebase client
 const getFirestoreClient = () => {
     if (getApps().length === 0) {
@@ -64,6 +73,7 @@ export function MissionControl() {
     const [countdown, setCountdown] = useState("00:00:00");
     const [publishCountdown, setPublishCountdown] = useState("00:00:00");
     const [mounted, setMounted] = useState(false);
+    const [expandedAgents, setExpandedAgents] = useState<Set<AgentName>>(new Set());
     const { toast } = useToast();
     const router = useRouter();
 
@@ -75,7 +85,29 @@ export function MissionControl() {
         editor: 'idle',
         publisher: 'idle'
     });
+    
+    const [agentProgress, setAgentProgress] = useState<Record<AgentName, AgentProgress>>({
+        scout: { status: 'idle', message: '' },
+        deduplicator: { status: 'idle', message: '', checked: 0, remaining: 0 },
+        journalist: { status: 'idle', message: '', drafted: 0, remaining: 0 },
+        validator: { status: 'idle', message: '' },
+        editor: { status: 'idle', message: '' },
+        publisher: { status: 'idle', message: '' }
+    });
+    
     const [globalMessage, setGlobalMessage] = useState("System is idle. Ready for the next run.");
+
+    const toggleAgentExpanded = (agent: AgentName) => {
+        setExpandedAgents(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(agent)) {
+                newSet.delete(agent);
+            } else {
+                newSet.add(agent);
+            }
+            return newSet;
+        });
+    };
 
     const resetWorkflow = () => {
         setAgentStatuses({
@@ -85,6 +117,14 @@ export function MissionControl() {
             validator: 'idle',
             editor: 'idle',
             publisher: 'idle'
+        });
+        setAgentProgress({
+            scout: { status: 'idle', message: '' },
+            deduplicator: { status: 'idle', message: '', checked: 0, remaining: 0 },
+            journalist: { status: 'idle', message: '', drafted: 0, remaining: 0 },
+            validator: { status: 'idle', message: '' },
+            editor: { status: 'idle', message: '' },
+            publisher: { status: 'idle', message: '' }
         });
         setGlobalMessage("System is idle. Ready for the next run.");
         setRunStatus('idle');
@@ -141,15 +181,26 @@ export function MissionControl() {
                     setRunStatus(data.status || 'idle');
                     setGlobalMessage(data.message || 'System is idle');
                     
-                    // Update agent statuses from progress
+                    // Update agent statuses and progress from Firestore
                     if (data.progress) {
-                        setAgentStatuses({
+                        const newStatuses: Record<AgentName, AgentStatus> = {
                             scout: data.progress.scout?.status as AgentStatus || 'idle',
                             deduplicator: data.progress.deduplicator?.status as AgentStatus || 'idle',
                             journalist: data.progress.journalist?.status as AgentStatus || 'idle',
                             validator: data.progress.validator?.status as AgentStatus || 'idle',
                             editor: data.progress.editor?.status as AgentStatus || 'idle',
                             publisher: data.progress.publisher?.status as AgentStatus || 'idle',
+                        };
+                        setAgentStatuses(newStatuses);
+                        
+                        // Store full progress data
+                        setAgentProgress({
+                            scout: data.progress.scout || { status: 'idle', message: '' },
+                            deduplicator: data.progress.deduplicator || { status: 'idle', message: '', checked: 0, remaining: 0 },
+                            journalist: data.progress.journalist || { status: 'idle', message: '', drafted: 0, remaining: 0 },
+                            validator: data.progress.validator || { status: 'idle', message: '' },
+                            editor: data.progress.editor || { status: 'idle', message: '' },
+                            publisher: data.progress.publisher || { status: 'idle', message: '' },
                         });
                     }
                 }
@@ -258,6 +309,78 @@ export function MissionControl() {
                             {runStatus === "stopping" && <AlertTriangle className="h-5 w-5 text-yellow-500" />}
                             <p className="text-lg font-semibold">{globalMessage}</p>
                         </div>
+                    </div>
+
+                    {/* Detailed Agent Progress */}
+                    <div className="space-y-3">
+                        <p className="text-sm font-medium text-muted-foreground">Agent Details</p>
+                        {(['scout', 'deduplicator', 'journalist', 'validator', 'editor', 'publisher'] as AgentName[]).map((agent) => {
+                            const progress = agentProgress[agent];
+                            const isExpanded = expandedAgents.has(agent);
+                            const hasDetails = progress.message || progress.checked !== undefined || progress.drafted !== undefined;
+                            
+                            return (
+                                <div key={agent} className="border rounded-lg overflow-hidden">
+                                    <button
+                                        onClick={() => hasDetails && toggleAgentExpanded(agent)}
+                                        className={`w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors ${!hasDetails ? 'cursor-default' : ''}`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {progress.status === 'idle' && <Clock className="h-4 w-4 text-gray-400" />}
+                                            {progress.status === 'working' && <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />}
+                                            {progress.status === 'success' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                                            {progress.status === 'error' && <XCircle className="h-4 w-4 text-red-500" />}
+                                            {progress.status === 'cooldown' && <Timer className="h-4 w-4 text-gray-400" />}
+                                            
+                                            <span className="font-medium capitalize">{agent}</span>
+                                            
+                                            <Badge variant={
+                                                progress.status === 'success' ? 'default' :
+                                                progress.status === 'working' ? 'secondary' :
+                                                progress.status === 'error' ? 'destructive' :
+                                                'outline'
+                                            }>
+                                                {progress.status}
+                                            </Badge>
+                                            
+                                            {agent === 'deduplicator' && progress.checked !== undefined && (
+                                                <span className="text-xs text-muted-foreground">
+                                                    {progress.checked} checked, {progress.remaining} remaining
+                                                </span>
+                                            )}
+                                            
+                                            {agent === 'journalist' && progress.drafted !== undefined && (
+                                                <span className="text-xs text-muted-foreground">
+                                                    {progress.drafted} drafted, {progress.remaining} remaining
+                                                </span>
+                                            )}
+                                        </div>
+                                        
+                                        {hasDetails && (
+                                            isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                                        )}
+                                    </button>
+                                    
+                                    {isExpanded && hasDetails && (
+                                        <div className="px-4 pb-3 pt-1 bg-gray-50/50 dark:bg-gray-900/50 border-t">
+                                            <p className="text-sm text-muted-foreground">{progress.message || 'No message'}</p>
+                                            {agent === 'deduplicator' && (
+                                                <div className="mt-2 flex gap-4 text-xs">
+                                                    <span>Checked: <strong>{progress.checked || 0}</strong></span>
+                                                    <span>Remaining: <strong>{progress.remaining || 0}</strong></span>
+                                                </div>
+                                            )}
+                                            {agent === 'journalist' && (
+                                                <div className="mt-2 flex gap-4 text-xs">
+                                                    <span>Drafted: <strong>{progress.drafted || 0}</strong></span>
+                                                    <span>Remaining: <strong>{progress.remaining || 0}</strong></span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
