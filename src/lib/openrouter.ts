@@ -35,7 +35,7 @@ export async function callOpenRouter(
       'X-Title': 'The Daily Agent',
     },
     body: JSON.stringify({
-      model: options.model || 'x-ai/grok-beta',
+      model: options.model || 'x-ai/grok-4-1-fast-reasoning',
       messages,
       temperature: options.temperature || 0.7,
       max_tokens: options.maxTokens || 4000,
@@ -60,5 +60,5 @@ export async function callGrok(prompt: string, systemPrompt?: string): Promise<s
   
   messages.push({ role: 'user', content: prompt });
   
-  return callOpenRouter(messages, { model: 'x-ai/grok-beta' });
+  return callOpenRouter(messages, { model: 'x-ai/grok-4-1-fast-reasoning' });
 }
