@@ -28,9 +28,22 @@ export default function HomePageClient({ editions }: HomePageClientProps) {
 
   const formatEditionDate = (edition: Edition) => {
     try {
-      const date = edition.publicationDate?.toDate?.() || new Date(edition.publicationDate);
-      return format(date, 'MMMM d, yyyy');
-    } catch {
+      if (!edition.publicationDate) return 'Unknown date';
+      
+      // Handle Firestore Timestamp
+      if (typeof edition.publicationDate === 'object' && 'toDate' in edition.publicationDate) {
+        return format(edition.publicationDate.toDate(), 'MMMM d, yyyy');
+      }
+      
+      // Handle seconds/nanoseconds object
+      if (typeof edition.publicationDate === 'object' && 'seconds' in edition.publicationDate) {
+        return format(new Date((edition.publicationDate as any).seconds * 1000), 'MMMM d, yyyy');
+      }
+      
+      // Handle regular date
+      return format(new Date(edition.publicationDate as any), 'MMMM d, yyyy');
+    } catch (error) {
+      console.error('Date formatting error:', error, edition.publicationDate);
       return 'Unknown date';
     }
   };

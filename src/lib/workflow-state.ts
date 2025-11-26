@@ -89,7 +89,7 @@ export async function updateAgentProgress(
   agent: keyof WorkflowState['progress'],
   status: string,
   message: string,
-  extra?: { checked?: number; remaining?: number; drafted?: number }
+  extra?: { checked?: number; remaining?: number; drafted?: number; deleted?: number; passed?: number }
 ): Promise<void> {
   try {
     const { firestore } = getFirebaseServices();
@@ -105,6 +105,8 @@ export async function updateAgentProgress(
       if (extra.checked !== undefined) updateData[`progress.${agent}.checked`] = extra.checked;
       if (extra.remaining !== undefined) updateData[`progress.${agent}.remaining`] = extra.remaining;
       if (extra.drafted !== undefined) updateData[`progress.${agent}.drafted`] = extra.drafted;
+      if (extra.deleted !== undefined) updateData[`progress.${agent}.deleted`] = extra.deleted;
+      if (extra.passed !== undefined) updateData[`progress.${agent}.passed`] = extra.passed;
     }
     
     await updateDoc(docRef, updateData);

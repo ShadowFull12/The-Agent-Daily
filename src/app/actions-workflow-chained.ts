@@ -66,7 +66,10 @@ export async function executeStep2_Dedup(): Promise<{ success: boolean; message:
       return { success: false, message: 'Deduplication failed', error: dedupResult.error };
     }
     
-    await updateAgentProgress('deduplicator', 'success', `Removed ${dedupResult.deletedCount} duplicates. ${dedupResult.totalLeads} unique leads remain.`);
+    await updateAgentProgress('deduplicator', 'success', `Removed ${dedupResult.deletedCount} duplicates. ${dedupResult.totalLeads} unique leads remain.`, { 
+      deleted: dedupResult.deletedCount, 
+      passed: dedupResult.totalLeads 
+    });
     await updateQueueState({ currentStep: 'distribute_leads', draftsMade: 0 });
     
     console.log('✅ Step 2 COMPLETE: Deduplication finished. Next step: Distribute leads');
@@ -373,13 +376,10 @@ export async function executeStep5_ValidateAndEdit(): Promise<{ success: boolean
       await updateAgentProgress('editor', 'success', `Edition created: ${editorResult.editionId}`);
       await updateWorkflowState({ status: 'success', message: 'Workflow completed successfully!' });
       
-      // Reset all journalist progress to idle after completion
-      await updateAgentProgress('journalist', 'idle', 'Ready', { drafted: 0, remaining: 0 });
-      await updateAgentProgress('journalist_1', 'idle', 'Ready', { drafted: 0 });
-      await updateAgentProgress('journalist_2', 'idle', 'Ready', { drafted: 0 });
-      await updateAgentProgress('journalist_3', 'idle', 'Ready', { drafted: 0 });
-      await updateAgentProgress('journalist_4', 'idle', 'Ready', { drafted: 0 });
-      await updateAgentProgress('journalist_5', 'idle', 'Ready', { drafted: 0 });
+      // Keep journalist progress with article counts (don't reset to 0)
+      // Note: Individual journalist counts are preserved automatically in Firestore
+      // We just update status to 'idle' without resetting drafted counts
+      await updateAgentProgress('journalist', 'idle', 'Completed', { remaining: 0 });
       
       console.log(`✅ Step 5 COMPLETE: Editor finished. Workflow complete with ${validationResult.validCount} articles!`);
       return { success: true, message: `Edition created with ${validationResult.validCount} articles!`, completed: true };

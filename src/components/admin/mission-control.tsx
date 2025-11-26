@@ -388,7 +388,13 @@ export function MissionControl() {
                                             
                                             {agent === 'journalist' && (progress.drafted !== undefined || progress.status === 'working') && (
                                                 <span className="text-xs text-muted-foreground font-semibold">
-                                                    Total: {progress.drafted || 0} drafted
+                                                    Total: {(
+                                                        (agentProgress.journalist_1?.drafted || 0) +
+                                                        (agentProgress.journalist_2?.drafted || 0) +
+                                                        (agentProgress.journalist_3?.drafted || 0) +
+                                                        (agentProgress.journalist_4?.drafted || 0) +
+                                                        (agentProgress.journalist_5?.drafted || 0)
+                                                    )} articles
                                                 </span>
                                             )}
                                         </div>
@@ -403,8 +409,8 @@ export function MissionControl() {
                                             <p className="text-sm text-muted-foreground">{progress.message || 'No message'}</p>
                                             {agent === 'deduplicator' && (
                                                 <div className="mt-2 flex gap-4 text-xs">
-                                                    <span>Checked: <strong>{progress.checked || 0}</strong></span>
-                                                    <span>Remaining: <strong>{progress.remaining || 0}</strong></span>
+                                                    <span>Passed: <strong>{progress.passed || 0}</strong></span>
+                                                    <span>Deleted: <strong>{progress.deleted || 0}</strong></span>
                                                 </div>
                                             )}
                                             {agent === 'journalist' && (
