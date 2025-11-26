@@ -53,7 +53,7 @@ async function callGrokWithWebSearch(query: string): Promise<string> {
         'X-Title': 'The Daily Agent',
       },
       body: JSON.stringify({
-        model: 'x-ai/grok-2-1212', // Grok 2 via OpenRouter (Grok 4 may not be available)
+        model: 'x-ai/grok-4.1-fast:free', // FREE Grok 4.1 Fast with web search capabilities!
         messages,
         temperature: 0.3, // Lower temperature for more factual responses
         max_tokens: 1000,

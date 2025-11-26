@@ -34,46 +34,80 @@ const SearchBreakingNewsOutputSchema = z.object({
 export type SearchBreakingNewsOutput = z.infer<typeof SearchBreakingNewsOutputSchema>;
 
 async function fetchNewsForTopic(topic: string, size: number): Promise<any[]> {
-    const apiKey = process.env.NEWSDATA_API_KEY;
-    if (!apiKey) {
-        throw new Error("NEWSDATA_API_KEY is not set in the environment variables.");
+    // Multiple API keys with fallback logic
+    const apiKeys = [
+        process.env.NEWSDATA_API_KEY,
+        process.env.NEWSDATA_API_KEY_2,
+        process.env.NEWSDATA_API_KEY_3,
+    ].filter(Boolean) as string[]; // Remove undefined/empty keys
+    
+    if (apiKeys.length === 0) {
+        throw new Error("No NEWSDATA_API_KEY is set in the environment variables.");
     }
     
     // Use 'top' as a general priority topic, and specific categories otherwise
     const categoryQuery = topic.toLowerCase() === 'top' ? '' : `&category=${topic.toLowerCase()}`;
-    const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&language=en${categoryQuery}&size=${size}&prioritydomain=top`;
+    
+    // Try each API key until one succeeds
+    for (let i = 0; i < apiKeys.length; i++) {
+        const apiKey = apiKeys[i];
+        const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&language=en${categoryQuery}&size=${size}&prioritydomain=top`;
 
-    try {
-        console.log(`🔍 Fetching news for topic: ${topic} from URL: ${url.replace(apiKey, 'HIDDEN')}`);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-            console.log(`⏱️ Timeout triggered for topic: ${topic}`);
-            controller.abort();
-        }, 30000); // 30 second timeout (increased from 15)
-        
-        const startTime = Date.now();
-        const response = await fetch(url, { signal: controller.signal });
-        const fetchTime = Date.now() - startTime;
-        clearTimeout(timeoutId);
-        
-        console.log(`📡 Response received for ${topic} in ${fetchTime}ms, status: ${response.status}`);
-        
-        if (!response.ok) {
-            console.error(`API request failed for topic ${topic} with status: ${response.status}`);
-            const errorBody = await response.text();
-            console.error('Error Body:', errorBody);
-            return [];
+        try {
+            console.log(`🔍 [API Key ${i + 1}/${apiKeys.length}] Fetching news for topic: ${topic}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                console.log(`⏱️ Timeout triggered for topic: ${topic}`);
+                controller.abort();
+            }, 30000); // 30 second timeout
+            
+            const startTime = Date.now();
+            const response = await fetch(url, { signal: controller.signal });
+            const fetchTime = Date.now() - startTime;
+            clearTimeout(timeoutId);
+            
+            console.log(`📡 Response received for ${topic} in ${fetchTime}ms, status: ${response.status}`);
+            
+            if (!response.ok) {
+                const errorBody = await response.text();
+                console.error(`❌ API Key ${i + 1} failed for topic ${topic} with status: ${response.status}`);
+                console.error('Error Body:', errorBody);
+                
+                // If this is the last key, return empty array
+                if (i === apiKeys.length - 1) {
+                    console.error(`❌ All ${apiKeys.length} API keys exhausted for topic: ${topic}`);
+                    return [];
+                }
+                
+                // Otherwise, continue to next API key
+                console.log(`🔄 Trying next API key for topic: ${topic}...`);
+                continue;
+            }
+            
+            const data = await response.json();
+            console.log(`✅ Fetched ${data.results?.length || 0} stories for topic: ${topic} using API Key ${i + 1}`);
+            return data.results || [];
+            
+        } catch (error) {
+            console.error(`❌ Error with API Key ${i + 1} for topic ${topic}:`, error);
+            if (error instanceof Error && error.name === 'AbortError') {
+                console.error(`⏱️ Request timed out for topic ${topic} after 30 seconds`);
+            }
+            
+            // If this is the last key, return empty array
+            if (i === apiKeys.length - 1) {
+                console.error(`❌ All ${apiKeys.length} API keys exhausted for topic: ${topic}`);
+                return [];
+            }
+            
+            // Otherwise, continue to next API key
+            console.log(`🔄 Trying next API key for topic: ${topic}...`);
+            continue;
         }
-        const data = await response.json();
-        console.log(`✅ Fetched ${data.results?.length || 0} stories for topic: ${topic}`);
-        return data.results || [];
-    } catch (error) {
-        console.error(`❌ Error fetching news for topic ${topic}:`, error);
-        if (error instanceof Error && error.name === 'AbortError') {
-            console.error(`⏱️ Request timed out for topic ${topic} after 30 seconds`);
-        }
-        return [];
     }
+    
+    // Should never reach here, but just in case
+    return [];
 }
 
 
