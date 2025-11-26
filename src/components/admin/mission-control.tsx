@@ -194,9 +194,17 @@ export function MissionControl() {
             const firestore = getFirestoreClient();
             const workflowDoc = doc(firestore, 'workflow_state', 'current_workflow');
             
-            const unsubscribe = onSnapshot(workflowDoc, (snapshot) => {
+            const unsubscribe = onSnapshot(workflowDoc, async (snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.data();
+                    
+                    // If workflow is success/complete, ensure queue is cleared
+                    if (data.status === 'success' || data.status === 'complete') {
+                        const { clearQueueState } = await import('@/app/workflow-queue');
+                        await clearQueueState();
+                        console.log('✅ Workflow complete, cleared queue state');
+                    }
+                    
                     setRunStatus(data.status || 'idle');
                     setGlobalMessage(data.message || 'System is idle');
                     
@@ -244,9 +252,20 @@ export function MissionControl() {
         }
     }, [mounted]);
 
-    // Set mounted state
+    // Set mounted state and check queue on mount
     useEffect(() => {
         setMounted(true);
+        
+        // Check queue state on mount and clear if complete
+        const checkQueue = async () => {
+            const { getQueueState, clearQueueState } = await import('@/app/workflow-queue');
+            const queueState = await getQueueState();
+            if (queueState && (queueState.currentStep === 'complete' || queueState.currentStep === 'error')) {
+                await clearQueueState();
+                console.log('✅ Cleared completed/error queue state on mount');
+            }
+        };
+        checkQueue();
     }, []);
 
     // Timer for the next automated run
