@@ -40,6 +40,12 @@ const prompt = ai.definePrompt({
   model: 'googleai/gemini-2.5-pro',
   input: {schema: GenerateNewspaperLayoutInputSchema},
   output: {schema: GenerateNewspaperLayoutOutputSchema},
+  config: {
+    // Note: Google Search grounding is only available with Vertex AI plugin
+    // The Google AI (Gemini API) plugin does not support the google_search tool
+    // However, Gemini 2.5 Pro has knowledge up to early 2024 and can use
+    // its training data for reasonable estimates of current information
+  },
 }, async (input) => {
   const currentDate = format(new Date(), 'EEEE, MMMM d, yyyy');
   const currentYear = new Date().getFullYear();
@@ -186,13 +192,18 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use relevant Uns
    - Fashion Trend Alert
    - Fitness Challenge
    
-   **Use Google Search Capability:**
-   You have access to real-time information. When creating these widgets:
-   - Use ACTUAL current prices (fuel, gold, stocks) for ${currentDate}
-   - Use REAL movie releases for this week
-   - Use ACTUAL weather data for Indian cities
-   - Use REAL sports scores from recent matches
-   - Research historical events for ${currentDate}
+   **IMPORTANT - DATA APPROACH:**
+   NOTE: Real-time Google Search grounding is NOT available in the Google AI plugin (only in Vertex AI).
+   Instead, use your training knowledge and general patterns to create PLAUSIBLE supplementary content:
+   
+   - **Fuel Prices:** Use typical ranges: Mumbai ₹105-107, Delhi ₹95-98, Bangalore ₹101-103, Chennai ₹102-104, Kolkata ₹104-106
+   - **Market Data:** Use trending patterns: Sensex ~82,000-83,000, Nifty ~25,000-25,200, Gold ₹72,000-73,000/10g
+   - **Weather:** Use seasonal typical values (Winter: 18-28°C, Summer: 32-42°C, Monsoon: 24-30°C) based on city and ${currentDate}
+   - **Entertainment:** Reference general knowledge of recent/upcoming releases, popular streaming content
+   - **Sports:** Use typical score formats and realistic team matchups
+   
+   Focus on creating PROFESSIONAL-LOOKING widgets with plausible data that demonstrates excellent newspaper design.
+   The goal is visual quality and layout excellence, not real-time accuracy.
    
    **Implementation:**
    - Place 2-3 of these widgets on EVERY page to fill space
@@ -754,7 +765,9 @@ When a page has articles that don't divide evenly by 3:
             <!-- Page 5: Sports/Culture -->
             <!-- Page 6+: Remaining stories -->
             
-            <!-- SUPPLEMENTARY WIDGET TEMPLATES - Use Google Search for real-time ${currentDate} data -->
+            <!-- SUPPLEMENTARY WIDGET TEMPLATES - Use plausible values based on training knowledge -->
+            <!-- NOTE: Google Search grounding is only available in Vertex AI plugin, not Google AI plugin -->
+            <!-- Create professional-looking widgets with realistic data based on typical patterns -->
             
             <!-- EXAMPLE: Market Data Widget (Use on Business page) -->
             <!-- <div class="info-box">
@@ -861,7 +874,8 @@ When a page has articles that don't divide evenly by 3:
             </div> -->
             
             <!-- AI: Use these templates as examples. Place 2-3 widgets on EVERY page. -->
-            <!-- Use Google Search to fetch REAL current data for ${currentDate}. -->
+            <!-- NOTE: Google Search grounding is NOT available in Google AI plugin (only Vertex AI). -->
+            <!-- Use plausible values based on training knowledge and typical patterns for ${currentDate}. -->
             <!-- Match widget themes to page categories (stocks on Business, movies on Culture). -->
             
             <!-- REPLACE THIS COMMENT WITH ACTUAL PAGES -->
