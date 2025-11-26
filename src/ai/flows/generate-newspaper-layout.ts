@@ -143,12 +143,71 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use relevant Uns
    - Well-structured paragraphs starting with <strong>CITY:</strong>
    - Images in ~60% of articles (use story-image class)
 
-6. **Modern Aesthetic:**
+6. **SUPPLEMENTARY CONTENT - Fill Empty Spaces with Daily Information:**
+   When pages have white space or need additional content to reach equal heights, ADD these components:
+   
+   **Market & Economy Widgets:**
+   - Stock Market Update (Sensex, Nifty with today's closing prices and % change)
+   - Cryptocurrency Prices (Bitcoin, Ethereum current values)
+   - Currency Exchange Rates (USD, EUR, GBP to INR)
+   - Gold & Silver Prices (22K, 24K per 10g in major cities)
+   - Crude Oil Prices (Brent, WTI current rates)
+   
+   **Daily Essentials (Use Today's Date - ${currentDate}):**
+   - Fuel Prices: Petrol & Diesel in Mumbai, Delhi, Bangalore, Kolkata, Chennai
+   - Weather Forecast: Temperature, conditions for major metros
+   - Sunrise/Sunset Times for Indian cities
+   - Moon Phase for today
+   
+   **Entertainment & Culture:**
+   - New Films Releasing This Week (Bollywood & Hollywood)
+   - Trending on OTT Platforms (Netflix, Prime, Hotstar)
+   - Book Recommendations / Bestseller List
+   - Music Chart Toppers
+   
+   **Daily Features:**
+   - Quote of the Day (inspirational/famous quotes)
+   - Historical Events - "On This Day" (${currentDate})
+   - Word of the Day with definition
+   - Fun Fact of the Day
+   - Trivia Question
+   - Puzzle Corner (Quick Sudoku or Crossword clue)
+   
+   **Sports Scoreboard:**
+   - Cricket Scores (IPL, International matches)
+   - Football Scores (ISL, EPL, La Liga)
+   - Tennis Rankings
+   - Olympics/Asian Games Updates if ongoing
+   
+   **Lifestyle Snippets:**
+   - Health Tip of the Day
+   - Recipe Corner (Quick Indian recipe)
+   - Tech Tip of the Day
+   - Fashion Trend Alert
+   - Fitness Challenge
+   
+   **Use Google Search Capability:**
+   You have access to real-time information. When creating these widgets:
+   - Use ACTUAL current prices (fuel, gold, stocks) for ${currentDate}
+   - Use REAL movie releases for this week
+   - Use ACTUAL weather data for Indian cities
+   - Use REAL sports scores from recent matches
+   - Research historical events for ${currentDate}
+   
+   **Implementation:**
+   - Place 2-3 of these widgets on EVERY page to fill space
+   - Use appropriate colored boxes (info-box, stat-box, news-brief classes)
+   - Keep them compact (3-5 items per widget)
+   - Match widget theme to page category when possible (stocks on Business page, movie releases on Culture page)
+   - These widgets make newspaper feel comprehensive and daily-relevant
+
+7. **Modern Aesthetic:**
    - Consistent spacing and rhythm
    - Balanced visual weight across columns
    - Clean typography with proper hierarchy
    - Professional color palette throughout
    - Equal page lengths with proper page breaks
+   - Pages feel full and information-rich, never sparse
 
 **PROVIDED ARTICLES (${input.articles.length} total):**
 ${articlesText}
@@ -694,6 +753,116 @@ When a page has articles that don't divide evenly by 3:
             <!-- Page 4: Technology/Science -->
             <!-- Page 5: Sports/Culture -->
             <!-- Page 6+: Remaining stories -->
+            
+            <!-- SUPPLEMENTARY WIDGET TEMPLATES - Use Google Search for real-time ${currentDate} data -->
+            
+            <!-- EXAMPLE: Market Data Widget (Use on Business page) -->
+            <!-- <div class="info-box">
+                <h4>Market Watch</h4>
+                <div class="stat-box">
+                    <div class="stat-number">82,347</div>
+                    <div class="stat-label">Sensex ▲ 1.2%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">25,184</div>
+                    <div class="stat-label">Nifty 50 ▲ 0.8%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">₹73.2</div>
+                    <div class="stat-label">Gold (10g) ▼ 0.3%</div>
+                </div>
+            </div> -->
+            
+            <!-- EXAMPLE: Fuel Prices Widget (Use on any page) -->
+            <!-- <div class="info-box">
+                <h4>Today's Fuel Prices</h4>
+                <p><strong>Mumbai:</strong> Petrol ₹106.31/L | Diesel ₹94.27/L</p>
+                <p><strong>Delhi:</strong> Petrol ₹96.72/L | Diesel ₹89.62/L</p>
+                <p><strong>Bangalore:</strong> Petrol ₹101.94/L | Diesel ₹87.89/L</p>
+                <p><strong>Chennai:</strong> Petrol ₹102.63/L | Diesel ₹94.24/L</p>
+                <p><strong>Kolkata:</strong> Petrol ₹106.03/L | Diesel ₹92.76/L</p>
+            </div> -->
+            
+            <!-- EXAMPLE: Weather Widget (Use on Front or National page) -->
+            <!-- <div class="info-box">
+                <h4>Today's Weather</h4>
+                <p><strong>Mumbai:</strong> 32°C | Partly Cloudy | Humidity 78%</p>
+                <p><strong>Delhi:</strong> 28°C | Clear | Humidity 45%</p>
+                <p><strong>Bangalore:</strong> 26°C | Light Rain | Humidity 82%</p>
+                <p><strong>Sunrise:</strong> 6:42 AM | <strong>Sunset:</strong> 6:18 PM</p>
+            </div> -->
+            
+            <!-- EXAMPLE: New Films Releasing Widget (Use on Culture/Entertainment page) -->
+            <!-- <div class="info-box">
+                <h4>New Releases This Week</h4>
+                <p><strong>Cinemas:</strong> "Fighter" (Action), "Teri Baaton Mein Aisa Uljha Jiya" (Romance)</p>
+                <p><strong>OTT:</strong> "Ghazi" (Netflix), "Murder Mubarak" (Prime Video)</p>
+                <p><strong>Books:</strong> "The Women" by Kristin Hannah, "Holly" by Stephen King</p>
+                <p><strong>Music:</strong> Top Chart - "Apna Bana Le" | Arijit Singh</p>
+            </div> -->
+            
+            <!-- EXAMPLE: Quote of the Day Widget -->
+            <!-- <div class="quote-box">
+                <div class="quote-text">"The only way to do great work is to love what you do."</div>
+                <div class="quote-author">— Steve Jobs</div>
+            </div> -->
+            
+            <!-- EXAMPLE: Historical Events Widget -->
+            <!-- <div class="info-box">
+                <h4>On This Day in History</h4>
+                <p><strong>1947:</strong> India gains independence from British rule</p>
+                <p><strong>1969:</strong> First human landing on the Moon</p>
+                <p><strong>2008:</strong> Barack Obama elected as first African American President</p>
+            </div> -->
+            
+            <!-- EXAMPLE: Sports Scoreboard Widget (Use on Sports page) -->
+            <!-- <div class="info-box">
+                <h4>Today's Scores</h4>
+                <p><strong>Cricket:</strong> India 342/5 vs Australia (Live)</p>
+                <p><strong>Football:</strong> Manchester United 2-1 Chelsea (FT)</p>
+                <p><strong>Tennis:</strong> Djokovic def. Alcaraz 6-4, 7-6</p>
+            </div> -->
+            
+            <!-- EXAMPLE: Cryptocurrency Prices Widget (Use on Business/Tech page) -->
+            <!-- <div class="info-box">
+                <h4>Crypto Market</h4>
+                <div class="stat-box">
+                    <div class="stat-number">₹45.2L</div>
+                    <div class="stat-label">Bitcoin ▲ 2.1%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">₹1.98L</div>
+                    <div class="stat-label">Ethereum ▲ 1.8%</div>
+                </div>
+            </div> -->
+            
+            <!-- EXAMPLE: Lifestyle/Health Tip Widget -->
+            <!-- <div class="news-brief">
+                <h4>Health Tip of the Day</h4>
+                <p>Start your morning with warm lemon water to boost metabolism and aid digestion. Add a pinch of turmeric for anti-inflammatory benefits.</p>
+            </div> -->
+            
+            <!-- EXAMPLE: Word of the Day Widget -->
+            <!-- <div class="quote-box">
+                <div class="quote-text"><strong>Word of the Day:</strong> Serendipity</div>
+                <div class="quote-author">Finding something good without looking for it</div>
+            </div> -->
+            
+            <!-- EXAMPLE: Tech Tip Widget (Use on Technology page) -->
+            <!-- <div class="news-brief">
+                <h4>Tech Tip</h4>
+                <p>Enable two-factor authentication on all your accounts. Use authenticator apps like Google Authenticator instead of SMS for better security.</p>
+            </div> -->
+            
+            <!-- EXAMPLE: Trivia Widget -->
+            <!-- <div class="info-box">
+                <h4>Did You Know?</h4>
+                <p>India is the world's largest producer of milk, spices, and pulses. The country has over 1.4 billion people speaking more than 19,500 languages and dialects.</p>
+            </div> -->
+            
+            <!-- AI: Use these templates as examples. Place 2-3 widgets on EVERY page. -->
+            <!-- Use Google Search to fetch REAL current data for ${currentDate}. -->
+            <!-- Match widget themes to page categories (stocks on Business, movies on Culture). -->
             
             <!-- REPLACE THIS COMMENT WITH ACTUAL PAGES -->
         </main>
