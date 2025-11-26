@@ -465,6 +465,12 @@ export async function executeNextWorkflowStep(): Promise<{
     }
     
     if (state.currentStep === 'error') {
+      // Check if this is a force stop
+      if (state.error === 'FORCE STOPPED BY USER') {
+        console.log('🛑 FORCE STOP DETECTED - Aborting execution immediately');
+        await clearQueueState();
+        return { success: false, message: 'Workflow force stopped', completed: true, error: 'Force stopped by user' };
+      }
       await updateWorkflowState({ status: 'error', message: state.error || 'Unknown error' });
       return { success: false, message: state.error || 'Unknown error', completed: true, error: state.error };
     }
@@ -595,15 +601,20 @@ export async function startChainedWorkflow(isManualRun = false): Promise<{ succe
 // Stop the workflow immediately
 export async function stopChainedWorkflow(): Promise<{ success: boolean; message: string }> {
   try {
-    console.log('🛑 STOPPING WORKFLOW - Clearing queue and resetting state...');
+    console.log('🛑 FORCE STOPPING WORKFLOW - IMMEDIATE ABORT');
     
-    // Clear queue state to stop any pending steps
-    await clearQueueState();
+    // STEP 1: Set to error state FIRST to abort any running operations
+    await updateQueueState({ 
+      currentStep: 'error', 
+      error: 'FORCE STOPPED BY USER',
+      isExecuting: false,
+      executionStartedAt: null as any
+    });
     
-    // Reset workflow state to idle
-    await updateWorkflowState({ status: 'idle', message: 'Workflow stopped by user' });
+    // STEP 2: Reset workflow state to idle
+    await updateWorkflowState({ status: 'idle', message: 'Workflow force stopped by user' });
     
-    // Clear all agent progress
+    // STEP 3: Clear all agent progress immediately
     await updateAgentProgress('scout', 'idle', '');
     await updateAgentProgress('deduplicator', 'idle', '', { checked: 0, remaining: 0 });
     await updateAgentProgress('journalist', 'idle', '', { drafted: 0, remaining: 0 });
@@ -616,8 +627,16 @@ export async function stopChainedWorkflow(): Promise<{ success: boolean; message
     await updateAgentProgress('editor', 'idle', '');
     await updateAgentProgress('publisher', 'idle', '');
     
-    console.log('✅ Workflow stopped successfully. Data preserved.');
-    return { success: true, message: 'Workflow stopped. All data preserved.' };
+    // STEP 4: Finally clear queue to idle state
+    await clearQueueState();
+    
+    console.log('✅ Workflow FORCE STOPPED. All operations aborted.');
+    
+    // Force revalidate to update UI immediately
+    const { revalidatePath } = await import('next/cache');
+    revalidatePath('/admin');
+    
+    return { success: true, message: 'Workflow force stopped. All data preserved.' };
   } catch (error: any) {
     console.error('❌ Error stopping workflow:', error);
     return { success: false, message: `Failed to stop: ${error.message}` };

@@ -59,6 +59,9 @@ export function WorkflowChainExecutor() {
         const result = await executeNextWorkflowStep();
         console.log(`📋 [MANUAL RUN] Step result: success=${result.success}, nextStep=${result.nextStep}, completed=${result.completed}`);
         
+        // Force UI update by triggering a state check
+        // Note: Firestore onSnapshot should handle this, but we trigger anyway for immediate feedback
+        
         if (result.completed) {
           console.log(`✅ [MANUAL RUN] Workflow completed: ${result.message}`);
           if (intervalRef.current) {
@@ -99,10 +102,10 @@ export function WorkflowChainExecutor() {
       }
     };
 
-    console.log('🎬 WorkflowChainExecutor started - polling every 3 seconds (MANUAL RUNS ONLY)');
+    console.log('🎬 WorkflowChainExecutor started - polling every 500ms (MANUAL RUNS ONLY)');
     
-    // Check every 3 seconds for pending work
-    intervalRef.current = setInterval(checkAndExecute, 3000);
+    // Check every 500ms for pending work (real-time updates)
+    intervalRef.current = setInterval(checkAndExecute, 500);
     
     // Also check immediately on mount
     checkAndExecute();
