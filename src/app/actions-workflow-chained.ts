@@ -356,20 +356,24 @@ export async function executeNextWorkflowStep(): Promise<{
   }
 }
 
-// Start the workflow - Only initializes queue, Vercel Cron executes steps
-export async function startChainedWorkflow(): Promise<{ success: boolean; message: string; error?: string }> {
+// Start the workflow - Only initializes queue, execution varies by trigger
+export async function startChainedWorkflow(isManualRun = false): Promise<{ success: boolean; message: string; error?: string }> {
   'use server';
   
   try {
-    console.log('🚀 Initializing chained workflow...');
+    console.log(`🚀 Initializing chained workflow... (${isManualRun ? 'MANUAL' : 'CRON'} trigger)`);
     
     // Clear any previous queue state
     await clearQueueState();
     
-    // Initialize workflow state
+    // Initialize workflow state with appropriate message
+    const statusMessage = isManualRun 
+      ? 'Workflow started manually. Executing steps immediately...'
+      : 'Workflow initialized. Waiting for cron to execute steps...';
+    
     await updateWorkflowState({ 
       status: 'running',
-      message: 'Workflow initialized. Waiting for cron to execute steps...'
+      message: statusMessage
     });
     
     // Set initial queue state
@@ -379,11 +383,16 @@ export async function startChainedWorkflow(): Promise<{ success: boolean; messag
     });
     
     console.log('✅ Queue initialized to: clear_data');
-    console.log('⏰ Vercel Cron will execute steps (separate function calls)');
+    console.log(isManualRun 
+      ? '⚡ Client executor will run steps immediately'
+      : '⏰ Vercel Cron will execute steps (separate function calls)'
+    );
     
     return { 
       success: true, 
-      message: 'Workflow initialized. Cron will execute each step as separate function call.' 
+      message: isManualRun 
+        ? 'Workflow started! Executing steps now...'
+        : 'Workflow initialized. Cron will execute each step as separate function call.'
     };
     
   } catch (error: any) {

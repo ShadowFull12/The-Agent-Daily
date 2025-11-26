@@ -176,8 +176,8 @@ export function MissionControl() {
         setRunStatus("running");
         setGlobalMessage("Starting chained workflow...");
         
-        // Use chained workflow for Vercel Hobby plan compatibility
-        const result = await startChainedWorkflow();
+        // Use chained workflow with manual trigger flag
+        const result = await startChainedWorkflow(true);
         if (result.success) {
             toast({ title: "Chained Workflow Started", description: "Steps will auto-execute. Each completes in <5 min." });
         } else {
