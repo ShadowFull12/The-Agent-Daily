@@ -8,6 +8,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { format } from 'date-fns';
+import { webSearchToolImplementation } from '@/ai/tools/web-search-tool';
 
 
 const GenerateNewspaperLayoutInputSchema = z.object({
@@ -35,16 +36,29 @@ export async function generateNewspaperLayout(input: GenerateNewspaperLayoutInpu
   return generateNewspaperLayoutFlow(input);
 }
 
+// Define the web search tool for real-time data
+const webSearchTool = ai.defineTool(
+  {
+    name: 'webSearch',
+    description: 'Search the web for current, real-time information including stock prices, fuel prices, weather, news, entertainment releases, and sports scores. Use this when you need up-to-date factual information that may have changed recently.',
+    inputSchema: z.object({
+      query: z.string().describe('The search query. Be specific about what information you need (e.g., "current fuel price in Mumbai", "Sensex value today", "weather in Delhi")'),
+    }),
+    outputSchema: z.string().describe('The search results with current information'),
+  },
+  webSearchToolImplementation
+);
+
 const prompt = ai.definePrompt({
   name: 'generateNewspaperLayoutPrompt',
   model: 'googleai/gemini-2.5-pro',
   input: {schema: GenerateNewspaperLayoutInputSchema},
   output: {schema: GenerateNewspaperLayoutOutputSchema},
+  tools: [webSearchTool], // Add web search tool
   config: {
-    // Note: Google Search grounding is only available with Vertex AI plugin
-    // The Google AI (Gemini API) plugin does not support the google_search tool
-    // However, Gemini 2.5 Pro has knowledge up to early 2024 and can use
-    // its training data for reasonable estimates of current information
+    // Web search tool uses Grok's native web search capabilities via OpenRouter
+    // Gemini can now request real-time data by calling the webSearch tool
+    temperature: 0.7,
   },
 }, async (input) => {
   const currentDate = format(new Date(), 'EEEE, MMMM d, yyyy');
@@ -192,18 +206,24 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use relevant Uns
    - Fashion Trend Alert
    - Fitness Challenge
    
-   **IMPORTANT - DATA APPROACH:**
-   NOTE: Real-time Google Search grounding is NOT available in the Google AI plugin (only in Vertex AI).
-   Instead, use your training knowledge and general patterns to create PLAUSIBLE supplementary content:
+   **IMPORTANT - USE WEB SEARCH TOOL FOR REAL-TIME DATA:**
+   You have access to a webSearch tool that uses Grok's real-time web search capabilities!
    
-   - **Fuel Prices:** Use typical ranges: Mumbai ₹105-107, Delhi ₹95-98, Bangalore ₹101-103, Chennai ₹102-104, Kolkata ₹104-106
-   - **Market Data:** Use trending patterns: Sensex ~82,000-83,000, Nifty ~25,000-25,200, Gold ₹72,000-73,000/10g
-   - **Weather:** Use seasonal typical values (Winter: 18-28°C, Summer: 32-42°C, Monsoon: 24-30°C) based on city and ${currentDate}
-   - **Entertainment:** Reference general knowledge of recent/upcoming releases, popular streaming content
-   - **Sports:** Use typical score formats and realistic team matchups
+   **When to use webSearch tool:**
+   - For fuel prices: Call webSearch with query like "current fuel prices Mumbai Delhi Bangalore Chennai Kolkata today"
+   - For market data: Call webSearch with "current Sensex Nifty Gold price Bitcoin Ethereum India today"
+   - For weather: Call webSearch with "current weather Mumbai Delhi Bangalore Chennai temperature today"
+   - For entertainment: Call webSearch with "new movies releasing this week India OTT releases Netflix Prime"
+   - For sports: Call webSearch with "latest cricket football tennis scores today India"
    
-   Focus on creating PROFESSIONAL-LOOKING widgets with plausible data that demonstrates excellent newspaper design.
-   The goal is visual quality and layout excellence, not real-time accuracy.
+   **How to use the tool:**
+   1. When creating supplementary widgets, identify what current data you need
+   2. Call the webSearch tool with a specific, detailed query
+   3. Use the REAL data returned from the search in your widgets
+   4. This ensures your newspaper displays ACTUAL current information, not estimates
+   
+   Make 3-5 webSearch calls to gather fresh data for different widget types across your pages.
+   Focus on the most important daily data: fuel prices, market data, weather, and entertainment.
    
    **Implementation:**
    - Place 2-3 of these widgets on EVERY page to fill space
@@ -765,9 +785,9 @@ When a page has articles that don't divide evenly by 3:
             <!-- Page 5: Sports/Culture -->
             <!-- Page 6+: Remaining stories -->
             
-            <!-- SUPPLEMENTARY WIDGET TEMPLATES - Use plausible values based on training knowledge -->
-            <!-- NOTE: Google Search grounding is only available in Vertex AI plugin, not Google AI plugin -->
-            <!-- Create professional-looking widgets with realistic data based on typical patterns -->
+            <!-- SUPPLEMENTARY WIDGET TEMPLATES - Use webSearch tool for real-time data! -->
+            <!-- YOU HAVE A webSearch TOOL - use it to fetch current fuel prices, market data, weather, etc. -->
+            <!-- Call webSearch("current fuel prices Mumbai Delhi today") to get REAL prices -->
             
             <!-- EXAMPLE: Market Data Widget (Use on Business page) -->
             <!-- <div class="info-box">
@@ -874,8 +894,8 @@ When a page has articles that don't divide evenly by 3:
             </div> -->
             
             <!-- AI: Use these templates as examples. Place 2-3 widgets on EVERY page. -->
-            <!-- NOTE: Google Search grounding is NOT available in Google AI plugin (only Vertex AI). -->
-            <!-- Use plausible values based on training knowledge and typical patterns for ${currentDate}. -->
+            <!-- IMPORTANT: Call webSearch tool to fetch REAL current data for ${currentDate}! -->
+            <!-- Example: webSearch("current Sensex Nifty today") for market data -->
             <!-- Match widget themes to page categories (stocks on Business, movies on Culture). -->
             
             <!-- REPLACE THIS COMMENT WITH ACTUAL PAGES -->
