@@ -92,35 +92,40 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use relevant Uns
 **YOUR CRITICAL TASK:**
 1. Identify the MOST IMPORTANT/BREAKING story for the HERO/LEAD position on Page 1
 2. Create SEPARATE DEDICATED PAGES for EACH category - DO NOT combine categories on same page
-3. Each category gets its OWN page(s) - one category can span MULTIPLE pages if it has many stories
-4. Total page count can be 10-15+ pages - use as many as needed to showcase all content beautifully
-5. Fill pages completely - avoid white space - distribute articles to maximize visual balance
+3. **STRICT CATEGORY SEPARATION:**
+   - **NATIONAL PAGE**: ONLY Indian domestic news (politics, governance, state news, internal affairs)
+   - **INTERNATIONAL PAGE**: ONLY global/foreign news (world events, international relations, foreign countries)
+   - NEVER mix Indian and international news on same page
+4. Each category gets its OWN page(s) - one category can span MULTIPLE pages if it has many stories
+5. Total page count can be 10-15+ pages - use as many as needed to showcase all content beautifully
+6. **ELIMINATE WHITE SPACE:** Fill pages completely - use span-2 class, multi-column class, and strategic article placement
+7. **NO DUPLICATE DATA BOXES:** Each unique data widget (Nifty, Fuel Prices, Weather, etc.) should appear ONLY ONCE in entire newspaper
 
 **CATEGORY PAGE STRATEGY (EACH CATEGORY SEPARATE):**
 - **Page 1**: Front Page with HERO breaking story + 3-4 top stories from different categories
-- **Pages 2-X**: NATIONAL category only (can be multiple pages if many national stories)
-- **Pages X+1-Y**: POLITICS category only (separate from national)
-- **Pages Y+1-Z**: BUSINESS category only  
-- **Next Pages**: TECHNOLOGY category only (separate from science)
-- **Next Pages**: SCIENCE category only (separate from technology)
-- **Next Pages**: SPORTS category only (separate from culture)
-- **Next Pages**: CULTURE/Entertainment category only
-- **Next Pages**: HEALTHCARE category only
-- **Next Pages**: ENVIRONMENT category only
-- **Final Pages**: Any remaining categories or opinion/lifestyle
+- **Pages 2-X**: **NATIONAL** category ONLY - Indian domestic news, Indian politics, state affairs, internal governance
+- **Pages X+1-Y**: **INTERNATIONAL** category ONLY - World news, foreign countries, global events, international relations
+- **Pages Y+1-Z**: POLITICS category only (if separate from national - Indian political analysis)
+- **Next Pages**: BUSINESS category only (economy, markets, companies)
+- **Next Pages**: TECHNOLOGY category only (tech news, startups, gadgets)
+- **Next Pages**: SCIENCE category only (research, discoveries, innovation)
+- **Next Pages**: SPORTS category only (cricket, football, olympics)
+- **Next Pages**: CULTURE/Entertainment category only (movies, music, arts)
+- **Next Pages**: HEALTHCARE category only (medical, health)
+- **Next Pages**: ENVIRONMENT category only (climate, nature)
+- **Final Pages**: Any remaining categories
 
-**IMPORTANT RULES - NO WHITE SPACE:**
-- NEVER combine categories like "National & Politics" or "Technology & Science" - they must be SEPARATE pages
-- One category can have 2-3 pages if there are 8+ articles in that category
-- ALL PAGES MUST BE EQUAL LENGTH - use CSS to ensure consistent page heights
-- When articles DON'T divide by 3 evenly on a page:
-  * Make 1-2 articles span 2 columns to fill horizontal space
-  * OR expand one article's content across multiple columns
-  * OR add quote boxes, stat boxes to balance the layout
-- For longer articles (400+ words): Split content across 2 columns using CSS column-span
-- Add quote boxes, stat boxes, news briefs ONLY when needed to fill white space
-- Total edition can easily be 10-15 pages - this is GOOD and expected
-- Every page should look visually balanced and full
+**CRITICAL RULES - ELIMINATE WHITE SPACE:**
+- **NEVER combine categories** like "National & Politics" or "Technology & Science" - they must be SEPARATE pages
+- **Fill every page completely:** Use these strategies to eliminate white space:
+  1. **Add span-2 class** to 1-2 articles to make them wider (2 columns instead of 1)
+  2. **Add multi-column class** to long articles (400+ words) to split text into 2 columns
+  3. **Strategic layout:** 4 articles = 1 span-2 + 3 normal; 5 articles = 2 span-2 + 3 normal; 7 articles = 1 span-2 + 6 normal
+  4. **Expand article content:** Make articles slightly longer with additional context/quotes
+  5. **Add compact info boxes** ONLY if still needed (small, 3-4 lines max)
+- **NO LARGE EMPTY SPACES:** Every page should look dense and information-rich
+- **Equal page heights:** All pages must have min-height: 1400px
+- Total edition can be 10-15 pages - this is GOOD and expected
 
 **MODERN DESIGN REQUIREMENTS:**
 1. **Page Layout - CRITICAL FOR NO WHITE SPACE:**
@@ -163,74 +168,71 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use relevant Uns
    - Well-structured paragraphs starting with <strong>CITY:</strong>
    - Images in ~60% of articles (use story-image class)
 
-6. **SUPPLEMENTARY CONTENT - Fill Empty Spaces with Daily Information:**
-   When pages have white space or need additional content to reach equal heights, ADD these components:
+6. **DATA BOXES & WIDGETS - CRITICAL RULES:**
+
+   **MANDATORY: ALL DATA MUST COME FROM webSearch TOOL - NO MADE-UP DATA!**
    
-   **Market & Economy Widgets:**
-   - Stock Market Update (Sensex, Nifty with today's closing prices and % change)
-   - Cryptocurrency Prices (Bitcoin, Ethereum current values)
-   - Currency Exchange Rates (USD, EUR, GBP to INR)
-   - Gold & Silver Prices (22K, 24K per 10g in major cities)
-   - Crude Oil Prices (Brent, WTI current rates)
+   **webSearch Tool Usage - UNLIMITED CALLS ENCOURAGED:**
+   - You have access to webSearch tool powered by Grok 4.1 Fast (FREE, real-time web search)
+   - **CALL IT AS MANY TIMES AS YOU NEED** - No limits! Make 10-20+ calls if needed
+   - **NEVER make up or estimate data** - Always use webSearch for current information
+   - **Gather extensive data first, then intelligently place boxes**
    
-   **Daily Essentials (Use Today's Date - ${currentDate}):**
-   - Fuel Prices: Petrol & Diesel in Mumbai, Delhi, Bangalore, Kolkata, Chennai
-   - Weather Forecast: Temperature, conditions for major metros
-   - Sunrise/Sunset Times for Indian cities
-   - Moon Phase for today
+   **Step 1: DATA GATHERING (Make Multiple webSearch Calls):**
+   Call webSearch for ALL these data types before creating layout:
    
-   **Entertainment & Culture:**
-   - New Films Releasing This Week (Bollywood & Hollywood)
-   - Trending on OTT Platforms (Netflix, Prime, Hotstar)
-   - Book Recommendations / Bestseller List
-   - Music Chart Toppers
+   1. **Market Data:** webSearch("current Sensex Nifty closing price today India NSE BSE")
+   2. **Fuel Prices:** webSearch("current petrol diesel prices Mumbai Delhi Bangalore Chennai Kolkata today")
+   3. **Gold/Silver:** webSearch("current gold silver price 22k 24k India today per 10 grams")
+   4. **Weather:** webSearch("current weather temperature Mumbai Delhi Bangalore Chennai Kolkata today")
+   5. **Crypto:** webSearch("current Bitcoin Ethereum price USD INR today")
+   6. **Currency:** webSearch("current USD EUR GBP to INR exchange rate today")
+   7. **Movies:** webSearch("new movies releasing this week India Bollywood Hollywood OTT Netflix Prime")
+   8. **Sports:** webSearch("latest cricket football tennis scores today India IPL Premier League")
+   9. **Tech News:** webSearch("latest technology news today India startups gadgets")
+   10. **Stock Winners/Losers:** webSearch("top gainers losers NSE BSE today India stock market")
    
-   **Daily Features:**
-   - Quote of the Day (inspirational/famous quotes)
-   - Historical Events - "On This Day" (${currentDate})
-   - Word of the Day with definition
-   - Fun Fact of the Day
-   - Trivia Question
-   - Puzzle Corner (Quick Sudoku or Crossword clue)
+   **Make 10-15 webSearch calls to gather comprehensive real-time data!**
    
-   **Sports Scoreboard:**
-   - Cricket Scores (IPL, International matches)
-   - Football Scores (ISL, EPL, La Liga)
-   - Tennis Rankings
-   - Olympics/Asian Games Updates if ongoing
+   **Step 2: INTELLIGENT PLACEMENT (NO DUPLICATES!):**
    
-   **Lifestyle Snippets:**
-   - Health Tip of the Day
-   - Recipe Corner (Quick Indian recipe)
-   - Tech Tip of the Day
-   - Fashion Trend Alert
-   - Fitness Challenge
+   After gathering all data, place widgets strategically:
    
-   **IMPORTANT - USE WEB SEARCH TOOL FOR REAL-TIME DATA:**
-   You have access to a webSearch tool that uses Grok's real-time web search capabilities!
+   **UNIQUE DATA BOXES - Each appears ONLY ONCE in entire newspaper:**
+   - **Nifty/Sensex Box** → Place on Business page ONLY (not on multiple pages!)
+   - **Fuel Prices Box** → Place on Business page ONLY
+   - **Weather Box** → Place on National page ONLY
+   - **Gold/Silver Prices** → Place on Business page ONLY
+   - **Cricket Scores** → Place on Sports page ONLY
+   - **Movie Releases** → Place on Culture/Entertainment page ONLY
+   - **Bitcoin/Crypto** → Place on Business/Technology page ONLY
+   - **Currency Rates** → Place on Business page ONLY
    
-   **When to use webSearch tool:**
-   - For fuel prices: Call webSearch with query like "current fuel prices Mumbai Delhi Bangalore Chennai Kolkata today"
-   - For market data: Call webSearch with "current Sensex Nifty Gold price Bitcoin Ethereum India today"
-   - For weather: Call webSearch with "current weather Mumbai Delhi Bangalore Chennai temperature today"
-   - For entertainment: Call webSearch with "new movies releasing this week India OTT releases Netflix Prime"
-   - For sports: Call webSearch with "latest cricket football tennis scores today India"
+   **Where to Place Data Boxes:**
+   - **Business Page:** Market data (Sensex, Nifty), Fuel prices, Gold/Silver, Crypto, Currency rates, Top gainers/losers
+   - **National Page:** Weather forecast for major cities, Sunrise/Sunset times
+   - **Sports Page:** Cricket scores, Football scores, Tennis rankings
+   - **Culture Page:** New movie releases, OTT trends, Music charts
+   - **Technology Page:** Latest tech news snippets, Startup funding news
+   - **Front Page:** Quote of the Day, On This Day in History
    
-   **How to use the tool:**
-   1. When creating supplementary widgets, identify what current data you need
-   2. Call the webSearch tool with a specific, detailed query
-   3. Use the REAL data returned from the search in your widgets
-   4. This ensures your newspaper displays ACTUAL current information, not estimates
+   **DO NOT place the same data box on multiple pages!** Check before adding:
+   - If you already added "Nifty 50" box on Business page, don't add it again anywhere
+   - If you already added "Fuel Prices" box, don't repeat it
+   - Each unique data point should appear ONCE
    
-   Make 3-5 webSearch calls to gather fresh data for different widget types across your pages.
-   Focus on the most important daily data: fuel prices, market data, weather, and entertainment.
+   **Widget Sizing - Keep Compact:**
+   - **Quote boxes:** 2-3 lines max, compact padding (0.8rem)
+   - **Stat boxes:** Large number + short label, tight spacing
+   - **Info boxes:** 3-4 bullet points max, small font
+   - **News briefs:** 4-5 one-line items, minimal padding
+   - DO NOT make boxes overly large - they should enhance, not dominate
    
-   **Implementation:**
-   - Place 2-3 of these widgets on EVERY page to fill space
-   - Use appropriate colored boxes (info-box, stat-box, news-brief classes)
-   - Keep them compact (3-5 items per widget)
-   - Match widget theme to page category when possible (stocks on Business page, movie releases on Culture page)
-   - These widgets make newspaper feel comprehensive and daily-relevant
+   **Only Add Boxes When Needed:**
+   - First try: span-2 class, multi-column class to fill space
+   - Then try: Expanding article content with more context
+   - Last resort: Add 1-2 compact data boxes if page still has white space
+   - Not every page needs data boxes - only add where truly beneficial and relevant
 
 7. **Modern Aesthetic:**
    - Consistent spacing and rhythm
@@ -759,7 +761,7 @@ When a page has articles that don't divide evenly by 3:
 <body>
     <div class="newspaper-shell">
         <header class="masthead">
-            <div class="nameplate">THE DAILY AGENT</div>
+            <div class="nameplate" style="background: linear-gradient(135deg, #d32f2f 0%, #000000 50%, #d32f2f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); font-weight: 900; letter-spacing: 0.3rem;">THE DAILY AGENT</div>
             <div class="masthead-meta">
                 <span>${currentDate}</span>
                 <span>|</span>
@@ -770,6 +772,7 @@ When a page has articles that don't divide evenly by 3:
             <nav class="masthead-nav">
                 <a href="#front">Front Page</a>
                 <a href="#national">National</a>
+                <a href="#international">International</a>
                 <a href="#business">Business</a>
                 <a href="#technology">Technology</a>
                 <a href="#sports">Sports</a>
