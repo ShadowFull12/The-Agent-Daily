@@ -226,6 +226,13 @@ export async function executeStep4_ValidateAndEdit(): Promise<{ success: boolean
       await updateQueueState({ currentStep: 'complete', validCount: validationResult.validCount });
       await updateWorkflowState({ status: 'success', message: 'Workflow completed successfully!' });
       
+      // Reset all journalist progress to idle after completion
+      await updateAgentProgress('journalist_1', 'idle', 'Ready', { drafted: 0 });
+      await updateAgentProgress('journalist_2', 'idle', 'Ready', { drafted: 0 });
+      await updateAgentProgress('journalist_3', 'idle', 'Ready', { drafted: 0 });
+      await updateAgentProgress('journalist_4', 'idle', 'Ready', { drafted: 0 });
+      await updateAgentProgress('journalist_5', 'idle', 'Ready', { drafted: 0 });
+      
       console.log(`✅ Step 9 COMPLETE: Editor finished. Workflow complete with ${validationResult.validCount} articles!`);
       return { success: true, message: `Edition created with ${validationResult.validCount} articles!`, completed: true };
       

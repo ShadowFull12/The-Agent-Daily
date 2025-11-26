@@ -42,47 +42,87 @@ const prompt = ai.definePrompt({
   model: 'googleai/gemini-2.5-pro', // Using Gemini 2.5 Pro for superior HTML generation
   input: {schema: GenerateNewspaperLayoutInputSchema},
   output: {schema: GenerateNewspaperLayoutOutputSchema},
-  prompt: `You are a world-class newspaper layout designer for "The Daily Agent", inspired by the dense, professional, and visually structured layout of "The Times of India". Your task is to generate a complete, multi-page, print-ready HTML layout with a STRICT 3-COLUMN GRID LAYOUT.
+  prompt: `You are a world-class newspaper layout designer for "The Daily Agent". Your task is to generate a complete HTML newspaper layout.
 
-**CRITICAL: 3-COLUMN LAYOUT REQUIREMENTS - MUST FOLLOW EXACTLY:**
-1.  **ALWAYS USE 3 COLUMNS**: The CSS uses \`column-count: 3\` which AUTOMATICALLY creates 3 columns. Your content will flow into 3 columns naturally.
-2.  **DO NOT CREATE MANUAL COLUMNS**: Do NOT use div wrappers like \`<div class="col-1">\`. Simply place \`<article class="story">\` elements one after another and the CSS will arrange them into 3 columns.
-3.  **MULTIPLE STORIES**: Create 20-25 individual \`<article class="story">\` blocks, each with complete content. The browser will automatically flow them into 3 columns.
-4.  **CONTENT LENGTH**: Each story should be 150-300 words. Mix long and short stories for visual variety.
-5.  **IMAGES**: Include images (using provided imageUrl) in 60% of stories. Place \`<figure>\` inside the \`<article>\`.
+**🚨 CRITICAL: THE CSS AUTOMATICALLY CREATES 3 COLUMNS 🚨**
 
-**Strict Layout and Content Instructions:**
-1.  **Use the Template Verbatim**: Your output MUST be a single HTML document based on the provided template. Do not change the CSS, fonts, or the overall HTML structure. The CSS explicitly uses a three-column layout (\`column-count: 3;\`). Your content must be structured to fit this.
-2.  **Perfect Content Placement & Flow**:
-    *   Take the articles provided and place them into the \`<article class="story">\` elements. Text MUST flow naturally from one column to the next.
-    *   To make text flow, you must manually split long articles. End one \`<article>\` block with a paragraph like \`<p class="story-continued">Continued on Col. X...</p>\` and start a new \`<article class="story continued">\` block in the next column with the rest of the text.
-    *   The **first article** is the lead story and MUST be placed first on Page 1.
-    *   **FILL ALL WHITESPACE**: You must arrange articles to fill the columns and pages perfectly, leaving no large empty white spaces. You must truncate or slightly expand article text if necessary to ensure a snug fit. This is critical for a professional look.
-    *   For each article, you must populate:
-        *   The headline inside the \`<h2>\` tag.
-        *   The content inside the \`<p>\` tags. The first paragraph of major stories should start with a bolded city name, like \`<strong>NEW DELHI:</strong>\`.
-        *   The image URL inside the \`<img src="...">\` attribute. Use the provided image or a suitable placeholder like \`https://picsum.photos/seed/your-seed/600/400\`.
-        *   A short, relevant caption inside the \`<figcaption>\` tag.
-    *   Create a relevant, concise "kicker" (e.g., "National Development", "Technology") for each story in the \`<p class="kicker">\` tag.
-    *   Create a plausible byline (e.g., "By Staff Reporter | Delhi Bureau") for each story in the \`<p class="byline">\` tag.
-3.  **Update Dynamic Fields**:
-    *   Set the date in the \`<title>\` and in the \`<div class="masthead-meta">\` to the current date: **${format(new Date(), 'EEEE, MMMM d, yyyy')}**.
-    *   Set the Volume number to **{{editionNumber}}**.
-    *   Generate a plausible Issue number (e.g., 318) and price (e.g., ₹12).
-    *   Increment the Page Number for each new page you create.
-4.  **Vary Layouts**: You have creative control over which articles get images and which don't. Use the \`<div class="page-box">\` for "IN BRIEF" summaries to fill small gaps. Use horizontal rules \`<hr>\` to separate smaller stories. The goal is a balanced, visually interesting layout on every single page. Not every story needs an image.
-5.  **Final Output**: The final output must be a single, complete HTML string starting with \`<!DOCTYPE html>\` and ending with \`</html>\`. Do not include any markdown, comments, or other text outside of the HTML.
+The HTML template includes this CSS: \`column-count: 3;\` 
+This means the browser will AUTOMATICALLY arrange your content into 3 columns.
 
-**Article Data to Use:**
+**YOUR ONLY JOB: Create 20-30 <article> elements in sequence**
+
+DO THIS:
+\`\`\`html
+<div class="page">
+  <div class="page-heading">...</div>
+  <article class="story">Story 1 content (200 words)</article>
+  <article class="story">Story 2 content (300 words)</article>
+  <article class="story">Story 3 content (150 words)</article>
+  <article class="story">Story 4 content (250 words)</article>
+  <!-- Keep adding 20-30 articles total -->
+</div>
+\`\`\`
+
+The CSS will automatically flow these into 3 columns. You don't create columns manually.
+
+**DO NOT DO THIS:**
+- ❌ DO NOT create \`<div class="column">\` wrappers
+- ❌ DO NOT use CSS Grid/Flexbox for columns
+- ❌ DO NOT manually split articles with "Continued on Col. 2"
+- ❌ DO NOT create column divs of any kind
+
+**SIMPLE RULES:**
+1. Create 20-30 \`<article class="story">\` elements inside each \`<div class="page">\`
+2. Each article: 150-400 words (vary lengths for visual interest)
+3. Include \`<figure>\` with image in 50% of articles
+4. Use ALL provided article data
+5. First article = lead story (use class="story lead")
+
+**Article Structure:**
+\`\`\`html
+<article class="story">
+  <p class="kicker">CATEGORY NAME</p>
+  <h2>Headline Goes Here</h2>
+  <p class="byline">By Reporter Name | Location</p>
+  <figure class="float-media">
+    <img src="{{imageUrl}}" alt="Description" />
+    <figcaption>Image caption here</figcaption>
+  </figure>
+  <p><strong>CITY:</strong> First paragraph with city name...</p>
+  <p>Second paragraph continues story...</p>
+  <p>Third paragraph adds more details...</p>
+</article>
+\`\`\`
+
+**Article Structure:**
+\`\`\`html
+<article class="story">
+  <p class="kicker">CATEGORY NAME</p>
+  <h2>Headline Goes Here</h2>
+  <p class="byline">By Reporter Name | Location</p>
+  <figure class="float-media">
+    <img src="{{imageUrl}}" alt="Description" />
+    <figcaption>Image caption here</figcaption>
+  </figure>
+  <p><strong>CITY:</strong> First paragraph with city name...</p>
+  <p>Second paragraph continues story...</p>
+  <p>Third paragraph adds more details...</p>
+</article>
+\`\`\`
+
+**Dynamic Fields to Update:**
+- Date: ${format(new Date(), 'EEEE, MMMM d, yyyy')}
+- Volume: {{editionNumber}}
+- Page numbers: 1, 2, 3, etc.
+
+**Use ALL Provided Articles:**
 {{#each articles}}
-  <div class="article-data" style="display: none;">
-    <h2>{{headline}}</h2>
-    <p>{{content}}</p>
-    {{#if imageUrl}}
-      <img src="{{{imageUrl}}}" alt="{{headline}}" />
-    {{/if}}
-  </div>
+- Headline: {{headline}}
+- Content: {{content}}
+{{#if imageUrl}}- Image: {{{imageUrl}}}{{/if}}
 {{/each}}
+
+Output must be complete HTML from \`<!DOCTYPE html>\` to \`</html>\`. No markdown, no comments outside HTML.
 
 
 **HTML TEMPLATE TO USE:**
@@ -448,44 +488,47 @@ const prompt = ai.definePrompt({
         </header>
 
         <main class="edition">
-            <!-- AI will generate all pages dynamically starting here. The AI MUST replace the content below with the articles provided. -->
-            <!-- EXAMPLE PAGE 1 LAYOUT (for AI reference) -->
+            <!-- AI: Replace this section with actual articles. Create 20-30 <article class="story"> elements. -->
+            <!-- The CSS column-count:3 will automatically arrange them into 3 columns. -->
             <section class="page" id="page-1">
                 <div class="page-heading">
                     <div class="page-label">Page 1 • Front Page</div>
                     <div class="page-number">1</div>
                 </div>
+                
+                <!-- AI: Start with lead story -->
                 <article class="story lead">
-                    <p class="kicker">LEAD STORY KICKER</p>
-                    <h2>Lead Story Headline: To Be Replaced</h2>
-                    <p class="byline">By AI Correspondent</p>
+                    <p class="kicker">CATEGORY</p>
+                    <h2>Lead Story Headline</h2>
+                    <p class="byline">By Reporter | Location</p>
                     <figure class="float-media">
-                        <img src="https://picsum.photos/seed/leadstory/800/500" alt="Lead story image." />
-                        <figcaption>A descriptive caption for the lead story's image.</figcaption>
+                        <img src="https://picsum.photos/seed/lead/800/500" alt="Lead image" />
+                        <figcaption>Caption for lead story image.</figcaption>
                     </figure>
-                    <p><strong>CITY:</strong> This is the lead story. It must be long and detailed, flowing naturally across columns. The AI will replace this with the actual content from the first article provided. This first paragraph should set the stage, starting with a bolded city name.</p>
-                    <p>Subsequent paragraphs will continue to flesh out the details. To make this story flow into the next column, the AI must split the content. It should end this article block here...</p>
-                    <p class="story-continued">Continued on Col. 2</p>
+                    <p><strong>CITY:</strong> Lead story content starts here with 300-400 words...</p>
                 </article>
 
-                <article class="story continued">
-                    <p>...and begin a new article block like this one in the next column. This ensures content wraps correctly. The AI must manage this splitting and continuation for all long articles to ensure there is no empty white space on any page. The layout must be dense and full.</p>
+                <!-- AI: Add 19-29 more articles like this -->
+                <article class="story">
+                    <p class="kicker">CATEGORY</p>
+                    <h2>Second Story Headline</h2>
+                    <p class="byline">By Reporter | Location</p>
+                    <p><strong>CITY:</strong> Story content 200-300 words...</p>
                 </article>
-
-                <div class="page-box">
-                    <h3>IN BRIEF</h3>
-                    <p><strong>Item 1:</strong> A short news brief goes here to fill space.</p>
-                    <p><strong>Item 2:</strong> Another brief news item for balance.</p>
-                </div>
 
                 <article class="story">
-                    <p class="kicker">Secondary Story</p>
-                    <h2>Secondary Article Headline</h2>
-                    <p class="byline">By Staff Writer</p>
-                    <p><strong>CITY:</strong> This is a shorter story that might fit in a single column. The AI will populate this with content from other articles. It can choose to include an image or not, depending on what creates a better layout.</p>
+                    <p class="kicker">CATEGORY</p>
+                    <h2>Third Story Headline</h2>
+                    <p class="byline">By Reporter | Location</p>
+                    <figure class="float-media">
+                        <img src="imageUrl" alt="Story image" />
+                        <figcaption>Image caption.</figcaption>
+                    </figure>
+                    <p><strong>CITY:</strong> Story content 150-250 words...</p>
                 </article>
+                
+                <!-- AI: Keep adding more articles until you have 20-30 total -->
             </section>
-             <!-- AI will generate more pages as needed -->
         </main>
 
         <footer class="folio">

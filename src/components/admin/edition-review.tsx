@@ -8,6 +8,7 @@ import { Newspaper, Eye, Trash2, Loader2, Maximize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { deleteEditionAction } from "@/app/actions";
 
 interface Edition {
   id: string;
@@ -94,24 +95,34 @@ export function EditionReview({ onRefresh }: EditionReviewProps) {
   const handleDelete = async (editionId: string, editionNumber: number) => {
     setDeleting(editionId);
     try {
-      const response = await fetch(`/api/editions/${editionId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
+      console.log(`🗑️ Deleting edition ${editionId}...`);
+      
+      // Use server action instead of API route
+      const result = await deleteEditionAction(editionId);
+      
+      if (result.success) {
+        console.log(`✅ Edition ${editionId} deleted successfully`);
+        
+        // Remove from UI immediately
+        setEditions(prev => prev.filter(e => e.id !== editionId));
+        
         toast({
           title: "Edition Deleted",
           description: `Edition #${editionNumber} has been removed.`,
         });
-        fetchEditions();
+        
+        // Refresh to ensure consistency
+        setTimeout(() => fetchEditions(), 500);
         onRefresh?.();
       } else {
-        throw new Error("Failed to delete edition");
+        console.error(`❌ Delete failed:`, result.error);
+        throw new Error(result.error || "Failed to delete edition");
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Delete error:", error);
       toast({
         title: "Error",
-        description: "Failed to delete the edition. Please try again.",
+        description: error.message || "Failed to delete the edition. Please try again.",
         variant: "destructive",
       });
     } finally {

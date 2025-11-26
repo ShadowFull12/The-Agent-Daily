@@ -382,6 +382,19 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
             return { success: false, error: "No valid articles to create an edition." };
         }
 
+        // Check for existing unpublished editions to prevent duplicates
+        const unpublishedQuery = query(
+            collection(firestore, "newspaper_editions"),
+            orderBy("editionNumber", "desc")
+        );
+        const unpublishedSnapshot = await getDocs(unpublishedQuery);
+        const existingDrafts = unpublishedSnapshot.docs.filter(doc => !doc.data().isPublished);
+        
+        if (existingDrafts.length > 0) {
+            console.log(`⚠️ Found ${existingDrafts.length} existing draft editions. Using existing edition instead of creating duplicate.`);
+            return { success: true, editionId: existingDrafts[0].id };
+        }
+
         const editionsQuery = query(collection(firestore, "newspaper_editions"), orderBy("editionNumber", "desc"), limit(1));
         const querySnapshot = await getDocs(editionsQuery);
         let newEditionNumber = 1;
@@ -406,12 +419,14 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
 
         const newEditionRef = await addDoc(collection(firestore, "newspaper_editions"), editionData);
         
-        // Mark drafts as 'published' instead of deleting them, to keep a record
+        // Delete draft articles after edition is created (not just mark as published)
         const batch = writeBatch(firestore);
         draftsSnapshot.forEach(doc => {
-            batch.update(doc.ref, { status: 'published' });
+            batch.delete(doc.ref); // Delete instead of updating status
         });
         await batch.commit();
+        
+        console.log(`✅ Edition created with ${articles.length} articles. Draft articles deleted from database.`);
 
         return { success: true, editionId: newEditionRef.id };
     } catch (error: any) {
@@ -497,6 +512,27 @@ export async function deleteDraftArticleAction(id: string): Promise<{ success: b
         await deleteDoc(doc(firestore, "draft_articles", id));
         return { success: true };
     } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function deleteEditionAction(id: string): Promise<{ success: boolean; error?: string; }> {
+    const { firestore } = getFirebaseServices();
+    try {
+        console.log(`🗑️ Deleting edition: ${id}`);
+        const editionRef = doc(firestore, "newspaper_editions", id);
+        const editionDoc = await getDoc(editionRef);
+        
+        if (!editionDoc.exists()) {
+            console.error(`❌ Edition ${id} not found`);
+            return { success: false, error: "Edition not found" };
+        }
+        
+        await deleteDoc(editionRef);
+        console.log(`✅ Successfully deleted edition: ${id}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error(`❌ Failed to delete edition ${id}:`, error);
         return { success: false, error: error.message };
     }
 }

@@ -17,10 +17,17 @@ export async function GET() {
     
     const snapshot = await getDocs(editionsQuery);
     
-    const editions = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    // Filter to show only unpublished editions (drafts) for review
+    const editions = snapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          status: data.isPublished ? "published" : "draft"
+        };
+      })
+      .filter(edition => edition.status === "draft"); // Only show drafts in review
 
     return NextResponse.json({ editions }, {
       headers: {
