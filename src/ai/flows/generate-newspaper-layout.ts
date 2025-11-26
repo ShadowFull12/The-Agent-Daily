@@ -71,47 +71,65 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use relevant Uns
 
 **YOUR CRITICAL TASK:**
 1. Identify the MOST IMPORTANT/BREAKING story for the HERO/LEAD position on Page 1
-2. Create SEPARATE PAGES for major categories: National, Politics, Business, Technology, Sports, Science, Culture
-3. Use the MODERN COLORFUL TEMPLATE with gradients, colored section headers, and enhanced typography
-4. Distribute articles across 5-7 pages based on their categories
-5. Page 1 has THE BIGGEST BREAKING STORY as hero with large headline and image
+2. Create SEPARATE DEDICATED PAGES for EACH category - DO NOT combine categories on same page
+3. Each category gets its OWN page(s) - one category can span MULTIPLE pages if it has many stories
+4. Total page count can be 10-15+ pages - use as many as needed to showcase all content beautifully
+5. Fill pages completely - avoid white space - distribute articles to maximize visual balance
 
-**ARTICLE DISTRIBUTION STRATEGY:**
-- **Page 1 (Front Page)**: Hero story + 2-3 other major stories from different categories
-- **Page 2 (National/Politics)**: National and Political news
-- **Page 3 (Business/Economy)**: Business, Markets, Economic news
-- **Page 4 (Technology/Science)**: Technology, Science, Innovation, Environment
-- **Page 5 (Sports/Culture)**: Sports, Entertainment, Culture
-- **Page 6 (Regional/Opinion)**: Remaining stories, editorials, lifestyle
+**CATEGORY PAGE STRATEGY (EACH CATEGORY SEPARATE):**
+- **Page 1**: Front Page with HERO breaking story + 3-4 top stories from different categories
+- **Pages 2-X**: NATIONAL category only (can be multiple pages if many national stories)
+- **Pages X+1-Y**: POLITICS category only (separate from national)
+- **Pages Y+1-Z**: BUSINESS category only  
+- **Next Pages**: TECHNOLOGY category only (separate from science)
+- **Next Pages**: SCIENCE category only (separate from technology)
+- **Next Pages**: SPORTS category only (separate from culture)
+- **Next Pages**: CULTURE/Entertainment category only
+- **Next Pages**: HEALTHCARE category only
+- **Next Pages**: ENVIRONMENT category only
+- **Final Pages**: Any remaining categories or opinion/lifestyle
+
+**IMPORTANT RULES:**
+- NEVER combine categories like "National & Politics" or "Technology & Science" - they must be SEPARATE pages
+- One category can have 2-3 pages if there are 8+ articles in that category
+- Distribute 4-7 articles per page to avoid white space
+- Use the 3-column grid to fill pages completely
+- Add quote boxes, stat boxes, news briefs to fill space and add visual interest
+- Total edition can easily be 10-15 pages - this is GOOD and expected
 
 **MODERN DESIGN REQUIREMENTS:**
-1. Use colorful gradient headers for each page:
-   - Front Page: Red gradient (--accent)
-   - National/Politics: Purple gradient (--accent-purple)
-   - Business: Green gradient (--accent-green)
-   - Technology: Blue gradient (--accent-blue)
-   - Sports/Culture: Orange gradient (--accent-orange)
+1. Use colorful gradient headers for each page (match to category):
+   - Front Page: Red gradient (.page-header.red)
+   - National: Purple gradient (.page-header.purple)
+   - Politics: Deep Purple gradient (.page-header.purple)
+   - Business: Green gradient (.page-header.green)
+   - Technology: Blue gradient (.page-header.blue)
+   - Science: Teal/Blue gradient (.page-header.blue)
+   - Sports: Orange gradient (.page-header.orange)
+   - Culture: Pink/Orange gradient (.page-header.orange)
+   - Healthcare: Green gradient (.page-header.green)
+   - Environment: Green gradient (.page-header.green)
 
 2. Hero story on Page 1 MUST have:
    - Large prominent headline (3.8rem font)
-   - Full-width or half-page image
-   - 300-400 word detailed content
+   - Full-width image in hero-image class
+   - 350-450 word detailed content
    - Breaking Development kicker in red
 
-3. Use varied article components:
+3. Use varied article components to fill space:
    - Quote boxes for impactful statements
-   - Stat boxes for key numbers/statistics
+   - Stat boxes for key numbers/statistics  
    - Info boxes for additional context
    - News briefs sidebar for quick updates
 
 4. Each article needs:
    - Colored kicker badge matching section
-   - Strong headline
-   - Byline with location
+   - Strong headline (h2 or h3)
+   - Byline with reporter name and location
    - Well-structured paragraphs starting with <strong>CITY:</strong>
-   - Images in ~50% of articles
+   - Images in ~60% of articles (use story-image class)
 
-5. Use 3-column grid layout per page (automatically handled by CSS)
+5. Use 3-column grid layout per page (three-column-layout class)
 
 **PROVIDED ARTICLES (${input.articles.length} total):**
 ${articlesText}
@@ -122,12 +140,15 @@ ${articlesText}
 - Complete HTML from <!DOCTYPE html> to </html>
 - NO markdown, NO code blocks, NO ``` markers
 - Use EXACT modern template provided below
-- Create 5-7 <section class="page"> elements
+- Create 10-15+ <section class="page"> elements as needed
+- Each category gets dedicated page(s) - NEVER mix categories on same page
 - First article on Page 1 MUST use hero-story class
 - Each page has colored header with page title and number
+- Page titles should be single category name (e.g., "National News", "Politics", "Business & Markets", "Technology")
 - Update page colors, titles, and numbers for each section
 - Use current date: ${currentDate}
 - Edition: ${input.editionNumber}
+- Fill pages completely to avoid white space
 
 **MODERN HTML TEMPLATE - USE THIS EXACTLY:**
 <!DOCTYPE html>
