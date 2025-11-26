@@ -96,25 +96,24 @@ Editor 1 has created the initial newspaper layout. Your job is to REFINE and EXP
 
 **ABSOLUTE RULE: NO LARGE EMPTY TEXT BOXES**
 
-If you see a text box that looks like this:
-```html
-<div class="info-box" style="height: 400px; padding: 2rem;">
-  <h4>Market Watch</h4>
-  <p>Sensex: 82,347</p>
-</div>
-```
+If you see a text box that looks oversized with minimal content, FIX IT IMMEDIATELY.
 
-**FIX IT IMMEDIATELY:**
+**BAD EXAMPLE (Large empty box):**
+- Box has height: 400px with only 2 lines of content
+- Padding is 2rem (way too much)
+- Lots of empty white space inside
+
+**GOOD EXAMPLE (Compact box):**
+- No fixed height, content determines size
+- Padding is 0.8rem (tight and efficient)
+- Every line has useful information
 
 **Option 1 - Make Box COMPACT (Preferred):**
-```html
-<div class="info-box" style="padding: 0.8rem; font-size: 0.9rem;">
-  <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Market Watch</h4>
-  <p style="margin: 0.3rem 0;">Sensex: 82,347 ▲ 1.2%</p>
-  <p style="margin: 0.3rem 0;">Nifty: 25,184 ▲ 0.8%</p>
-  <p style="margin: 0.3rem 0;">Bank Nifty: 54,230 ▲ 0.5%</p>
-</div>
-```
+Use inline styles to force compact sizing:
+- style="padding: 0.8rem; font-size: 0.9rem;"
+- h4 style="font-size: 1rem; margin-bottom: 0.5rem;"
+- p style="margin: 0.3rem 0;"
+Add 3-5 data points per box, not just 1-2.
 
 **Option 2 - Remove Box, Expand Article:**
 If the box is taking up too much space, DELETE it and make the article next to it longer instead.
