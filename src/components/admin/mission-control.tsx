@@ -116,7 +116,7 @@ export function MissionControl() {
         });
     };
 
-    const resetWorkflow = () => {
+    const resetWorkflow = async () => {
         setAgentStatuses({
             scout: 'idle',
             deduplicator: 'idle',
@@ -140,6 +140,10 @@ export function MissionControl() {
         });
         setGlobalMessage("System is idle. Ready for the next run.");
         setRunStatus('idle');
+        
+        // Clear the queue state in Firestore to prevent restart on refresh
+        const { clearQueueState } = await import('@/app/workflow-queue');
+        await clearQueueState();
     };
 
     const handleForceStop = async () => {
