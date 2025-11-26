@@ -12,6 +12,7 @@ export type WorkflowStep =
   | 'journalists_parallel'
   | 'validate'
   | 'editor'
+  | 'editor_2'
   | 'complete'
   | 'error';
 
@@ -24,6 +25,8 @@ export type QueueState = {
   isManualRun?: boolean;
   isExecuting?: boolean; // Lock to prevent concurrent executions
   executionStartedAt?: any; // Timestamp when execution started
+  initialHtml?: string; // HTML from Editor 1 for Editor 2 to refine
+  editionNumber?: number; // Edition number from Editor 1
   lastUpdated: any;
 };
 

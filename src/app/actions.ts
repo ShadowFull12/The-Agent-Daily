@@ -5,6 +5,7 @@ import 'dotenv/config';
 import { searchBreakingNews } from "@/ai/flows/search-breaking-news";
 import { summarizeBreakingNews } from "@/ai/flows/summarize-breaking-news";
 import { generateNewspaperLayout } from "@/ai/flows/generate-newspaper-layout";
+import { refineNewspaperLayout } from "@/ai/flows/refine-newspaper-layout";
 import {
   collection,
   addDoc,
@@ -394,6 +395,114 @@ export async function validateArticlesAction(): Promise<{ success: boolean; vali
 
 
 // 5. Chief Editor Agent: Creates the newspaper preview
+// Editor 1: Create initial newspaper layout (returns HTML, doesn't save to DB)
+export async function createInitialLayoutAction(): Promise<{ success: boolean; html?: string; editionNumber?: number; error?: string }> {
+    const { firestore } = getFirebaseServices();
+    const editionCreationId = `editor1_${Date.now()}`;
+
+    try {
+        console.log(`📰 Editor 1 [${editionCreationId}]: Creating initial layout...`);
+        
+        // Fetch validated articles
+        const draftsSnapshot = await getDocs(query(collection(firestore, "draft_articles"), where("status", "==", "validated")));
+        const articles = draftsSnapshot.docs
+            .map(doc => ({...doc.data(), id: doc.id})) as DraftArticle[];
+        
+        // Sort in memory by createdAt descending
+        articles.sort((a, b) => {
+            const aTime = a.createdAt?.toMillis() || 0;
+            const bTime = b.createdAt?.toMillis() || 0;
+            return bTime - aTime;
+        });
+
+        if (articles.length === 0) {
+            console.log('❌ No validated articles found');
+            return { success: false, error: "No valid articles to create layout." };
+        }
+
+        console.log(`📊 Found ${articles.length} validated articles`);
+
+        // Get edition number
+        const editionsQuery = query(collection(firestore, "newspaper_editions"), orderBy("editionNumber", "desc"), limit(1));
+        const querySnapshot = await getDocs(editionsQuery);
+        let newEditionNumber = 1;
+        if (!querySnapshot.empty) {
+            newEditionNumber = querySnapshot.docs[0].data().editionNumber + 1;
+        }
+
+        console.log(`📝 Editor 1 [${editionCreationId}]: Generating initial layout for edition #${newEditionNumber}...`);
+        const layout = await generateNewspaperLayout({ articles, editionNumber: newEditionNumber });
+
+        console.log(`✅ Editor 1 [${editionCreationId}]: Initial layout created (${layout.html.length} characters)`);
+        
+        return { 
+            success: true, 
+            html: layout.html,
+            editionNumber: newEditionNumber
+        };
+    } catch (error: any) {
+        const errorMessage = `Editor 1 failed: ${error.message}`;
+        console.error(`❌ Editor 1 [${editionCreationId}]: ${errorMessage}`, error);
+        return { success: false, error: errorMessage };
+    }
+}
+
+// Editor 2: Refine and expand layout, then save to database
+export async function refineLayoutAction(initialHtml: string, editionNumber: number): Promise<{ success: boolean; editionId?: string; error?: string }> {
+    const { firestore } = getFirebaseServices();
+    const editionCreationId = `editor2_${Date.now()}`;
+
+    try {
+        console.log(`📰 Editor 2 [${editionCreationId}]: Refining and expanding layout for edition #${editionNumber}...`);
+        
+        // Refine the HTML
+        const refinedLayout = await refineNewspaperLayout({ 
+            html: initialHtml, 
+            editionNumber 
+        });
+
+        console.log(`✅ Editor 2 [${editionCreationId}]: Layout refined (${refinedLayout.html.length} characters)`);
+        
+        // Get validated articles for metadata
+        const draftsSnapshot = await getDocs(query(collection(firestore, "draft_articles"), where("status", "==", "validated")));
+        const articles = draftsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id})) as DraftArticle[];
+        
+        if (articles.length === 0) {
+            return { success: false, error: "No articles found for edition metadata" };
+        }
+
+        const mainArticle = articles[0];
+        const coverImageUrl = mainArticle.imageUrl || `https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&h=500&fit=crop`;
+
+        const editionData: Omit<Edition, 'id'> = {
+            editionNumber: editionNumber,
+            publicationDate: Timestamp.now(),
+            htmlContent: refinedLayout.html, 
+            coverImageUrl: coverImageUrl,
+            headline: mainArticle.headline,
+            isPublished: false, 
+        };
+
+        const newEditionRef = await addDoc(collection(firestore, "newspaper_editions"), editionData);
+        console.log(`✅ Editor 2 [${editionCreationId}]: Edition #${editionNumber} created with ID: ${newEditionRef.id}`);
+        
+        // Delete draft articles after edition is created
+        const batch = writeBatch(firestore);
+        draftsSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        
+        console.log(`🗑️ Editor 2 [${editionCreationId}]: Deleted ${draftsSnapshot.size} draft articles from database`);
+
+        return { success: true, editionId: newEditionRef.id };
+    } catch (error: any) {
+        const errorMessage = `Editor 2 failed: ${error.message}`;
+        console.error(`❌ Editor 2 [${editionCreationId}]: ${errorMessage}`, error);
+        return { success: false, error: errorMessage };
+    }
+}
+
 export async function createPreviewEditionAction(): Promise<{ success: boolean; editionId?: string; error?: string }> {
     const { firestore } = getFirebaseServices();
     const editionCreationId = `edition_${Date.now()}`; // Unique ID for tracking
