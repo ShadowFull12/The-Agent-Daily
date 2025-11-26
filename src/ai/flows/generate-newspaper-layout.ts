@@ -138,9 +138,9 @@ ${articlesText}
 
 **CRITICAL OUTPUT REQUIREMENTS:**
 - Complete HTML from <!DOCTYPE html> to </html>
-- NO markdown, NO code blocks, NO ``` markers
+- NO markdown formatting, NO code blocks
 - Use EXACT modern template provided below
-- Create 10-15+ <section class="page"> elements as needed
+- Create 10-15+ pages with <section class="page"> elements as needed
 - Each category gets dedicated page(s) - NEVER mix categories on same page
 - First article on Page 1 MUST use hero-story class
 - Each page has colored header with page title and number
