@@ -9,16 +9,26 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔔 Cron triggered: Checking workflow queue...');
     
-    // Verify cron authorization
-    const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      console.warn('⚠️ Unauthorized cron request');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Verify cron authorization (only if CRON_SECRET is set)
+    if (process.env.CRON_SECRET) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        console.warn('⚠️ Unauthorized cron request (wrong or missing auth header)');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      console.log('✅ Cron authentication successful');
+    } else {
+      console.log('ℹ️ CRON_SECRET not set - allowing request without auth');
     }
     
     // Check if there's work to do
     const state = await getQueueState();
-    console.log(`📋 Current queue state: ${state?.currentStep || 'none'}`);
+    console.log(`📋 Current queue state:`, {
+      currentStep: state?.currentStep || 'none',
+      isExecuting: state?.isExecuting || false,
+      attempt: state?.attempt || 0,
+      isManualRun: state?.isManualRun || false
+    });
     
     if (!state || state.currentStep === 'idle' || state.currentStep === 'complete') {
       console.log('✅ No work to do. Workflow is idle/complete.');
