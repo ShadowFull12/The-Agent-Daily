@@ -22,7 +22,23 @@ export function WorkflowChainExecutor() {
         
         // Check if there's work to do
         const state = await getQueueState();
-        console.log(`📊 Queue State Check: currentStep="${state?.currentStep || 'none'}"`);
+        console.log(`📊 Queue State Check: currentStep="${state?.currentStep || 'none'}", isManualRun=${state?.isManualRun || false}`);
+        
+        // CRITICAL: Only execute for MANUAL runs (isManualRun === true)
+        // Cron handles automatic runs, client executor handles manual runs
+        if (!state?.isManualRun) {
+          console.log(`⏭️ Not a manual run - cron will handle execution. Stopping client executor.`);
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = undefined;
+          }
+          if (immediateTimeoutRef.current) {
+            clearTimeout(immediateTimeoutRef.current);
+            immediateTimeoutRef.current = undefined;
+          }
+          isExecutingRef.current = false;
+          return;
+        }
         
         if (!state || state.currentStep === 'idle' || state.currentStep === 'complete' || state.currentStep === 'error') {
           // No work to do, stop checking
@@ -39,12 +55,12 @@ export function WorkflowChainExecutor() {
           return;
         }
 
-        console.log(`🔄 Executing step: ${state.currentStep}`);
+        console.log(`🔄 [MANUAL RUN] Executing step: ${state.currentStep}`);
         const result = await executeNextWorkflowStep();
-        console.log(`📋 Step result: success=${result.success}, nextStep=${result.nextStep}, completed=${result.completed}`);
+        console.log(`📋 [MANUAL RUN] Step result: success=${result.success}, nextStep=${result.nextStep}, completed=${result.completed}`);
         
         if (result.completed) {
-          console.log(`✅ Workflow completed: ${result.message}`);
+          console.log(`✅ [MANUAL RUN] Workflow completed: ${result.message}`);
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = undefined;
@@ -54,26 +70,26 @@ export function WorkflowChainExecutor() {
             immediateTimeoutRef.current = undefined;
           }
         } else if (result.success && result.nextStep) {
-          console.log(`➡️ Step completed successfully. Next step: ${result.nextStep}. Triggering immediate check in 1 second...`);
+          console.log(`➡️ [MANUAL RUN] Step completed successfully. Next step: ${result.nextStep}. Triggering immediate check in 1 second...`);
           // Clear any existing immediate timeout
           if (immediateTimeoutRef.current) {
             clearTimeout(immediateTimeoutRef.current);
           }
           // Schedule immediate next step execution
           immediateTimeoutRef.current = setTimeout(() => {
-            console.log('⚡ Immediate trigger executing...');
+            console.log('⚡ [MANUAL RUN] Immediate trigger executing...');
             isExecutingRef.current = false;
             checkAndExecute();
           }, 1000);
           return; // Don't reset flag yet - timeout will do it
         } else if (!result.success) {
-          console.error(`❌ Step failed: ${result.error}. Stopping executor.`);
+          console.error(`❌ [MANUAL RUN] Step failed: ${result.error}. Stopping executor.`);
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = undefined;
           }
         } else {
-          console.log(`⏸️ Step returned without nextStep. Result:`, result);
+          console.log(`⏸️ [MANUAL RUN] Step returned without nextStep. Result:`, result);
         }
         
       } catch (error) {
@@ -83,7 +99,7 @@ export function WorkflowChainExecutor() {
       }
     };
 
-    console.log('🎬 WorkflowChainExecutor started - polling every 3 seconds');
+    console.log('🎬 WorkflowChainExecutor started - polling every 3 seconds (MANUAL RUNS ONLY)');
     
     // Check every 3 seconds for pending work
     intervalRef.current = setInterval(checkAndExecute, 3000);
