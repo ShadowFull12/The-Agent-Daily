@@ -366,6 +366,29 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
     const { firestore } = getFirebaseServices();
 
     try {
+        console.log('📰 Editor: Starting edition creation...');
+        
+        // Check for RECENT duplicate editions FIRST (created in last 5 minutes) to prevent race conditions
+        const fiveMinutesAgo = Timestamp.fromMillis(Date.now() - 5 * 60 * 1000);
+        const recentEditionsQuery = query(
+            collection(firestore, "newspaper_editions"),
+            orderBy("publicationDate", "desc"),
+            limit(5)
+        );
+        const recentSnapshot = await getDocs(recentEditionsQuery);
+        
+        // Filter in memory for unpublished editions created within last 5 minutes
+        const recentDrafts = recentSnapshot.docs.filter(doc => {
+            const data = doc.data();
+            return !data.isPublished && data.publicationDate >= fiveMinutesAgo;
+        });
+        
+        if (recentDrafts.length > 0) {
+            const existingEdition = recentDrafts[0];
+            console.log(`⚠️ Found recent draft edition #${existingEdition.data().editionNumber} created within 5 minutes. Preventing duplicate creation.`);
+            return { success: true, editionId: existingEdition.id };
+        }
+        
         // Fetch validated articles without composite index requirement
         const draftsSnapshot = await getDocs(query(collection(firestore, "draft_articles"), where("status", "==", "validated")));
         const articles = draftsSnapshot.docs
@@ -379,30 +402,11 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
         });
 
         if (articles.length === 0) {
+            console.log('❌ No validated articles found for edition creation');
             return { success: false, error: "No valid articles to create an edition." };
         }
 
-        // Check for RECENT duplicate editions (created in last 2 minutes) to prevent race conditions
-        // Fetch recent editions and filter in memory to avoid composite index
-        const twoMinutesAgo = Timestamp.fromMillis(Date.now() - 2 * 60 * 1000);
-        const recentEditionsQuery = query(
-            collection(firestore, "newspaper_editions"),
-            orderBy("publicationDate", "desc"),
-            limit(10)
-        );
-        const recentSnapshot = await getDocs(recentEditionsQuery);
-        
-        // Filter in memory for unpublished editions created within last 2 minutes
-        const recentDrafts = recentSnapshot.docs.filter(doc => {
-            const data = doc.data();
-            return !data.isPublished && data.publicationDate >= twoMinutesAgo;
-        });
-        
-        if (recentDrafts.length > 0) {
-            const existingEdition = recentDrafts[0];
-            console.log(`⚠️ Found recent draft edition created within 2 minutes. Using existing edition #${existingEdition.data().editionNumber} instead of creating duplicate.`);
-            return { success: true, editionId: existingEdition.id };
-        }
+        console.log(`📊 Found ${articles.length} validated articles for edition`);
 
         const editionsQuery = query(collection(firestore, "newspaper_editions"), orderBy("editionNumber", "desc"), limit(1));
         const querySnapshot = await getDocs(editionsQuery);
@@ -411,6 +415,7 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
             newEditionNumber = querySnapshot.docs[0].data().editionNumber + 1;
         }
 
+        console.log(`📝 Creating edition #${newEditionNumber}...`);
         const layout = await generateNewspaperLayout({ articles, editionNumber: newEditionNumber });
 
         const mainArticle = articles[0];
@@ -427,6 +432,7 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
         };
 
         const newEditionRef = await addDoc(collection(firestore, "newspaper_editions"), editionData);
+        console.log(`✅ Edition #${newEditionNumber} created with ID: ${newEditionRef.id}`);
         
         // Delete draft articles after edition is created (not just mark as published)
         const batch = writeBatch(firestore);
@@ -435,7 +441,7 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
         });
         await batch.commit();
         
-        console.log(`✅ Edition created with ${articles.length} articles. Draft articles deleted from database.`);
+        console.log(`🗑️ Deleted ${draftsSnapshot.size} draft articles from database`);
 
         return { success: true, editionId: newEditionRef.id };
     } catch (error: any) {

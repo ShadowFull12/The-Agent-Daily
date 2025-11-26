@@ -351,6 +351,16 @@ export async function executeStep5_ValidateAndEdit(): Promise<{ success: boolean
     if (validationResult.validCount >= 20) {
       await updateAgentProgress('validator', 'success', `Article count sufficient (${validationResult.validCount}). Proceeding to layout.`);
       
+      // Double-check we're not already complete (prevent duplicate editions)
+      const currentState = await getQueueState();
+      if (currentState?.currentStep === 'complete') {
+        console.log('⚠️ Workflow already completed. Skipping edition creation.');
+        return { success: true, message: 'Edition already created', completed: true };
+      }
+      
+      // Mark as complete BEFORE creating edition to prevent race conditions
+      await updateQueueState({ currentStep: 'complete', validCount: validationResult.validCount });
+      
       // Create edition
       await updateAgentProgress('editor', 'working', 'Chief Editor is designing layout...');
       const editorResult = await createPreviewEditionAction();
@@ -361,7 +371,6 @@ export async function executeStep5_ValidateAndEdit(): Promise<{ success: boolean
       }
       
       await updateAgentProgress('editor', 'success', `Edition created: ${editorResult.editionId}`);
-      await updateQueueState({ currentStep: 'complete', validCount: validationResult.validCount });
       await updateWorkflowState({ status: 'success', message: 'Workflow completed successfully!' });
       
       // Reset all journalist progress to idle after completion
@@ -417,8 +426,9 @@ export async function executeNextWorkflowStep(): Promise<{
     }
     
     if (state.currentStep === 'complete') {
+      console.log('⚠️ Workflow already complete. Preventing duplicate execution.');
       await clearQueueState();
-      return { success: true, message: 'Workflow completed', completed: true };
+      return { success: true, message: 'Workflow already completed', completed: true };
     }
     
     if (state.currentStep === 'error') {
@@ -427,7 +437,7 @@ export async function executeNextWorkflowStep(): Promise<{
     }
     
     console.log(`🎯 ========================================`);
-    console.log(`🎯 STARTING STEP: ${state.currentStep}`);
+    console.log(`🎯 STARTING STEP: ${state.currentStep} (Attempt ${state.attempt || 1})`);
     console.log(`🎯 ========================================`);
     
     let result: any;
