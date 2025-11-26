@@ -364,8 +364,19 @@ export async function executeStep6_Editor2(): Promise<{ success: boolean; messag
     
     const state = await getQueueState();
     
+    console.log('🔍 Editor 2: Checking queue state...');
+    console.log('🔍 Editor 2: State keys:', state ? Object.keys(state) : 'null');
+    console.log('🔍 Editor 2: initialHtml exists?', !!state?.initialHtml);
+    console.log('🔍 Editor 2: initialHtml length:', state?.initialHtml?.length || 0);
+    console.log('🔍 Editor 2: editionNumber:', state?.editionNumber);
+    
     if (!state?.initialHtml) {
-      return { success: false, message: 'No initial HTML from Editor 1', error: 'Missing initial HTML' };
+      console.error('❌ Editor 2: Missing initialHtml in queue state!');
+      console.error('❌ Editor 2: Full state:', JSON.stringify(state, null, 2));
+      
+      // Move back to editor step to retry Editor 1
+      await updateQueueState({ currentStep: 'editor', error: 'Missing HTML from Editor 1' });
+      return { success: false, message: 'No initial HTML from Editor 1 - retrying Editor 1', error: 'Missing initial HTML', nextStep: 'editor' };
     }
     
     // Double-check we're not already complete

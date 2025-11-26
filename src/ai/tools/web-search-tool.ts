@@ -36,6 +36,8 @@ async function callTavilySearch(query: string): Promise<string> {
     day: 'numeric' 
   });
 
+  console.log(`🌐 Tavily API: Searching for "${query.substring(0, 60)}..."`);
+
   try {
     const response = await fetch('https://api.tavily.com/search', {
       method: 'POST',
@@ -54,14 +56,16 @@ async function callTavilySearch(query: string): Promise<string> {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error(`Tavily API error: ${response.status} - ${error}`);
+      console.error(`❌ Tavily API: HTTP ${response.status} - ${error}`);
       throw new Error(`Tavily API error: ${response.status}`);
     }
 
     const data: TavilyResponse = await response.json();
+    console.log(`✅ Tavily API: Success with ${data.results?.length || 0} results`);
     
     // Return the AI-generated answer if available, otherwise compile from results
     if (data.answer) {
+      console.log(`✅ Tavily API: Answer length: ${data.answer.length} chars`);
       return `${data.answer}\n\nDate: ${today}`;
     }
     
@@ -71,9 +75,11 @@ async function callTavilySearch(query: string): Promise<string> {
       .map((result, index) => `${index + 1}. ${result.content}`)
       .join('\n\n');
     
+    console.log(`✅ Tavily API: Compiled info length: ${compiledInfo.length} chars`);
     return `${compiledInfo}\n\nDate: ${today}`;
-  } catch (error) {
-    console.error('Error calling Tavily search:', error);
+  } catch (error: any) {
+    console.error(`❌ Tavily API: Error - ${error.message}`);
+    console.error(`❌ Tavily API: Stack:`, error.stack);
     throw error;
   }
 }
@@ -96,14 +102,19 @@ export async function getWebSearchToolSchema() {
  * Web Search Tool Implementation
  */
 export async function webSearchToolImplementation(input: { query: string }): Promise<string> {
-  console.log(`🔍 Web Search Tool called with query: "${input.query}"`);
+  console.log(`🔍 Web Search Tool: Query received (${input.query.length} chars): "${input.query.substring(0, 80)}..."`);
   
   try {
+    const startTime = Date.now();
     const result = await callTavilySearch(input.query);
-    console.log(`✅ Web Search Tool result: ${result.substring(0, 100)}...`);
+    const elapsed = Date.now() - startTime;
+    
+    console.log(`✅ Web Search Tool: Success in ${elapsed}ms (${result.length} chars)`);
+    console.log(`✅ Web Search Tool: Result preview: ${result.substring(0, 100)}...`);
     return result;
-  } catch (error) {
-    console.error('❌ Web Search Tool error:', error);
+  } catch (error: any) {
+    console.error(`❌ Web Search Tool: Failed for query "${input.query.substring(0, 80)}..."`);
+    console.error(`❌ Web Search Tool: Error:`, error.message);
     // Return a fallback message instead of throwing
     return 'Unable to fetch current data. Please use typical values based on recent patterns.';
   }

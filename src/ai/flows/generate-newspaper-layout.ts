@@ -1078,7 +1078,39 @@ const generateNewspaperLayoutFlow = ai.defineFlow(
     outputSchema: GenerateNewspaperLayoutOutputSchema,
   },
   async (input) => {
-    const result = await prompt(input);
-    return result.output!;
+    console.log(`📰 Editor 1: Starting layout generation with ${input.articles.length} articles...`);
+    console.log(`📰 Editor 1: Article categories:`, [...new Set(input.articles.map(a => a.category))].join(', '));
+    
+    try {
+      console.log(`🤖 Editor 1: Calling Gemini 2.5 Pro with tools...`);
+      const startTime = Date.now();
+      
+      const result = await prompt(input);
+      
+      const elapsedTime = Date.now() - startTime;
+      console.log(`⏱️ Editor 1: Gemini call completed in ${elapsedTime}ms`);
+      
+      if (!result.output) {
+        console.error(`❌ Editor 1: Gemini returned null/undefined output`);
+        console.error(`❌ Editor 1: Full result:`, JSON.stringify(result, null, 2));
+        throw new Error('Gemini returned null output - possible token limit or rate limit');
+      }
+      
+      if (!result.output.html) {
+        console.error(`❌ Editor 1: Output exists but html field is missing`);
+        console.error(`❌ Editor 1: Output keys:`, Object.keys(result.output));
+        throw new Error('Gemini output missing html field');
+      }
+      
+      console.log(`✅ Editor 1: Generated HTML (${result.output.html.length} characters)`);
+      console.log(`✅ Editor 1: HTML preview:`, result.output.html.substring(0, 200) + '...');
+      
+      return result.output;
+    } catch (error: any) {
+      console.error(`❌ Editor 1: Error during generation:`, error.message);
+      console.error(`❌ Editor 1: Error stack:`, error.stack);
+      console.error(`❌ Editor 1: Error details:`, JSON.stringify(error, null, 2));
+      throw error;
+    }
   }
 );

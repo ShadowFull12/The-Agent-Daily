@@ -64,6 +64,20 @@ export async function updateQueueState(state: Partial<QueueState>) {
     newState.executionStartedAt = currentState.executionStartedAt;
   }
   
+  // Preserve initialHtml from Editor 1
+  if (state.initialHtml !== undefined) {
+    newState.initialHtml = state.initialHtml;
+  } else if (currentState?.initialHtml) {
+    newState.initialHtml = currentState.initialHtml;
+  }
+  
+  // Preserve editionNumber from Editor 1
+  if (state.editionNumber !== undefined) {
+    newState.editionNumber = state.editionNumber;
+  } else if (currentState?.editionNumber) {
+    newState.editionNumber = currentState.editionNumber;
+  }
+  
   // Only include error field if it has a value (Firestore doesn't accept undefined)
   if (state.error !== undefined && state.error !== null) {
     newState.error = state.error;
