@@ -1,75 +1,79 @@
 'use server';
 
 /**
- * Web Search Tool using Grok's native web search via OpenRouter
- * Grok 4 Fast has built-in real-time web search capabilities
+ * Web Search Tool using Tavily API for REAL-TIME web search
+ * Tavily is a FREE search API optimized for AI applications
+ * Provides current, factual information from the web
  */
 
 import { z } from 'genkit';
 
-interface OpenRouterMessage {
-  role: 'system' | 'user' | 'assistant';
+interface TavilySearchResult {
+  title: string;
+  url: string;
   content: string;
+  score: number;
 }
 
-interface OpenRouterResponse {
-  choices: Array<{
-    message: {
-      content: string;
-    };
-  }>;
+interface TavilyResponse {
+  answer: string;
+  results: TavilySearchResult[];
 }
 
 /**
- * Call Grok with web search enabled via OpenRouter API
- * Grok's agentic mode will automatically perform web searches when needed
+ * Call Tavily API for real-time web search
+ * FREE tier: ~1000 searches/month
  */
-async function callGrokWithWebSearch(query: string): Promise<string> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+async function callTavilySearch(query: string): Promise<string> {
+  const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY not found in environment variables');
+    throw new Error('TAVILY_API_KEY not found in environment variables');
   }
 
-  const messages: OpenRouterMessage[] = [
-    {
-      role: 'system',
-      content: 'You are a research assistant. Use web search to find the most current and accurate information. Provide concise, factual answers with specific numbers, dates, and details.',
-    },
-    {
-      role: 'user',
-      content: query,
-    },
-  ];
+  const today = new Date().toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
 
   try {
-    // Note: OpenRouter supports Grok but may not support all xAI-specific features
-    // We'll use the standard OpenAI-compatible API format
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://github.com/ShadowFull12/The-Agent-Daily',
-        'X-Title': 'The Daily Agent',
       },
       body: JSON.stringify({
-        model: 'x-ai/grok-4.1-fast:free', // FREE Grok 4.1 Fast with web search capabilities!
-        messages,
-        temperature: 0.3, // Lower temperature for more factual responses
-        max_tokens: 1000,
+        api_key: apiKey,
+        query: `${query} ${today}`,
+        search_depth: 'basic', // 'basic' or 'advanced'
+        include_answer: true, // Get AI-generated answer
+        include_raw_content: false,
+        max_results: 5,
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error(`OpenRouter API error: ${response.status} - ${error}`);
-      throw new Error(`OpenRouter API error: ${response.status}`);
+      console.error(`Tavily API error: ${response.status} - ${error}`);
+      throw new Error(`Tavily API error: ${response.status}`);
     }
 
-    const data: OpenRouterResponse = await response.json();
-    return data.choices[0].message.content;
+    const data: TavilyResponse = await response.json();
+    
+    // Return the AI-generated answer if available, otherwise compile from results
+    if (data.answer) {
+      return `${data.answer}\n\nDate: ${today}`;
+    }
+    
+    // Fallback: compile information from search results
+    const compiledInfo = data.results
+      .slice(0, 3)
+      .map((result, index) => `${index + 1}. ${result.content}`)
+      .join('\n\n');
+    
+    return `${compiledInfo}\n\nDate: ${today}`;
   } catch (error) {
-    console.error('Error calling Grok with web search:', error);
+    console.error('Error calling Tavily search:', error);
     throw error;
   }
 }
@@ -95,7 +99,7 @@ export async function webSearchToolImplementation(input: { query: string }): Pro
   console.log(`🔍 Web Search Tool called with query: "${input.query}"`);
   
   try {
-    const result = await callGrokWithWebSearch(input.query);
+    const result = await callTavilySearch(input.query);
     console.log(`✅ Web Search Tool result: ${result.substring(0, 100)}...`);
     return result;
   } catch (error) {
