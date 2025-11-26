@@ -27,7 +27,8 @@ import { getFirebaseServices } from "@/lib/firebase-server";
 // Helper function to map topics to newspaper categories
 function categorizeStory(topic: string): string {
   const categoryMap: Record<string, string> = {
-    'world': 'National',
+    'india': 'National',        // Indian news → National page
+    'world': 'International',   // World news → International page
     'technology': 'Technology',
     'business': 'Business',
     'science': 'Science',
@@ -48,8 +49,21 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
   
   try {
     console.log('🔍 Scout Agent: Starting news search...');
-    const topics = ["world", "technology", "business", "science", "politics", "entertainment", "sports", "health", "environment"];
-    console.log('📰 Scout Agent: Searching topics:', topics);
+    // IMPORTANT: Search India-specific topics first to ensure National page has Indian content
+    // Then add international and other topics
+    const topics = [
+      "india",           // Indian domestic news for National page
+      "world",           // International news
+      "technology", 
+      "business", 
+      "science", 
+      "politics",        // Will include both Indian and international politics
+      "entertainment", 
+      "sports", 
+      "health", 
+      "environment"
+    ];
+    console.log('📰 Scout Agent: Searching topics (India-first for National page):', topics);
     
     const searchResult = await withTimeout(
       searchBreakingNews({ topics, limit: limitStories }),

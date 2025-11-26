@@ -89,43 +89,115 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use relevant Uns
       content: [{
         text: `You are a world-class newspaper layout designer for "The Daily Agent", creating a MODERN, COLORFUL Indian newspaper edition.
 
-**YOUR CRITICAL TASK:**
-1. Identify the MOST IMPORTANT/BREAKING story for the HERO/LEAD position on Page 1
-2. Create SEPARATE DEDICATED PAGES for EACH category - DO NOT combine categories on same page
-3. **STRICT CATEGORY SEPARATION:**
-   - **NATIONAL PAGE**: ONLY Indian domestic news (politics, governance, state news, internal affairs)
-   - **INTERNATIONAL PAGE**: ONLY global/foreign news (world events, international relations, foreign countries)
-   - NEVER mix Indian and international news on same page
-4. Each category gets its OWN page(s) - one category can span MULTIPLE pages if it has many stories
-5. Total page count can be 10-15+ pages - use as many as needed to showcase all content beautifully
-6. **ELIMINATE WHITE SPACE:** Fill pages completely - use span-2 class, multi-column class, and strategic article placement
-7. **NO DUPLICATE DATA BOXES:** Each unique data widget (Nifty, Fuel Prices, Weather, etc.) should appear ONLY ONCE in entire newspaper
+**CRITICAL PRINCIPLE: ADAPTIVE, FLUID DESIGN**
+You are NOT constrained to fixed categories or page structures. Each edition should be UNIQUE based on available content.
+Think like a creative editor who adapts the newspaper design to the day's stories.
 
-**CATEGORY PAGE STRATEGY (EACH CATEGORY SEPARATE):**
-- **Page 1**: Front Page with HERO breaking story + 3-4 top stories from different categories
-- **Pages 2-X**: **NATIONAL** category ONLY - Indian domestic news, Indian politics, state affairs, internal governance
-- **Pages X+1-Y**: **INTERNATIONAL** category ONLY - World news, foreign countries, global events, international relations
-- **Pages Y+1-Z**: POLITICS category only (if separate from national - Indian political analysis)
-- **Next Pages**: BUSINESS category only (economy, markets, companies)
-- **Next Pages**: TECHNOLOGY category only (tech news, startups, gadgets)
-- **Next Pages**: SCIENCE category only (research, discoveries, innovation)
-- **Next Pages**: SPORTS category only (cricket, football, olympics)
-- **Next Pages**: CULTURE/Entertainment category only (movies, music, arts)
-- **Next Pages**: HEALTHCARE category only (medical, health)
-- **Next Pages**: ENVIRONMENT category only (climate, nature)
-- **Final Pages**: Any remaining categories
+**STEP 1: ANALYZE AVAILABLE CONTENT**
+First, look at ALL ${input.articles.length} articles and group them by category:
+${categoryList}
 
-**CRITICAL RULES - ELIMINATE WHITE SPACE:**
-- **NEVER combine categories** like "National & Politics" or "Technology & Science" - they must be SEPARATE pages
-- **Fill every page completely:** Use these strategies to eliminate white space:
-  1. **Add span-2 class** to 1-2 articles to make them wider (2 columns instead of 1)
-  2. **Add multi-column class** to long articles (400+ words) to split text into 2 columns
-  3. **Strategic layout:** 4 articles = 1 span-2 + 3 normal; 5 articles = 2 span-2 + 3 normal; 7 articles = 1 span-2 + 6 normal
-  4. **Expand article content:** Make articles slightly longer with additional context/quotes
-  5. **Add compact info boxes** ONLY if still needed (small, 3-4 lines max)
-- **NO LARGE EMPTY SPACES:** Every page should look dense and information-rich
-- **Equal page heights:** All pages must have min-height: 1400px
-- Total edition can be 10-15 pages - this is GOOD and expected
+For each category, count articles:
+- **National (Indian news)**: Articles about India, Indian politics, Indian states, domestic affairs
+- **International**: Articles about foreign countries, world events, global news
+- **Other categories**: Technology, Business, Sports, Culture, Science, Healthcare, Environment
+
+**STEP 2: ADAPTIVE CATEGORY STRATEGY**
+
+**CRITICAL RULES:**
+1. **IF a category has 0 articles → SKIP that category entirely (no page for it)**
+2. **IF National has 0 Indian articles → Skip National page, start with International or next available**
+3. **IF International has 0 world articles → Skip International page**
+4. **Only create pages for categories that have articles!**
+
+**SMART CATEGORY DETECTION:**
+- **National Page**: ONLY use if you find articles about:
+  * India, Indian cities (Mumbai, Delhi, Bangalore, etc.)
+  * Indian government, Indian politics, Indian states
+  * Domestic Indian affairs, Indian companies, Indian culture
+  * Keywords: India, Indian, Delhi, Mumbai, Modi, BJP, Congress, etc.
+  
+- **International Page**: ONLY use if you find articles about:
+  * Foreign countries (USA, China, UK, Russia, etc.)
+  * World events, global affairs, international relations
+  * Foreign leaders, foreign companies, overseas news
+  * Keywords: America, China, Trump, Biden, Europe, UN, NATO, etc.
+
+**FLEXIBLE PAGE STRUCTURE (Adapt based on content):**
+
+- **Page 1**: Front Page - HERO story + 3-4 top stories from ANY available categories
+
+- **Pages 2+**: Create pages ONLY for categories that have articles:
+  * IF National has 5+ articles → Create 1-2 National pages
+  * IF International has 5+ articles → Create 1-2 International pages
+  * IF Business has 4+ articles → Create Business page
+  * IF Technology has 4+ articles → Create Technology page
+  * IF Sports has 4+ articles → Create Sports page
+  * IF Culture has 3+ articles → Create Culture page
+  * IF Science/Healthcare/Environment have articles → Create pages as needed
+
+- **Smart Merging (ONLY if category has few articles):**
+  * IF National has only 2-3 articles → Merge into Front Page, don't create separate National page
+  * IF a category has only 1-2 articles → Place on Front Page or merge with related category
+  * Example: 2 Science articles + 2 Healthcare articles = 1 "Science & Health" page
+
+**STEP 3: ELIMINATE WHITE SPACE - CREATIVE LAYOUT STRATEGIES**
+
+**TARGET: Each page should have TWO LONG ROWS of THREE COLUMNS (2 rows × 3 columns = 6 story slots)**
+
+But be creative! Mix different layouts:
+
+**Layout Pattern A - Standard 6 Articles:**
+Row 1: Article-1, Article-2, Article-3 (all single column)
+Row 2: Article-4, Article-5, Article-6 (all single column)
+
+**Layout Pattern B - Feature Story (5 articles):**
+Row 1: BIG-Article (span-2 taking 2 columns), Article-2 (single column)
+Row 2: Article-3, Article-4, Article-5 (all single column)
+
+**Layout Pattern C - Hero + Grid (7 articles):**
+Row 1: HERO-Article (span-2 taking 2 columns), Data-Box (single column)
+Row 2: Article-1, Article-2, Article-3 (all single column)
+Row 3: Article-4, Article-5, Article-6 (all single column)
+
+**Layout Pattern D - Mixed (4 articles + boxes):**
+Row 1: Article-1 (span-2 taking 2 columns), Data-Box (single column)
+Row 2: Article-2, Article-3, Info-Box (all single column)
+Row 3: Article-4 (span-2 taking 2 columns), Quote-Box (single column)
+
+**CREATIVE FREEDOM - Mix These Elements:**
+1. **span-2 articles**: Make 1-2 articles per page take 2 columns (more prominent)
+2. **multi-column text**: Split long article text into 2 columns within its box
+3. **Large photos**: Some articles get big images (full column width or span-2)
+4. **Data boxes**: Strategically place 1-2 compact boxes per page
+5. **Two-row layouts**: Every page should have at least 2 full rows visible
+
+**STRATEGIC BOX PLACEMENT:**
+- Place boxes to FILL GAPS, not create them
+- Boxes should be COMPACT (3-4 lines max)
+- Position boxes at END of rows or BOTTOM of columns
+- Never put box between two article columns (breaks flow)
+- Good placement: Article, Article, Box-at-end
+- Bad placement: Article, Box-in-middle, Article
+
+**STEP 4: ENSURE NO WHITE SPACE**
+
+**For each page, calculate:**
+- Articles available in this category
+- Target: Fill 2 rows × 3 columns (6 slots)
+
+**If you have:**
+- **6+ articles**: Use 6 articles in standard 2-row grid
+- **5 articles**: Use Pattern B (1 span-2 feature + 4 normal)
+- **4 articles**: Use Pattern D (1 span-2 + 3 normal + boxes)
+- **3 articles**: Make 1 span-2, add boxes, expand content
+- **2 articles**: Each spans-2, add data boxes between
+- **1 article**: Skip category or merge into another page
+
+**NO FIXED STRUCTURE - BE ADAPTIVE!**
+Don't force categories. If this edition has mostly Tech and Sports, make those pages great!
+If there's no Indian news, skip National page entirely.
+Every edition should feel fresh and different based on the day's news.
 
 **MODERN DESIGN REQUIREMENTS:**
 1. **Page Layout - CRITICAL FOR NO WHITE SPACE:**
