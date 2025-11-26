@@ -545,9 +545,6 @@ export async function startChainedWorkflow(isManualRun = false): Promise<{ succe
     await updateAgentProgress('publisher', 'idle', '');
     console.log('✅ All agents reset to idle state');
     
-    // Clear any previous queue state
-    await clearQueueState();
-    
     // Initialize workflow state with appropriate message
     const statusMessage = isManualRun 
       ? 'Workflow started manually. Executing steps immediately...'
@@ -558,11 +555,20 @@ export async function startChainedWorkflow(isManualRun = false): Promise<{ succe
       message: statusMessage
     });
     
-    // Set initial queue state
-    await updateQueueState({ 
-      currentStep: 'clear_data',
+    // CRITICAL: Set initial queue state DIRECTLY (don't call clearQueueState first)
+    // clearQueueState sets to 'idle' which causes cron to skip execution
+    const { firestore } = await import('@/lib/firebase-server').then(m => m.getFirebaseServices());
+    const { setDoc, doc, Timestamp } = await import('firebase/firestore');
+    
+    await setDoc(doc(firestore, 'workflow_queue', 'current'), {
+      currentStep: 'clear_data' as any,
       isManualRun: isManualRun,
-      lastUpdated: Date.now()
+      attempt: 1,
+      draftsMade: 0,
+      validCount: 0,
+      lastUpdated: Timestamp.now(),
+      isExecuting: false,
+      executionStartedAt: null as any
     });
     
     console.log('✅ Queue initialized to: clear_data');
