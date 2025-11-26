@@ -63,136 +63,230 @@ export async function executeStep2_Dedup(): Promise<{ success: boolean; message:
     }
     
     await updateAgentProgress('deduplicator', 'success', `Removed ${dedupResult.deletedCount} duplicates. ${dedupResult.totalLeads} unique leads remain.`);
-    await updateQueueState({ currentStep: 'journalist_1', draftsMade: 0 });
+    await updateQueueState({ currentStep: 'distribute_leads', draftsMade: 0 });
     
-    console.log('✅ Step 2 COMPLETE: Deduplication finished. Next step: Journalist 1');
-    return { success: true, message: `Removed ${dedupResult.deletedCount} duplicates. Proceeding to journalist_1...`, nextStep: 'journalist_1' };
+    console.log('✅ Step 2 COMPLETE: Deduplication finished. Next step: Distribute leads');
+    return { success: true, message: `Removed ${dedupResult.deletedCount} duplicates. Proceeding to distribute leads...`, nextStep: 'distribute_leads' };
   } catch (error: any) {
     await updateQueueState({ currentStep: 'error', error: error.message });
     return { success: false, message: 'Step 2 failed', error: error.message };
   }
 }
 
-// Step 3.1: Journalist 1
-export async function executeStep3_Journalist1(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
-  return await executeSingleJournalist('journalist_1', 'journalist_2');
-}
-
-// Step 3.2: Journalist 2
-export async function executeStep3_Journalist2(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
-  return await executeSingleJournalist('journalist_2', 'journalist_3');
-}
-
-// Step 3.3: Journalist 3
-export async function executeStep3_Journalist3(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
-  return await executeSingleJournalist('journalist_3', 'journalist_4');
-}
-
-// Step 3.4: Journalist 4
-export async function executeStep3_Journalist4(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
-  return await executeSingleJournalist('journalist_4', 'journalist_5');
-}
-
-// Step 3.5: Journalist 5
-export async function executeStep3_Journalist5(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
-  return await executeSingleJournalist('journalist_5', 'validate');
-}
-
-// Execute a single journalist process
-async function executeSingleJournalist(journalistId: string, nextStep: string): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
+// Step 3: Distribute leads to journalist-specific collections
+export async function executeStep3_DistributeLeads(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
   try {
-    console.log(`📋 Step: ${journalistId}`);
+    console.log('📋 Step 3: Distributing leads to journalists');
     
-    await updateAgentProgress(journalistId as any, 'working', 'Starting...', { drafted: 0 });
+    await updateAgentProgress('journalist', 'working', 'Distributing leads to 5 journalists...');
     
-    const result = await runJournalistProcess(journalistId);
+    const { firestore } = await import('@/lib/firebase-server').then(m => m.getFirebaseServices());
+    const { collection, getDocs, writeBatch, doc, Timestamp } = await import('firebase/firestore');
     
-    await updateAgentProgress(journalistId as any, 'success', `Completed ${result.drafted} article${result.drafted !== 1 ? 's' : ''}`, { 
-      drafted: result.drafted 
-    });
+    // Get all raw leads
+    const leadsSnapshot = await getDocs(collection(firestore, 'raw_leads'));
+    const allLeads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // Update total drafted count
-    const state = await getQueueState();
-    const totalDrafts = (state?.draftsMade || 0) + result.drafted;
+    if (allLeads.length === 0) {
+      await updateQueueState({ currentStep: 'error', error: 'No leads to distribute' });
+      return { success: false, message: 'No leads found to distribute', error: 'No leads available' };
+    }
     
-    // Update journalist aggregated status
-    await updateAgentProgress('journalist', 'working', `Total: ${totalDrafts} articles drafted`, { 
-      drafted: totalDrafts, 
-      remaining: 0 
-    });
+    // Divide leads equally among 5 journalists
+    const journalists = ['journalist_1', 'journalist_2', 'journalist_3', 'journalist_4', 'journalist_5'];
+    const leadsPerJournalist = Math.ceil(allLeads.length / journalists.length);
     
-    await updateQueueState({ currentStep: nextStep as any, draftsMade: totalDrafts });
+    console.log(`📊 Distributing ${allLeads.length} leads: ~${leadsPerJournalist} per journalist`);
     
-    console.log(`✅ ${journalistId} COMPLETE: Drafted ${result.drafted} articles. Total: ${totalDrafts}. Next step: ${nextStep}`);
-    return { success: true, message: `${journalistId} drafted ${result.drafted} article(s). Total: ${totalDrafts}`, nextStep };
+    // Create batches for each journalist
+    const batches: any[] = [];
+    
+    for (let i = 0; i < journalists.length; i++) {
+      const journalistId = journalists[i];
+      const startIdx = i * leadsPerJournalist;
+      const endIdx = Math.min(startIdx + leadsPerJournalist, allLeads.length);
+      const journalistLeads = allLeads.slice(startIdx, endIdx);
+      
+      if (journalistLeads.length === 0) continue;
+      
+      const batch = writeBatch(firestore);
+      
+      // Add leads to journalist-specific collection
+      journalistLeads.forEach(lead => {
+        const newDocRef = doc(collection(firestore, `leads_${journalistId}`));
+        batch.set(newDocRef, {
+          ...lead,
+          assignedTo: journalistId,
+          assignedAt: Timestamp.now()
+        });
+      });
+      
+      batches.push({ batch, journalistId, count: journalistLeads.length });
+      
+      console.log(`📌 Assigned ${journalistLeads.length} leads to ${journalistId}`);
+    }
+    
+    // Commit all batches
+    await Promise.all(batches.map(b => b.batch.commit()));
+    
+    // Clear the raw_leads collection
+    const clearBatch = writeBatch(firestore);
+    leadsSnapshot.docs.forEach(doc => clearBatch.delete(doc.ref));
+    await clearBatch.commit();
+    
+    // Update UI for each journalist
+    for (const { journalistId, count } of batches) {
+      await updateAgentProgress(journalistId as any, 'idle', `Ready with ${count} leads`, { drafted: 0 });
+    }
+    
+    await updateAgentProgress('journalist', 'working', `Leads distributed. Starting parallel drafting...`);
+    await updateQueueState({ currentStep: 'journalists_parallel', draftsMade: 0 });
+    
+    console.log('✅ Step 3 COMPLETE: Leads distributed. Next step: Parallel journalist work');
+    return { success: true, message: `Distributed ${allLeads.length} leads to 5 journalists`, nextStep: 'journalists_parallel' };
     
   } catch (error: any) {
     await updateQueueState({ currentStep: 'error', error: error.message });
-    return { success: false, message: `${journalistId} failed`, error: error.message };
+    return { success: false, message: 'Lead distribution failed', error: error.message };
   }
 }
 
-// Individual journalist worker process
-async function runJournalistProcess(journalistId: string): Promise<{ drafted: number }> {
+// Step 4: All journalists work in parallel
+export async function executeStep4_JournalistsParallel(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
+  try {
+    console.log('📋 Step 4: Running all 5 journalists in parallel');
+    
+    await updateAgentProgress('journalist', 'working', 'All 5 journalists drafting articles...');
+    
+    const journalists = ['journalist_1', 'journalist_2', 'journalist_3', 'journalist_4', 'journalist_5'];
+    
+    // Start all journalists in parallel
+    const journalistPromises = journalists.map(journalistId => 
+      runJournalistFromAssignedLeads(journalistId)
+    );
+    
+    // Wait for all to complete
+    const results = await Promise.all(journalistPromises);
+    
+    // Calculate total articles drafted
+    const totalDrafted = results.reduce((sum, result) => sum + result.drafted, 0);
+    
+    // Update aggregated journalist status
+    await updateAgentProgress('journalist', 'success', `All journalists completed: ${totalDrafted} articles drafted`, { 
+      drafted: totalDrafted, 
+      remaining: 0 
+    });
+    
+    await updateQueueState({ currentStep: 'validate', draftsMade: totalDrafted });
+    
+    console.log(`✅ Step 4 COMPLETE: All journalists finished. Total articles: ${totalDrafted}. Next step: Validation`);
+    return { success: true, message: `All journalists completed. ${totalDrafted} articles drafted.`, nextStep: 'validate' };
+    
+  } catch (error: any) {
+    await updateQueueState({ currentStep: 'error', error: error.message });
+    return { success: false, message: 'Parallel journalist work failed', error: error.message };
+  }
+}
+
+// Run journalist process from their assigned leads collection
+async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ drafted: number }> {
   let drafted = 0;
-  let hasMoreLeads = true;
-  let consecutiveErrors = 0;
   
-  console.log(`📰 ${journalistId} starting...`);
+  console.log(`📰 ${journalistId} starting parallel work...`);
   
-  while (hasMoreLeads && consecutiveErrors < 3) {
-    try {
-      const result = await draftArticleAction(journalistId);
+  await updateAgentProgress(journalistId as any, 'working', 'Drafting articles...', { drafted: 0 });
+  
+  const { firestore } = await import('@/lib/firebase-server').then(m => m.getFirebaseServices());
+  const { collection, getDocs, query, limit, writeBatch, doc, Timestamp, deleteDoc } = await import('firebase/firestore');
+  
+  try {
+    // Process all leads from this journalist's collection
+    let hasMoreLeads = true;
+    
+    while (hasMoreLeads) {
+      // Get one lead from journalist's collection
+      const leadsQuery = query(collection(firestore, `leads_${journalistId}`), limit(1));
+      const leadsSnapshot = await getDocs(leadsQuery);
       
-      if (result.success && result.articleId) {
+      if (leadsSnapshot.empty) {
+        hasMoreLeads = false;
+        break;
+      }
+      
+      const leadDoc = leadsSnapshot.docs[0];
+      const leadData = leadDoc.data();
+      const lead = { 
+        id: leadDoc.id, 
+        url: leadData.url || '',
+        title: leadData.title || '',
+        topic: leadData.topic || '',
+        content: leadData.content || '',
+        imageUrl: leadData.imageUrl || ''
+      };
+      
+      try {
+        // Generate article from lead
+        const { summarizeBreakingNews } = await import('@/ai/flows/summarize-breaking-news');
+        const summaryResult = await summarizeBreakingNews({ 
+          url: lead.url, 
+          title: lead.title, 
+          topic: lead.topic, 
+          content: lead.content 
+        });
+        
+        // Create draft article
+        const batch = writeBatch(firestore);
+        
+        const newDraftRef = doc(collection(firestore, 'draft_articles'));
+        batch.set(newDraftRef, {
+          rawLeadId: lead.id,
+          headline: summaryResult.headline,
+          content: summaryResult.summary,
+          imageUrl: lead.imageUrl || '',
+          status: 'drafted',
+          createdBy: journalistId,
+          createdAt: Timestamp.now()
+        });
+        
+        // Delete the lead from journalist's collection
+        batch.delete(leadDoc.ref);
+        
+        await batch.commit();
+        
         drafted++;
-        consecutiveErrors = 0; // Reset error counter on success
+        
         await updateAgentProgress(journalistId as any, 'working', `Drafted ${drafted} article${drafted > 1 ? 's' : ''}`, { 
           drafted 
         });
-        console.log(`📰 ${journalistId} drafted article: ${result.headline} (${result.remaining} leads left)`);
         
-        // Check if more leads remain
-        if (result.remaining === 0) {
-          hasMoreLeads = false;
-          await updateAgentProgress(journalistId as any, 'success', `Completed ${drafted} article${drafted > 1 ? 's' : ''}`, { 
-            drafted 
-          });
-          console.log(`✅ ${journalistId} completed with ${drafted} articles`);
-        } else {
-          await sleep(200); // Brief pause between drafts
-        }
-      } else if (result.remaining === 0) {
-        // No more leads, exit gracefully
-        hasMoreLeads = false;
-        await updateAgentProgress(journalistId as any, 'success', `Completed ${drafted} article${drafted > 1 ? 's' : ''}`, { 
-          drafted 
-        });
-        console.log(`✅ ${journalistId} completed with ${drafted} articles (no more leads)`);
-      } else if (result.error) {
-        consecutiveErrors++;
-        console.error(`❌ ${journalistId} error (${consecutiveErrors}/3):`, result.error);
-        if (consecutiveErrors < 3) {
-          await sleep(1000); // Wait before retry
-        }
-      }
-    } catch (error: any) {
-      consecutiveErrors++;
-      console.error(`❌ ${journalistId} exception (${consecutiveErrors}/3):`, error.message);
-      if (consecutiveErrors < 3) {
-        await sleep(1000);
-      } else {
-        await updateAgentProgress(journalistId as any, 'error', `Failed after 3 errors`, { drafted });
-        break;
+        console.log(`📰 ${journalistId} drafted: ${summaryResult.headline}`);
+        
+        await sleep(200); // Brief pause between articles
+        
+      } catch (articleError: any) {
+        console.error(`❌ ${journalistId} failed to draft article:`, articleError);
+        // Delete the problematic lead and continue
+        await deleteDoc(leadDoc.ref);
       }
     }
+    
+    await updateAgentProgress(journalistId as any, 'success', `Completed ${drafted} article${drafted !== 1 ? 's' : ''}`, { 
+      drafted 
+    });
+    
+    console.log(`✅ ${journalistId} completed with ${drafted} articles`);
+    
+    return { drafted };
+    
+  } catch (error: any) {
+    console.error(`❌ ${journalistId} critical error:`, error);
+    await updateAgentProgress(journalistId as any, 'idle', `Error: ${error.message}`, { drafted });
+    return { drafted };
   }
-  
-  return { drafted };
 }
 
-// Step 4: Validate and Editor (completes in < 60s)
-export async function executeStep4_ValidateAndEdit(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string; completed?: boolean }> {
+// Step 5: Validate and Editor (completes in < 60s)
+export async function executeStep5_ValidateAndEdit(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string; completed?: boolean }> {
   try {
     console.log('📋 Step 4: Validate and Editor');
     
@@ -227,13 +321,14 @@ export async function executeStep4_ValidateAndEdit(): Promise<{ success: boolean
       await updateWorkflowState({ status: 'success', message: 'Workflow completed successfully!' });
       
       // Reset all journalist progress to idle after completion
+      await updateAgentProgress('journalist', 'idle', 'Ready', { drafted: 0, remaining: 0 });
       await updateAgentProgress('journalist_1', 'idle', 'Ready', { drafted: 0 });
       await updateAgentProgress('journalist_2', 'idle', 'Ready', { drafted: 0 });
       await updateAgentProgress('journalist_3', 'idle', 'Ready', { drafted: 0 });
       await updateAgentProgress('journalist_4', 'idle', 'Ready', { drafted: 0 });
       await updateAgentProgress('journalist_5', 'idle', 'Ready', { drafted: 0 });
       
-      console.log(`✅ Step 9 COMPLETE: Editor finished. Workflow complete with ${validationResult.validCount} articles!`);
+      console.log(`✅ Step 5 COMPLETE: Editor finished. Workflow complete with ${validationResult.validCount} articles!`);
       return { success: true, message: `Edition created with ${validationResult.validCount} articles!`, completed: true };
       
     } else if ((state?.attempt || 1) < 3) {
@@ -305,35 +400,20 @@ export async function executeNextWorkflowStep(): Promise<{
         result = await executeStep2_Dedup();
         break;
         
-      case 'journalist_1':
-        console.log('📋 Executing: Step 3.1 - Journalist 1');
-        result = await executeStep3_Journalist1();
+      case 'distribute_leads':
+        console.log('📋 Executing: Step 3 - Distribute Leads');
+        result = await executeStep3_DistributeLeads();
         break;
         
-      case 'journalist_2':
-        console.log('📋 Executing: Step 3.2 - Journalist 2');
-        result = await executeStep3_Journalist2();
-        break;
-        
-      case 'journalist_3':
-        console.log('📋 Executing: Step 3.3 - Journalist 3');
-        result = await executeStep3_Journalist3();
-        break;
-        
-      case 'journalist_4':
-        console.log('📋 Executing: Step 3.4 - Journalist 4');
-        result = await executeStep3_Journalist4();
-        break;
-        
-      case 'journalist_5':
-        console.log('📋 Executing: Step 3.5 - Journalist 5');
-        result = await executeStep3_Journalist5();
+      case 'journalists_parallel':
+        console.log('📋 Executing: Step 4 - All Journalists (Parallel)');
+        result = await executeStep4_JournalistsParallel();
         break;
         
       case 'validate':
       case 'editor':
-        console.log('📋 Executing: Step 4 - Validate & Editor');
-        result = await executeStep4_ValidateAndEdit();
+        console.log('📋 Executing: Step 5 - Validate & Editor');
+        result = await executeStep5_ValidateAndEdit();
         const nextState = await getQueueState();
         result.nextStep = nextState?.currentStep === 'clear_data' ? 'clear_data' : 'complete';
         result.completed = nextState?.currentStep === 'complete';

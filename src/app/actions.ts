@@ -600,7 +600,15 @@ export async function clearAllDataAction(): Promise<{ success: boolean; error?: 
         const { withTimeout } = await import('@/lib/firebase-server');
         console.log('✅ Firebase services initialized');
         
-        const collections = ["raw_leads", "draft_articles"];
+        const collections = [
+            "raw_leads", 
+            "draft_articles",
+            "leads_journalist_1",
+            "leads_journalist_2",
+            "leads_journalist_3",
+            "leads_journalist_4",
+            "leads_journalist_5"
+        ];
         let totalDeleted = 0;
         
         for (const colName of collections) {
