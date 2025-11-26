@@ -39,10 +39,25 @@ export async function generateNewspaperLayout(input: GenerateNewspaperLayoutInpu
 
 const prompt = ai.definePrompt({
   name: 'generateNewspaperLayoutPrompt',
-  model: 'googleai/gemini-2.5-pro', // Using Gemini 2.5 Pro for superior HTML generation
+  model: 'googleai/gemini-2.5-pro',
   input: {schema: GenerateNewspaperLayoutInputSchema},
   output: {schema: GenerateNewspaperLayoutOutputSchema},
-  prompt: `You are a world-class newspaper layout designer for "The Daily Agent", a prestigious Indian newspaper.
+}, async (input) => {
+  const currentDate = format(new Date(), 'EEEE, MMMM d, yyyy');
+  const currentYear = new Date().getFullYear();
+  
+  const articlesText = input.articles.map((article, idx) => `
+Article ${idx + 1}:
+- Headline: ${article.headline}
+- Content: ${article.content}
+${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use placeholder from unsplash.com'}
+`).join('\n');
+
+  return {
+    messages: [{
+      role: 'user',
+      content: [{
+        text: `You are a world-class newspaper layout designer for "The Daily Agent", a prestigious Indian newspaper.
 
 **YOUR TASK:** Generate a complete newspaper edition using the provided template below. Follow these rules EXACTLY:
 
@@ -75,19 +90,14 @@ const prompt = ai.definePrompt({
 \`\`\`
 
 **Provided Articles to Use:**
-${input.articles.map((article, idx) => `
-Article ${idx + 1}:
-- Headline: ${article.headline}
-- Content: ${article.content}
-${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use placeholder from unsplash.com'}
-`).join('\n')}
+${articlesText}
 
 **Categories to Use:** National Development, Technology, Politics, Business, Markets, Sports, Culture, Science, Environment, Education, Agriculture, Infrastructure, Policy Watch
 
 **Output Requirements:**
 - Complete HTML from <!DOCTYPE html> to </html>
 - NO markdown formatting, NO code blocks, NO comments
-- Use current date: ${format(new Date(), 'EEEE, MMMM d, yyyy')}
+- Use current date: ${currentDate}
 - Edition number: ${input.editionNumber}
 - Replace ALL placeholder content with actual articles
 - Create exactly ONE page with 20-30 articles
@@ -99,7 +109,7 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use placeholder 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The Daily Agent | ${format(new Date(), 'MMMM d, yyyy')} | Indian Edition</title>
+    <title>The Daily Agent | ${currentDate} | Indian Edition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Merriweather:wght@400;700;900&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -457,9 +467,9 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use placeholder 
         <header class="masthead">
             <div class="nameplate">The Daily Agent</div>
             <div class="masthead-meta">
-                <span>${format(new Date(), 'EEEE, MMMM d, yyyy')}</span>
+                <span>${currentDate}</span>
                 <span>Indian Edition</span>
-                <span>Vol. {{editionNumber}}, No. 1</span>
+                <span>Vol. ${input.editionNumber}, No. 1</span>
             </div>
             <nav class="masthead-nav">
                 <a href="#page-1">Front Page</a>
@@ -511,13 +521,16 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use placeholder 
         </main>
 
         <footer class="folio">
-            <p>&copy; ${new Date().getFullYear()} The Daily Agent. Reproductions by permission only.</p>
+            <p>&copy; ${currentYear} The Daily Agent. Reproductions by permission only.</p>
             <p>For news tips: newsroom@dailyagent.press | Subscribe at DailyAgent.press/subscribe</p>
         </footer>
     </div>
 </body>
 </html>
 `
+      }]
+    }]
+  };
 });
 
 const generateNewspaperLayoutFlow = ai.defineFlow(
