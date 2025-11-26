@@ -30,9 +30,10 @@ export async function executeStep1_ClearAndScout(): Promise<{ success: boolean; 
     const state = await getQueueState();
     const attempt = state?.attempt || 1;
     
-    // Scout for 40 leads (target 35+ after dedup/validation)
+    // Scout for leads: 40 on first attempt, 5 on retries
+    const leadsToFind = attempt === 1 ? 40 : 5;
     await updateAgentProgress('scout', 'working', `Scout is gathering news leads (Attempt ${attempt}/3)...`);
-    const scoutResult = await findLeadsAction(40);
+    const scoutResult = await findLeadsAction(leadsToFind);
     
     if (!scoutResult.success) {
       await updateQueueState({ currentStep: 'error', error: scoutResult.error });
@@ -371,8 +372,8 @@ export async function executeStep5_ValidateAndEdit(): Promise<{ success: boolean
     
     await updateAgentProgress('validator', 'working', `Validator approved ${validationResult.validCount} articles, discarded ${validationResult.discardedCount}.`);
     
-    // Check if we have enough articles (35+ for comprehensive edition)
-    if (validationResult.validCount >= 35) {
+    // Check if we have enough articles (30+ for comprehensive edition)
+    if (validationResult.validCount >= 30) {
       await updateAgentProgress('validator', 'working', `Article count sufficient (${validationResult.validCount}). Proceeding to layout.`);
       
       // Double-check we're not already complete (prevent duplicate editions)
@@ -407,7 +408,7 @@ export async function executeStep5_ValidateAndEdit(): Promise<{ success: boolean
       
     } else if ((state?.attempt || 1) < 3) {
       // Need more articles, retry from scout
-      await updateAgentProgress('validator', 'working', `Need more articles (${validationResult.validCount}/20). Retrying scout...`);
+      await updateAgentProgress('validator', 'working', `Need more articles (${validationResult.validCount}/30). Retrying scout...`);
       await updateQueueState({ 
         currentStep: 'clear_data', 
         attempt: (state?.attempt || 1) + 1,
