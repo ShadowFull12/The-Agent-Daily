@@ -89,16 +89,29 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use relevant Uns
 - **Next Pages**: ENVIRONMENT category only
 - **Final Pages**: Any remaining categories or opinion/lifestyle
 
-**IMPORTANT RULES:**
+**IMPORTANT RULES - NO WHITE SPACE:**
 - NEVER combine categories like "National & Politics" or "Technology & Science" - they must be SEPARATE pages
 - One category can have 2-3 pages if there are 8+ articles in that category
-- Distribute 4-7 articles per page to avoid white space
-- Use the 3-column grid to fill pages completely
-- Add quote boxes, stat boxes, news briefs to fill space and add visual interest
+- ALL PAGES MUST BE EQUAL LENGTH - use CSS to ensure consistent page heights
+- When articles DON'T divide by 3 evenly on a page:
+  * Make 1-2 articles span 2 columns to fill horizontal space
+  * OR expand one article's content across multiple columns
+  * OR add quote boxes, stat boxes to balance the layout
+- For longer articles (400+ words): Split content across 2 columns using CSS column-span
+- Add quote boxes, stat boxes, news briefs ONLY when needed to fill white space
 - Total edition can easily be 10-15 pages - this is GOOD and expected
+- Every page should look visually balanced and full
 
 **MODERN DESIGN REQUIREMENTS:**
-1. Use colorful gradient headers for each page (match to category):
+1. **Page Layout - CRITICAL FOR NO WHITE SPACE:**
+   - Use 3-column grid (three-column-layout class)
+   - If page has 4 stories: Make 1 story span 2 columns
+   - If page has 5 stories: Make 2 stories span 2 columns, rest single column
+   - If page has 7 stories: Make 1 story span 2 columns
+   - Long articles (400+ words): Use CSS column-count: 2 to split within story
+   - All pages MUST have equal heights using min-height and page-break
+
+2. **Colored gradient headers** for each page (match to category):
    - Front Page: Red gradient (.page-header.red)
    - National: Purple gradient (.page-header.purple)
    - Politics: Deep Purple gradient (.page-header.purple)
@@ -110,26 +123,32 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use relevant Uns
    - Healthcare: Green gradient (.page-header.green)
    - Environment: Green gradient (.page-header.green)
 
-2. Hero story on Page 1 MUST have:
+3. **Hero story on Page 1** MUST have:
    - Large prominent headline (3.8rem font)
    - Full-width image in hero-image class
    - 350-450 word detailed content
    - Breaking Development kicker in red
 
-3. Use varied article components to fill space:
-   - Quote boxes for impactful statements
-   - Stat boxes for key numbers/statistics  
-   - Info boxes for additional context
-   - News briefs sidebar for quick updates
+4. **Component Sizing - FIT TO CONTENT:**
+   - Quote boxes: Only 2-3 lines of text, compact padding (0.8rem)
+   - Stat boxes: Large number + short label, tight spacing
+   - Info boxes: 3-4 bullet points maximum, compact
+   - News briefs: 4-5 one-line items, minimal padding
+   - DO NOT make boxes overly large - they should enhance, not dominate
 
-4. Each article needs:
+5. **Each article needs:**
    - Colored kicker badge matching section
    - Strong headline (h2 or h3)
    - Byline with reporter name and location
    - Well-structured paragraphs starting with <strong>CITY:</strong>
    - Images in ~60% of articles (use story-image class)
 
-5. Use 3-column grid layout per page (three-column-layout class)
+6. **Modern Aesthetic:**
+   - Consistent spacing and rhythm
+   - Balanced visual weight across columns
+   - Clean typography with proper hierarchy
+   - Professional color palette throughout
+   - Equal page lengths with proper page breaks
 
 **PROVIDED ARTICLES (${input.articles.length} total):**
 ${articlesText}
@@ -142,13 +161,22 @@ ${articlesText}
 - Use EXACT modern template provided below
 - Create 10-15+ pages with <section class="page"> elements as needed
 - Each category gets dedicated page(s) - NEVER mix categories on same page
+- ALL PAGES MUST BE EQUAL HEIGHT (min-height: 1400px)
 - First article on Page 1 MUST use hero-story class
 - Each page has colored header with page title and number
 - Page titles should be single category name (e.g., "National News", "Politics", "Business & Markets", "Technology")
 - Update page colors, titles, and numbers for each section
 - Use current date: ${currentDate}
 - Edition: ${input.editionNumber}
-- Fill pages completely to avoid white space
+
+**WHITE SPACE ELIMINATION STRATEGY:**
+When a page has articles that don't divide evenly by 3:
+- 4 articles: Add class="span-2" to 1 article to make it wider
+- 5 articles: Add class="span-2" to 2 articles
+- 7 articles: Add class="span-2" to 1 article
+- Long article (400+ words): Add class="multi-column" to split text into 2 columns
+- Use compact quote/stat/info boxes (2-3 lines max) to fill remaining gaps
+- Example: <article class="story span-2 multi-column">...</article>
 
 **MODERN HTML TEMPLATE - USE THIS EXACTLY:**
 <!DOCTYPE html>
@@ -280,6 +308,9 @@ ${articlesText}
             margin-bottom: 3rem;
             page-break-after: always;
             break-after: page;
+            min-height: 1400px; /* Equal page heights */
+            display: flex;
+            flex-direction: column;
         }
 
         .page-header {
@@ -310,6 +341,7 @@ ${articlesText}
             grid-template-columns: 1fr 1fr 1fr;
             gap: 2rem;
             padding: 2rem;
+            flex: 1; /* Fill available space */
         }
 
         .hero-section {
@@ -335,6 +367,19 @@ ${articlesText}
             grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
             padding: 2rem;
+            flex: 1; /* Fill available space */
+            align-content: start;
+        }
+
+        /* Multi-column story support for filling space */
+        .story.span-2 {
+            grid-column: span 2; /* Spans 2 columns */
+        }
+
+        .story.multi-column {
+            column-count: 2;
+            column-gap: 1.5rem;
+            column-rule: 1px solid var(--border);
         }
 
         .hero-story { margin-bottom: 2rem; }
@@ -476,8 +521,8 @@ ${articlesText}
 
         .quote-box {
             border-left: 6px solid var(--accent);
-            padding: 1.2rem 1.8rem;
-            margin: 1.5rem 0;
+            padding: 0.8rem 1.2rem; /* Compact padding */
+            margin: 1rem 0;
             background: linear-gradient(135deg, #fff5f5 0%, #ffebee 100%);
             font-style: italic;
             border-radius: 0 8px 8px 0;
@@ -485,14 +530,14 @@ ${articlesText}
         }
 
         .quote-box p {
-            font-size: 1.15rem;
-            line-height: 1.65;
-            margin: 0 0 0.6rem;
+            font-size: 1rem; /* Reduced from 1.15rem */
+            line-height: 1.5;
+            margin: 0 0 0.4rem;
             font-weight: 500;
         }
 
         .quote-box cite {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             font-style: normal;
             color: var(--accent);
             font-weight: 700;
@@ -502,24 +547,24 @@ ${articlesText}
             background: linear-gradient(135deg, var(--highlight-blue) 0%, #bbdefb 100%);
             border: 3px solid var(--accent-blue);
             border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
+            padding: 1rem 1.2rem; /* Compact padding */
+            margin: 1rem 0;
             text-align: center;
             box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
         }
 
         .stat-box .stat-number {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 3rem;
+            font-size: 2.5rem; /* Reduced from 3rem */
             font-weight: 900;
             color: var(--accent-blue);
             line-height: 1;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.3rem;
         }
 
         .stat-box .stat-label {
             font-family: 'Inter', sans-serif;
-            font-size: 0.95rem;
+            font-size: 0.85rem; /* Reduced from 0.95rem */
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.08rem;
@@ -529,6 +574,41 @@ ${articlesText}
         .info-box {
             background: linear-gradient(135deg, var(--highlight-green) 0%, #c8e6c9 100%);
             border: 3px solid var(--accent-green);
+            border-radius: 8px;
+            padding: 0.8rem 1rem; /* Compact padding */
+            margin: 1rem 0;
+            box-shadow: 0 4px 12px rgba(56, 142, 60, 0.2);
+        }
+
+        .info-box h4 {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem; /* Reduced from 1rem */
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--accent-green);
+            margin: 0 0 0.5rem;
+        }
+
+        .news-brief {
+            background: linear-gradient(135deg, var(--highlight) 0%, #fff8dc 100%);
+            border: 3px solid var(--accent-orange);
+            border-left: 8px solid var(--accent-orange);
+            padding: 0.8rem 1rem; /* Compact padding */
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(245, 124, 0, 0.2);
+        }
+
+        .news-brief h3 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem; /* Reduced from 1.1rem */
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.12rem;
+            margin: 0 0 0.6rem;
+            border-bottom: 3px solid var(--accent-orange);
+            padding-bottom: 0.4rem;
+            color: var(--accent-orange);
+        }
             border-radius: 8px;
             padding: 1.2rem;
             margin: 1.5rem 0;
