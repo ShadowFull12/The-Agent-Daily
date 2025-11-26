@@ -30,9 +30,9 @@ export async function executeStep1_ClearAndScout(): Promise<{ success: boolean; 
     const state = await getQueueState();
     const attempt = state?.attempt || 1;
     
-    // Scout for 25 leads
+    // Scout for 40 leads (target 35+ after dedup/validation)
     await updateAgentProgress('scout', 'working', `Scout is gathering news leads (Attempt ${attempt}/3)...`);
-    const scoutResult = await findLeadsAction(25);
+    const scoutResult = await findLeadsAction(40);
     
     if (!scoutResult.success) {
       await updateQueueState({ currentStep: 'error', error: scoutResult.error });
@@ -267,7 +267,8 @@ async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ d
         title: leadData.title || '',
         topic: leadData.topic || '',
         content: leadData.content || '',
-        imageUrl: leadData.imageUrl || ''
+        imageUrl: leadData.imageUrl || '',
+        category: leadData.category || 'National'
       };
       
       try {
@@ -293,7 +294,8 @@ async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ d
           url: lead.url, 
           title: lead.title, 
           topic: lead.topic, 
-          content: lead.content 
+          content: lead.content,
+          category: lead.category
         });
         
         // Create draft article
@@ -307,7 +309,9 @@ async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ d
           imageUrl: lead.imageUrl || '',
           status: 'drafted',
           createdBy: journalistId,
-          createdAt: Timestamp.now()
+          createdAt: Timestamp.now(),
+          category: summaryResult.category,
+          kicker: summaryResult.kicker
         });
         
         // Delete the lead from journalist's collection
@@ -367,9 +371,9 @@ export async function executeStep5_ValidateAndEdit(): Promise<{ success: boolean
     
     await updateAgentProgress('validator', 'working', `Validator approved ${validationResult.validCount} articles, discarded ${validationResult.discardedCount}.`);
     
-    // Check if we have enough articles (20+)
-    if (validationResult.validCount >= 20) {
-      await updateAgentProgress('validator', 'success', `Article count sufficient (${validationResult.validCount}). Proceeding to layout.`);
+    // Check if we have enough articles (35+ for comprehensive edition)
+    if (validationResult.validCount >= 35) {
+      await updateAgentProgress('validator', 'working', `Article count sufficient (${validationResult.validCount}). Proceeding to layout.`);
       
       // Double-check we're not already complete (prevent duplicate editions)
       const currentState = await getQueueState();

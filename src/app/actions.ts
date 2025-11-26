@@ -24,6 +24,23 @@ import {
 import type { RawLead, DraftArticle, Edition } from "@/lib/types";
 import { getFirebaseServices } from "@/lib/firebase-server";
 
+// Helper function to map topics to newspaper categories
+function categorizeStory(topic: string): string {
+  const categoryMap: Record<string, string> = {
+    'world': 'National',
+    'technology': 'Technology',
+    'business': 'Business',
+    'science': 'Science',
+    'politics': 'Politics',
+    'entertainment': 'Culture',
+    'sports': 'Sports',
+    'health': 'Healthcare',
+    'environment': 'Environment',
+    'top': 'National'
+  };
+  return categoryMap[topic.toLowerCase()] || 'National';
+}
+
 // 1. Scout Agent: Finds new leads
 export async function findLeadsAction(limitStories: number = 25): Promise<{ success: boolean; leadCount: number; error?: string; }> {
   const { firestore } = getFirebaseServices();
@@ -31,7 +48,7 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
   
   try {
     console.log('🔍 Scout Agent: Starting news search...');
-    const topics = ["world", "technology", "business", "science", "politics", "entertainment", "sports"];
+    const topics = ["world", "technology", "business", "science", "politics", "entertainment", "sports", "health", "environment"];
     console.log('📰 Scout Agent: Searching topics:', topics);
     
     const searchResult = await withTimeout(
@@ -70,7 +87,8 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
           title: story.title,
           content: story.content || '',
           status: 'pending',
-          checked: false
+          checked: false,
+          category: categorizeStory(story.topic) // Add category based on topic
         };
         batch.set(newLeadRef, leadData);
       });

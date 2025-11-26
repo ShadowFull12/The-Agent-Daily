@@ -13,6 +13,7 @@ export interface RawLead {
     createdAt: Timestamp;
     status: 'pending' | 'processed';
     checked?: boolean;
+    category?: string; // Category like National, Politics, Business, Technology, Sports, etc.
 }
 
 export interface DraftArticle {
@@ -23,6 +24,8 @@ export interface DraftArticle {
     imageUrl: string;
     createdAt: Timestamp;
     status: 'drafted' | 'validated' | 'published';
+    category?: string; // News category for layout organization
+    kicker?: string; // Short category label for display
 }
 
 export interface Article {
