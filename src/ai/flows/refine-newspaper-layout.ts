@@ -51,21 +51,25 @@ Editor 1 has created the initial newspaper layout. Your job is to REFINE and EXP
    - Add more paragraphs, quotes, context, analysis, statistics
    - Make each article feel complete and comprehensive
 
-2. **EMPTY SPACES (Critical Issue):**
+2. **EMPTY SPACES (Critical Issue #1 - HIGHEST PRIORITY):**
    - Pages have white space at bottom or sides
-   - Add more content to fill these spaces:
-     * Expand existing articles to be longer
-     * Add info boxes, quote boxes, stat boxes where space exists
-     * Use multi-column text for long articles
-     * Add span-2 classes to make articles wider and fill gaps
+   - IMMEDIATE FIXES (in order of priority):
+     a) EXPAND existing articles - Add 2-3 more paragraphs to each article
+     b) Make articles span-2 - Use more space horizontally
+     c) Add multi-column class to long articles
+     d) Only as LAST resort: Add 1-2 COMPACT info boxes (see sizing rules below)
 
-3. **TEXT BOXES TOO EMPTY:**
-   - Some info boxes only have raw data from web search
-   - EXPAND these boxes with:
-     * More descriptive text explaining the data
-     * Context about trends or changes
-     * Additional related information
-     * Make each box informative, not just data dumps
+3. **TEXT BOXES TOO LARGE AND EMPTY (Critical Issue #2):**
+   - **PROBLEM:** Info boxes have huge padding/height but minimal content
+   - **SYMPTOM:** Box is 300-400px tall with only 2 lines of text inside
+   - **ROOT CAUSE:** Excessive padding (2rem), large fonts (1.1rem), big margins (1rem between items)
+   - **SOLUTION:**
+     * Reduce padding to 0.8rem
+     * Reduce font-size to 0.9rem
+     * Reduce margins to 0.3rem between items
+     * Remove any fixed heights
+     * Add 3-5 compact data points instead of 1-2
+     * OR delete box and expand article next to it instead
 
 4. **LAYOUT BALANCE:**
    - Some columns are too short while others are long
@@ -88,13 +92,50 @@ Editor 1 has created the initial newspaper layout. Your job is to REFINE and EXP
 - Add regional context: How this affects different states/cities
 - Add comparative context: How this compares to previous years/other countries
 
-**For Info Boxes & Widgets:**
-- Don't just copy web search data directly
-- Add explanatory text BEFORE the data
-- Example (BAD): "Sensex: 82,347 ▲ 1.2%"
-- Example (GOOD): "Indian stock markets showed strong performance today with the Sensex closing at 82,347 points, marking a gain of 1.2%. This follows yesterday's rally driven by positive global cues and strong domestic earnings. The Nifty 50 also rose..."
-- Add context: Why did it go up/down? What's the trend?
-- Add comparison: How does this compare to last week/month?
+**For Info Boxes & Widgets - CRITICAL SIZE RULES:**
+
+**ABSOLUTE RULE: NO LARGE EMPTY TEXT BOXES**
+
+If you see a text box that looks like this:
+```html
+<div class="info-box" style="height: 400px; padding: 2rem;">
+  <h4>Market Watch</h4>
+  <p>Sensex: 82,347</p>
+</div>
+```
+
+**FIX IT IMMEDIATELY:**
+
+**Option 1 - Make Box COMPACT (Preferred):**
+```html
+<div class="info-box" style="padding: 0.8rem; font-size: 0.9rem;">
+  <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Market Watch</h4>
+  <p style="margin: 0.3rem 0;">Sensex: 82,347 ▲ 1.2%</p>
+  <p style="margin: 0.3rem 0;">Nifty: 25,184 ▲ 0.8%</p>
+  <p style="margin: 0.3rem 0;">Bank Nifty: 54,230 ▲ 0.5%</p>
+</div>
+```
+
+**Option 2 - Remove Box, Expand Article:**
+If the box is taking up too much space, DELETE it and make the article next to it longer instead.
+
+**MANDATORY BOX SIZING:**
+- padding: 0.8rem (NOT 1.5rem or 2rem)
+- font-size: 0.9rem (NOT 1rem or 1.1rem)
+- line-height: 1.4 (NOT 1.8 or 2)
+- margin between items: 0.3rem to 0.5rem (NOT 1rem)
+- No fixed heights (let content determine height)
+- Maximum 5 lines of content per box
+- Use compact list format, not paragraphs
+
+**BOX CONTENT RULES:**
+- Quote boxes: 2-3 lines maximum, 15-20 words total
+- Stat boxes: One number + one label, that's it
+- Market data: List format (Sensex: X, Nifty: Y, Bank Nifty: Z)
+- Weather: City name + temperature, compact table
+- News briefs: 4-5 items, one line each
+- NO long explanatory paragraphs in boxes
+- Explanation goes in ARTICLES, not boxes
 
 **For Layout Issues:**
 

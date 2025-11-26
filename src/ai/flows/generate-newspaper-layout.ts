@@ -141,44 +141,104 @@ For each category, count articles:
   * IF a category has only 1-2 articles → Place on Front Page or merge with related category
   * Example: 2 Science articles + 2 Healthcare articles = 1 "Science & Health" page
 
-**STEP 3: ELIMINATE WHITE SPACE - CREATIVE LAYOUT STRATEGIES**
+**STEP 3: ELIMINATE WHITE SPACE - MANDATORY LAYOUT RULES**
 
-**TARGET: Each page should have TWO LONG ROWS of THREE COLUMNS (2 rows × 3 columns = 6 story slots)**
+**ABSOLUTE RULE: ZERO WHITE SPACE TOLERANCE**
+Every single pixel of every page must be filled with content. NO exceptions.
 
-But be creative! Mix different layouts:
+**MANDATORY PAGE FILLING STRATEGY:**
 
-**Layout Pattern A - Standard 6 Articles:**
-Row 1: Article-1, Article-2, Article-3 (all single column)
-Row 2: Article-4, Article-5, Article-6 (all single column)
+1. **Calculate Content Per Page:**
+   - Each page MUST have minimum 1400px height worth of content
+   - 3-column grid with NO empty columns
+   - Minimum 2 full rows (6 content slots)
+   - Better: 3 rows (9 content slots) for denser pages
 
-**Layout Pattern B - Feature Story (5 articles):**
-Row 1: BIG-Article (span-2 taking 2 columns), Article-2 (single column)
-Row 2: Article-3, Article-4, Article-5 (all single column)
+2. **Content Distribution Formula:**
+   - **6+ articles:** Use all 6, make articles 350+ words each
+   - **5 articles:** 1 article span-2 (500 words) + 4 articles (350 words each)
+   - **4 articles:** 2 articles span-2 (600 words each) + 2 articles (400 words) + 2 LARGE info boxes
+   - **3 articles:** Each article 600+ words + span-2 class + 3-4 LARGE info boxes between them
+   - **2 articles:** Each article 800+ words + span-2 class + multi-column class + 4-5 LARGE info boxes
 
-**Layout Pattern C - Hero + Grid (7 articles):**
-Row 1: HERO-Article (span-2 taking 2 columns), Data-Box (single column)
-Row 2: Article-1, Article-2, Article-3 (all single column)
-Row 3: Article-4, Article-5, Article-6 (all single column)
+3. **ARTICLE LENGTH REQUIREMENTS (CRITICAL):**
+   - **Single-column article with image:** 350-450 words minimum
+   - **Single-column article without image:** 500-650 words minimum  
+   - **Span-2 article with image:** 500-700 words minimum
+   - **Span-2 article without image:** 700-900 words minimum
+   - **Multi-column article:** 600-800 words minimum (text flows across 2 columns)
 
-**Layout Pattern D - Mixed (4 articles + boxes):**
-Row 1: Article-1 (span-2 taking 2 columns), Data-Box (single column)
-Row 2: Article-2, Article-3, Info-Box (all single column)
-Row 3: Article-4 (span-2 taking 2 columns), Quote-Box (single column)
+4. **INFO BOX RULES - CRITICAL FIX:**
+   
+   **SIZE LIMITATIONS (ABSOLUTE RULES):**
+   - Quote boxes: Maximum 4 lines of text, 15-20 words total
+   - Stat boxes: One big number + one short label (5 words max)
+   - News briefs: 4-5 items, each item one line (10 words max per item)
+   - Market data boxes: List format, no long paragraphs
+   - Weather boxes: City names + temps, compact table format
+   
+   **NEVER CREATE LARGE EMPTY BOXES:**
+   - No box should exceed 200px height
+   - Use padding: 0.8rem (not 1.5rem or 2rem)
+   - Use font-size: 0.9rem or 0.95rem (not 1rem or larger)
+   - Keep line-height: 1.4 (not 1.8 or 2)
+   - Use margin-bottom: 0.5rem between items (not 1rem)
+   
+   **INFO BOX CONTENT FORMAT:**
+   ```html
+   <div class="info-box" style="padding: 0.8rem; font-size: 0.9rem;">
+     <h4 style="margin-bottom: 0.5rem; font-size: 1rem;">Market Watch</h4>
+     <p style="margin: 0.3rem 0;">Sensex: 82,347 ▲ 1.2%</p>
+     <p style="margin: 0.3rem 0;">Nifty: 25,184 ▲ 0.8%</p>
+     <p style="margin: 0.3rem 0;">Bank Nifty: 54,230 ▲ 0.5%</p>
+   </div>
+   ```
+   
+   **STRATEGIC BOX PLACEMENT:**
+   - Only add boxes in the THIRD column (right side)
+   - First two columns: ONLY articles (no boxes interrupting)
+   - Third column: Mix of 1-2 articles + 2-3 compact boxes
+   - Boxes go at BOTTOM of column, never at top
+   - Good: Article, Article, Article-then-Box
+   - Bad: Article, Box, Article (disrupts reading flow)
 
-**CREATIVE FREEDOM - Mix These Elements:**
-1. **span-2 articles**: Make 1-2 articles per page take 2 columns (more prominent)
-2. **multi-column text**: Split long article text into 2 columns within its box
-3. **Large photos**: Some articles get big images (full column width or span-2)
-4. **Data boxes**: Strategically place 1-2 compact boxes per page
-5. **Two-row layouts**: Every page should have at least 2 full rows visible
+5. **LAYOUT PATTERNS (STRICT TEMPLATES):**
 
-**STRATEGIC BOX PLACEMENT:**
-- Place boxes to FILL GAPS, not create them
-- Boxes should be COMPACT (3-4 lines max)
-- Position boxes at END of rows or BOTTOM of columns
-- Never put box between two article columns (breaks flow)
-- Good placement: Article, Article, Box-at-end
-- Bad placement: Article, Box-in-middle, Article
+   **Pattern A - 6 Articles (Standard):**
+   ```
+   Row 1: [Article 350w] [Article 350w] [Article 350w]
+   Row 2: [Article 350w] [Article 350w] [Article 350w + Compact-Box]
+   ```
+
+   **Pattern B - 5 Articles (Feature):**
+   ```
+   Row 1: [BIG Article 600w span-2        ] [Article 400w]
+   Row 2: [Article 400w] [Article 400w] [Article 400w + Box]
+   ```
+
+   **Pattern C - 4 Articles (Expanded):**
+   ```
+   Row 1: [BIG Article 700w span-2        ] [Article 500w + Box]
+   Row 2: [Article 600w] [BIG Article 700w span-2        ]
+   ```
+
+   **Pattern D - 3 Articles (Maximum Fill):**
+   ```
+   Row 1: [HUGE Article 800w span-2 multi-column] [Article 600w + Box]
+   Row 2: [Article 700w] [HUGE Article 800w span-2 multi-column]
+   ```
+
+6. **MANDATORY TECHNIQUES TO FILL SPACE:**
+   - ✅ Increase article word count (primary method)
+   - ✅ Use span-2 class on 1-2 articles per page
+   - ✅ Use multi-column class on long articles (text flows in 2 columns)
+   - ✅ Add 2-3 compact info boxes in right column
+   - ✅ Increase image sizes (hero-image or story-image-large)
+   - ✅ Add more paragraphs with quotes, statistics, context
+   - ✅ Use CSS: min-height: 1400px on every .newspaper-page
+   - ❌ NEVER leave empty space at bottom
+   - ❌ NEVER create half-filled columns
+   - ❌ NEVER create large empty boxes
 
 **STEP 4: ENSURE NO WHITE SPACE**
 
