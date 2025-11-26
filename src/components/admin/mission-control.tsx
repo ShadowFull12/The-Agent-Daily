@@ -380,9 +380,9 @@ export function MissionControl() {
                                                 {progress.status}
                                             </Badge>
                                             
-                                            {agent === 'deduplicator' && (progress.checked !== undefined || progress.status === 'working') && (
+                                            {agent === 'deduplicator' && (progress.passed !== undefined || progress.status === 'working') && (
                                                 <span className="text-xs text-muted-foreground">
-                                                    {progress.checked || 0} checked, {progress.remaining || 0} remaining
+                                                    Passed: {progress.passed || 0}, Deleted: {progress.deleted || 0}
                                                 </span>
                                             )}
                                             

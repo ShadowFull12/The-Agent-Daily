@@ -364,9 +364,10 @@ export async function validateArticlesAction(): Promise<{ success: boolean; vali
 // 5. Chief Editor Agent: Creates the newspaper preview
 export async function createPreviewEditionAction(): Promise<{ success: boolean; editionId?: string; error?: string }> {
     const { firestore } = getFirebaseServices();
+    const editionCreationId = `edition_${Date.now()}`; // Unique ID for tracking
 
     try {
-        console.log('📰 Editor: Starting edition creation...');
+        console.log(`📰 Editor [${editionCreationId}]: Starting edition creation...`);
         
         // Check for RECENT duplicate editions FIRST (created in last 5 minutes) to prevent race conditions
         const fiveMinutesAgo = Timestamp.fromMillis(Date.now() - 5 * 60 * 1000);
@@ -377,17 +378,25 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
         );
         const recentSnapshot = await getDocs(recentEditionsQuery);
         
+        console.log(`🔍 Editor [${editionCreationId}]: Found ${recentSnapshot.docs.length} recent editions to check`);
+        
         // Filter in memory for unpublished editions created within last 5 minutes
         const recentDrafts = recentSnapshot.docs.filter(doc => {
             const data = doc.data();
-            return !data.isPublished && data.publicationDate >= fiveMinutesAgo;
+            const isRecent = !data.isPublished && data.publicationDate >= fiveMinutesAgo;
+            if (isRecent) {
+                console.log(`⚠️ Editor [${editionCreationId}]: Found recent unpublished edition #${data.editionNumber} (ID: ${doc.id})`);
+            }
+            return isRecent;
         });
         
         if (recentDrafts.length > 0) {
             const existingEdition = recentDrafts[0];
-            console.log(`⚠️ Found recent draft edition #${existingEdition.data().editionNumber} created within 5 minutes. Preventing duplicate creation.`);
+            console.log(`⚠️ Editor [${editionCreationId}]: SKIPPING - Found recent draft edition #${existingEdition.data().editionNumber}. Preventing duplicate creation.`);
             return { success: true, editionId: existingEdition.id };
         }
+        
+        console.log(`✅ Editor [${editionCreationId}]: No recent drafts found. Proceeding with creation...`);
         
         // Fetch validated articles without composite index requirement
         const draftsSnapshot = await getDocs(query(collection(firestore, "draft_articles"), where("status", "==", "validated")));
@@ -415,7 +424,7 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
             newEditionNumber = querySnapshot.docs[0].data().editionNumber + 1;
         }
 
-        console.log(`📝 Creating edition #${newEditionNumber}...`);
+        console.log(`📝 Editor [${editionCreationId}]: Creating edition #${newEditionNumber}...`);
         const layout = await generateNewspaperLayout({ articles, editionNumber: newEditionNumber });
 
         const mainArticle = articles[0];
@@ -432,7 +441,7 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
         };
 
         const newEditionRef = await addDoc(collection(firestore, "newspaper_editions"), editionData);
-        console.log(`✅ Edition #${newEditionNumber} created with ID: ${newEditionRef.id}`);
+        console.log(`✅ Editor [${editionCreationId}]: Edition #${newEditionNumber} created with ID: ${newEditionRef.id}`);
         
         // Delete draft articles after edition is created (not just mark as published)
         const batch = writeBatch(firestore);
@@ -441,12 +450,12 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
         });
         await batch.commit();
         
-        console.log(`🗑️ Deleted ${draftsSnapshot.size} draft articles from database`);
+        console.log(`🗑️ Editor [${editionCreationId}]: Deleted ${draftsSnapshot.size} draft articles from database`);
 
         return { success: true, editionId: newEditionRef.id };
     } catch (error: any) {
         const errorMessage = `Failed to create preview edition: ${error.message}`;
-        console.error("createPreviewEditionAction failed:", error);
+        console.error(`❌ Editor [${editionCreationId}]: ${errorMessage}`, error);
         return { success: false, error: errorMessage };
     }
 }

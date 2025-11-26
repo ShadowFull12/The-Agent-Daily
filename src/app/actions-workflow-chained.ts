@@ -222,8 +222,9 @@ export async function executeStep4_JournalistsParallel(): Promise<{ success: boo
 // Run journalist process from their assigned leads collection
 async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ drafted: number }> {
   let drafted = 0;
+  const processId = `${journalistId}_${Date.now()}`; // Unique process ID
   
-  console.log(`📰 ${journalistId} starting parallel work...`);
+  console.log(`📰 ${journalistId} starting parallel work... [Process ID: ${processId}]`);
   
   await updateAgentProgress(journalistId as any, 'working', 'Drafting articles...', { drafted: 0 });
   
@@ -265,10 +266,12 @@ async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ d
         const existingDraft = await getDocs(existingDraftQuery);
         
         if (!existingDraft.empty) {
-          console.log(`⚠️ ${journalistId} skipping duplicate lead: ${lead.id}`);
+          console.log(`⚠️ ${journalistId} [${processId}] skipping duplicate lead: ${lead.id}`);
           await deleteDoc(leadDoc.ref);
           continue;
         }
+        
+        console.log(`📝 ${journalistId} [${processId}] processing lead: ${lead.id} - "${lead.title.substring(0, 50)}..."`);
         
         // Generate article from lead
         const { summarizeBreakingNews } = await import('@/ai/flows/summarize-breaking-news');
@@ -304,12 +307,12 @@ async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ d
           drafted 
         });
         
-        console.log(`📰 ${journalistId} drafted: ${summaryResult.headline}`);
+        console.log(`✅ ${journalistId} [${processId}] drafted article #${drafted}: ${summaryResult.headline.substring(0, 60)}...`);
         
         await sleep(200); // Brief pause between articles
         
       } catch (articleError: any) {
-        console.error(`❌ ${journalistId} failed to draft article:`, articleError);
+        console.error(`❌ ${journalistId} [${processId}] failed to draft article:`, articleError);
         // Delete the problematic lead and continue
         await deleteDoc(leadDoc.ref);
       }
@@ -319,12 +322,12 @@ async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ d
       drafted 
     });
     
-    console.log(`✅ ${journalistId} completed with ${drafted} articles`);
+    console.log(`✅ ${journalistId} [${processId}] completed with ${drafted} articles`);
     
     return { drafted };
     
   } catch (error: any) {
-    console.error(`❌ ${journalistId} critical error:`, error);
+    console.error(`❌ ${journalistId} [${processId}] critical error:`, error);
     await updateAgentProgress(journalistId as any, 'idle', `Error: ${error.message}`, { drafted });
     return { drafted };
   }
