@@ -120,19 +120,22 @@ export async function executeStep3_DistributeLeads(): Promise<{ success: boolean
       
       const batch = writeBatch(firestore);
       
+      console.log(`📌 ${journalistId} will process ${journalistLeads.length} leads (index ${startIdx} to ${endIdx-1}):`);
+      
       // Add leads to journalist-specific collection
-      journalistLeads.forEach(lead => {
+      journalistLeads.forEach((lead, idx) => {
         const newDocRef = doc(collection(firestore, `leads_${journalistId}`));
+        const leadTitle = (lead as any).title || 'Untitled';
         batch.set(newDocRef, {
           ...lead,
           assignedTo: journalistId,
-          assignedAt: Timestamp.now()
+          assignedAt: Timestamp.now(),
+          originalIndex: startIdx + idx // Track original position for debugging
         });
+        console.log(`   → Lead ${startIdx + idx}: "${leadTitle.substring(0, 50)}..." (ID: ${lead.id})`);
       });
       
       batches.push({ batch, journalistId, count: journalistLeads.length });
-      
-      console.log(`📌 Assigned ${journalistLeads.length} leads to ${journalistId}`);
     }
     
     // Commit all batches
@@ -142,6 +145,16 @@ export async function executeStep3_DistributeLeads(): Promise<{ success: boolean
     batches.forEach(b => {
       console.log(`   ${b.journalistId}: ${b.count} leads assigned`);
     });
+    
+    // Verify no overlap by checking total assigned equals original count
+    const totalAssigned = batches.reduce((sum, b) => sum + b.count, 0);
+    console.log(`✅ Verification: ${totalAssigned} leads assigned out of ${allLeads.length} total (${totalAssigned === allLeads.length ? 'MATCH ✓' : 'MISMATCH ✗'})`);
+    
+    if (totalAssigned !== allLeads.length) {
+      console.error(`❌ ERROR: Lead distribution mismatch! Expected ${allLeads.length}, got ${totalAssigned}`);
+      await updateQueueState({ currentStep: 'error', error: 'Lead distribution count mismatch' });
+      return { success: false, message: 'Lead distribution failed', error: 'Count mismatch' };
+    }
     
     // Clear the raw_leads collection
     const clearBatch = writeBatch(firestore);
@@ -226,7 +239,8 @@ async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ d
   
   console.log(`📰 ${journalistId} starting parallel work... [Process ID: ${processId}]`);
   
-  await updateAgentProgress(journalistId as any, 'working', 'Drafting articles...', { drafted: 0 });
+  // Don't reset drafted count - just update status to 'working'
+  await updateAgentProgress(journalistId as any, 'working', 'Drafting articles...');
   
   const { firestore } = await import('@/lib/firebase-server').then(m => m.getFirebaseServices());
   const { collection, getDocs, query, limit, writeBatch, doc, Timestamp, deleteDoc, where } = await import('firebase/firestore');

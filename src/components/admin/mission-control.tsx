@@ -439,7 +439,13 @@ export function MissionControl() {
                                                     <div className="mt-2 pt-2 border-t">
                                                         <div className="flex justify-between text-xs">
                                                             <span className="font-medium">Total Drafted:</span>
-                                                            <span className="font-bold">{progress.drafted || 0} articles</span>
+                                                            <span className="font-bold">{(
+                                                                (agentProgress.journalist_1?.drafted || 0) +
+                                                                (agentProgress.journalist_2?.drafted || 0) +
+                                                                (agentProgress.journalist_3?.drafted || 0) +
+                                                                (agentProgress.journalist_4?.drafted || 0) +
+                                                                (agentProgress.journalist_5?.drafted || 0)
+                                                            )} articles</span>
                                                         </div>
                                                     </div>
                                                 </div>
