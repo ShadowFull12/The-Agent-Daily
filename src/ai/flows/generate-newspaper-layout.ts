@@ -59,19 +59,55 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use placeholder 
       content: [{
         text: `You are a world-class newspaper layout designer for "The Daily Agent", a prestigious Indian newspaper.
 
-**YOUR TASK:** Generate a complete newspaper edition using the provided template below. Follow these rules EXACTLY:
+**YOUR TASK:** Generate a complete MULTI-PAGE newspaper edition. Follow these rules EXACTLY:
 
 **CRITICAL RULES:**
 1. Use the EXACT HTML template structure provided below
-2. The CSS \`column-count: 3\` automatically creates 3 columns - DO NOT create manual column divs
-3. Create 20-30 <article class="story"> elements in sequence - CSS will flow them into columns
-4. First article MUST use class="story lead" for prominence
-5. Vary article lengths: 150-400 words for visual balance
-6. Include images (using provided imageUrl) in approximately 50% of articles
-7. Use ALL provided articles - expand content to 150-400 words per article if needed
-8. Use Indian cities, reporter names, and local context
-9. Each article needs: kicker (category), headline, byline, content paragraphs
-10. Start paragraphs with <strong>CITY:</strong> format
+2. Create MULTIPLE PAGES (3-5 pages) by duplicating the <section class="page"> element
+3. Distribute 5-7 articles per page for balanced layout
+4. First article on Page 1 MUST use class="story lead" for prominence
+5. Each page has CSS \`column-count: 3\` for automatic 3-column layout
+6. Vary article lengths: 150-400 words for visual balance
+7. Include images (using provided imageUrl) in approximately 50% of articles
+8. Use ALL provided articles - expand content to 150-400 words per article if needed
+9. Use Indian cities, reporter names, and local context
+10. Each article needs: kicker (category), headline, byline, content paragraphs
+11. Start paragraphs with <strong>CITY:</strong> format
+12. Update page numbers and labels for each page
+
+**Multi-Page Structure - IMPORTANT:**
+Create multiple <section class="page"> elements like this:
+
+\`\`\`html
+<section class="page" id="page-1">
+  <div class="page-heading">
+    <div class="page-label">Page 1 • Front Page</div>
+    <div class="page-number">1</div>
+  </div>
+  <article class="story lead">...</article>
+  <article class="story">...</article>
+  <!-- 5-7 articles per page -->
+</section>
+
+<section class="page" id="page-2">
+  <div class="page-heading">
+    <div class="page-label">Page 2 • National News</div>
+    <div class="page-number">2</div>
+  </div>
+  <article class="story">...</article>
+  <!-- More articles -->
+</section>
+
+<section class="page" id="page-3">
+  <div class="page-heading">
+    <div class="page-label">Page 3 • Business & Technology</div>
+    <div class="page-number">3</div>
+  </div>
+  <article class="story">...</article>
+  <!-- More articles -->
+</section>
+<!-- Continue for all pages -->
+\`\`\`
 
 **Article Structure Pattern:**
 \`\`\`html
@@ -100,7 +136,10 @@ ${articlesText}
 - Use current date: ${currentDate}
 - Edition number: ${input.editionNumber}
 - Replace ALL placeholder content with actual articles
-- Create exactly ONE page with 20-30 articles
+- Create 3-5 pages by duplicating <section class="page"> elements
+- Distribute articles evenly: 5-7 articles per page
+- Update page numbers and page labels for each page
+- Each page should have balanced 3-column layout
 
 
 **HTML TEMPLATE TO USE:**
@@ -241,11 +280,19 @@ ${articlesText}
             column-fill: balance;
             column-rule: 1px solid var(--border);
             position: relative;
-            page-break-inside: avoid;
+            page-break-after: always;
+            break-after: page;
+            min-height: 800px;
         }
 
         .page:not(:first-of-type) {
             page-break-before: always;
+            break-before: page;
+        }
+
+        .page:last-of-type {
+            page-break-after: auto;
+            break-after: auto;
         }
 
         .page-heading {
@@ -477,15 +524,16 @@ ${articlesText}
         </header>
 
         <main class="edition">
-            <!-- AI: Replace this section with actual articles. Create 20-30 <article class="story"> elements. -->
-            <!-- The CSS column-count:3 will automatically arrange them into 3 columns. -->
+            <!-- AI: Create MULTIPLE <section class="page"> elements (3-5 pages) -->
+            <!-- Distribute 5-7 articles per page for balanced layout -->
+            
             <section class="page" id="page-1">
                 <div class="page-heading">
                     <div class="page-label">Page 1 • Front Page</div>
                     <div class="page-number">1</div>
                 </div>
                 
-                <!-- AI: Start with lead story -->
+                <!-- AI: Start with lead story on Page 1 -->
                 <article class="story lead">
                     <p class="kicker">CATEGORY</p>
                     <h2>Lead Story Headline</h2>
@@ -497,17 +545,27 @@ ${articlesText}
                     <p><strong>CITY:</strong> Lead story content starts here with 300-400 words...</p>
                 </article>
 
-                <!-- AI: Add 19-29 more articles like this -->
+                <!-- AI: Add 4-6 more articles for Page 1 -->
                 <article class="story">
                     <p class="kicker">CATEGORY</p>
                     <h2>Second Story Headline</h2>
                     <p class="byline">By Reporter | Location</p>
                     <p><strong>CITY:</strong> Story content 200-300 words...</p>
                 </article>
+                
+                <!-- More articles... -->
+            </section>
 
+            <!-- AI: CREATE MORE PAGES LIKE THIS -->
+            <section class="page" id="page-2">
+                <div class="page-heading">
+                    <div class="page-label">Page 2 • National News</div>
+                    <div class="page-number">2</div>
+                </div>
+                
                 <article class="story">
                     <p class="kicker">CATEGORY</p>
-                    <h2>Third Story Headline</h2>
+                    <h2>Story Headline</h2>
                     <p class="byline">By Reporter | Location</p>
                     <figure class="float-media">
                         <img src="imageUrl" alt="Story image" />
@@ -516,8 +574,11 @@ ${articlesText}
                     <p><strong>CITY:</strong> Story content 150-250 words...</p>
                 </article>
                 
-                <!-- AI: Keep adding more articles until you have 20-30 total -->
+                <!-- AI: Add 4-6 more articles for Page 2 -->
             </section>
+
+            <!-- AI: Continue creating pages until ALL articles are used -->
+            <!-- Typical edition has 3-5 pages total -->
         </main>
 
         <footer class="folio">

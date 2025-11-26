@@ -135,6 +135,11 @@ export async function executeStep3_DistributeLeads(): Promise<{ success: boolean
     // Commit all batches
     await Promise.all(batches.map(b => b.batch.commit()));
     
+    console.log(`📊 Lead distribution complete:`);
+    batches.forEach(b => {
+      console.log(`   ${b.journalistId}: ${b.count} leads assigned`);
+    });
+    
     // Clear the raw_leads collection
     const clearBatch = writeBatch(firestore);
     leadsSnapshot.docs.forEach(doc => clearBatch.delete(doc.ref));
@@ -185,9 +190,24 @@ export async function executeStep4_JournalistsParallel(): Promise<{ success: boo
       remaining: 0 
     });
     
-    await updateQueueState({ currentStep: 'validate', draftsMade: totalDrafted });
+    // Deduplicate draft articles before validation
+    console.log('🔍 Running article deduplication...');
+    await updateAgentProgress('deduplicator', 'working', 'Checking for duplicate articles...');
     
-    console.log(`✅ Step 4 COMPLETE: All journalists finished. Total articles: ${totalDrafted}. Next step: Validation`);
+    const { deduplicateDraftArticlesAction } = await import('@/app/actions-dedup-new');
+    const dedupResult = await deduplicateDraftArticlesAction();
+    
+    if (dedupResult.success && dedupResult.deletedCount > 0) {
+      console.log(`🗑️ Removed ${dedupResult.deletedCount} duplicate articles. ${dedupResult.totalArticles} unique articles remain.`);
+      await updateAgentProgress('deduplicator', 'success', `Removed ${dedupResult.deletedCount} duplicate articles. ${dedupResult.totalArticles} unique remain.`);
+    } else {
+      console.log(`✅ No duplicate articles found. ${dedupResult.totalArticles} unique articles.`);
+      await updateAgentProgress('deduplicator', 'success', `No duplicates found. ${dedupResult.totalArticles} articles ready.`);
+    }
+    
+    await updateQueueState({ currentStep: 'validate', draftsMade: dedupResult.totalArticles });
+    
+    console.log(`✅ Step 4 COMPLETE: All journalists finished. Total articles: ${dedupResult.totalArticles}. Next step: Validation`);
     return { success: true, message: `All journalists completed. ${totalDrafted} articles drafted.`, nextStep: 'validate' };
     
   } catch (error: any) {
@@ -205,7 +225,7 @@ async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ d
   await updateAgentProgress(journalistId as any, 'working', 'Drafting articles...', { drafted: 0 });
   
   const { firestore } = await import('@/lib/firebase-server').then(m => m.getFirebaseServices());
-  const { collection, getDocs, query, limit, writeBatch, doc, Timestamp, deleteDoc } = await import('firebase/firestore');
+  const { collection, getDocs, query, limit, writeBatch, doc, Timestamp, deleteDoc, where } = await import('firebase/firestore');
   
   try {
     // Process all leads from this journalist's collection
@@ -233,6 +253,20 @@ async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ d
       };
       
       try {
+        // Check if this lead was already processed (duplicate prevention)
+        const existingDraftQuery = query(
+          collection(firestore, 'draft_articles'),
+          where('rawLeadId', '==', lead.id),
+          limit(1)
+        );
+        const existingDraft = await getDocs(existingDraftQuery);
+        
+        if (!existingDraft.empty) {
+          console.log(`⚠️ ${journalistId} skipping duplicate lead: ${lead.id}`);
+          await deleteDoc(leadDoc.ref);
+          continue;
+        }
+        
         // Generate article from lead
         const { summarizeBreakingNews } = await import('@/ai/flows/summarize-breaking-news');
         const summaryResult = await summarizeBreakingNews({ 

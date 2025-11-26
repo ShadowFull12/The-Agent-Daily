@@ -122,3 +122,98 @@ Do NOT include markdown, explanations, or any other text. ONLY return the JSON a
         return { success: false, deletedCount: 0, remaining: 0, totalLeads: 0, error: error.message };
     }
 }
+
+// Deduplicate draft articles after journalists finish
+export async function deduplicateDraftArticlesAction(): Promise<{ success: boolean; deletedCount: number; totalArticles: number; error?: string; }> {
+    const { firestore } = getFirebaseServices();
+    try {
+        console.log('🔍 Article Dedup: Checking draft articles for duplicates...');
+        
+        const articlesSnapshot = await getDocs(collection(firestore, "draft_articles"));
+        const totalArticles = articlesSnapshot.size;
+        
+        if (articlesSnapshot.empty || articlesSnapshot.size <= 1) {
+            console.log(`✅ Article Dedup: No duplicates possible (${totalArticles} articles)`);
+            return { success: true, deletedCount: 0, totalArticles };
+        }
+        
+        const articles = articlesSnapshot.docs.map((doc, index) => ({ 
+            id: doc.id, 
+            index: index + 1,
+            headline: doc.data().headline || '',
+            content: (doc.data().content || '').substring(0, 200) // First 200 chars
+        }));
+        
+        console.log(`📊 Checking ${articles.length} draft articles for duplicates...`);
+        
+        // Build a prompt with all articles
+        const articlesList = articles.map((article, idx) => 
+            `${idx + 1}. Headline: "${article.headline}"\n   Content: "${article.content}..."`
+        ).join('\n\n');
+        
+        const prompt = `You are an expert news editor. Below are ${articles.length} draft news articles. Identify which articles are reporting essentially the same story (duplicates).
+
+**Rules:**
+1. Compare headlines AND content snippets
+2. Articles about the same event/story are duplicates
+3. Similar headlines with similar content = duplicates
+4. Different angles on same story = duplicates
+5. Return ONLY the numbers of duplicate articles to DELETE (keep the first occurrence, remove subsequent ones)
+
+**Draft Articles:**
+${articlesList}
+
+**Output Format:**
+Return ONLY a JSON array of numbers representing duplicate articles to DELETE. For example: [3, 7, 12, 15]
+If no duplicates found, return: []
+
+Do NOT include markdown, explanations, or any other text. ONLY return the JSON array.`;
+
+        console.log('🤖 Calling AI to check articles for duplicates...');
+        
+        const { callKimi } = await import('@/lib/openrouter');
+        const response = await callKimi(prompt, 'You are a professional news editor. Respond with ONLY a JSON array of numbers, no other text.');
+        
+        // Clean and parse response
+        let cleanResponse = response.trim();
+        if (cleanResponse.startsWith('```')) {
+            cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        }
+        
+        console.log('📊 AI Response:', cleanResponse);
+        
+        const duplicateIndices: number[] = JSON.parse(cleanResponse);
+        console.log(`🎯 AI identified ${duplicateIndices.length} duplicate articles:`, duplicateIndices);
+        
+        // Delete the duplicate articles
+        let deletedCount = 0;
+        if (duplicateIndices.length > 0) {
+            const batch = writeBatch(firestore);
+            
+            for (const index of duplicateIndices) {
+                const articleToDelete = articles.find(a => a.index === index);
+                if (articleToDelete) {
+                    console.log(`🗑️ Deleting duplicate article #${index}: "${articleToDelete.headline.substring(0, 60)}..."`);
+                    batch.delete(doc(firestore, "draft_articles", articleToDelete.id));
+                    deletedCount++;
+                }
+            }
+            
+            await batch.commit();
+            console.log(`✅ Deleted ${deletedCount} duplicate articles`);
+        }
+        
+        // Get final count
+        const finalSnapshot = await getDocs(collection(firestore, "draft_articles"));
+        
+        return { 
+            success: true, 
+            deletedCount, 
+            totalArticles: finalSnapshot.size
+        };
+        
+    } catch (error: any) {
+        console.error("deduplicateDraftArticlesAction failed:", error);
+        return { success: false, deletedCount: 0, totalArticles: 0, error: error.message };
+    }
+}
