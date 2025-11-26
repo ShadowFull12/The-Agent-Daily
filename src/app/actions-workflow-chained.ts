@@ -513,6 +513,7 @@ export async function startChainedWorkflow(isManualRun = false): Promise<{ succe
     // Set initial queue state
     await updateQueueState({ 
       currentStep: 'clear_data',
+      isManualRun: isManualRun,
       lastUpdated: Date.now()
     });
     

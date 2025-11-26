@@ -38,6 +38,16 @@ export async function GET(request: NextRequest) {
       });
     }
     
+    // Check if this is a manual run (skip cron execution to prevent duplicates)
+    if (state.isManualRun) {
+      console.log('⏭️ Cron: Skipping execution - manual run in progress (client executor handling steps)');
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Manual run in progress - client executor handling steps',
+        currentStep: state.currentStep
+      });
+    }
+    
     // Execute ONE step
     console.log(`⚡ Executing step: ${state.currentStep}`);
     const result = await executeNextWorkflowStep();

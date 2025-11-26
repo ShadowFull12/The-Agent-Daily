@@ -21,6 +21,7 @@ export type QueueState = {
   draftsMade: number;
   validCount: number;
   error?: string;
+  isManualRun?: boolean;
   lastUpdated: any;
 };
 
@@ -46,6 +47,7 @@ export async function updateQueueState(state: Partial<QueueState>) {
     attempt: state.attempt ?? currentState?.attempt ?? 1,
     draftsMade: state.draftsMade ?? currentState?.draftsMade ?? 0,
     validCount: state.validCount ?? currentState?.validCount ?? 0,
+    isManualRun: state.isManualRun ?? currentState?.isManualRun ?? false,
     lastUpdated: Timestamp.now(),
   };
   
