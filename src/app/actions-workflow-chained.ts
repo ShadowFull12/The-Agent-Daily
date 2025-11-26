@@ -32,8 +32,8 @@ export async function executeStep1_ClearAndScout(): Promise<{ success: boolean; 
     const state = await getQueueState();
     const attempt = state?.attempt || 1;
     
-    // Scout for leads: 40 on first attempt, 5 on retries
-    const leadsToFind = attempt === 1 ? 40 : 5;
+    // Scout for leads: 45 on first attempt, 5 on retries
+    const leadsToFind = attempt === 1 ? 45 : 5;
     await updateAgentProgress('scout', 'working', `Scout is gathering news leads (Attempt ${attempt}/3)...`);
     const scoutResult = await findLeadsAction(leadsToFind);
     
@@ -442,35 +442,46 @@ export async function executeStep5_ValidateAndEditor1(): Promise<{ success: bool
     
     await updateAgentProgress('validator', 'success', `Validator approved ${validationResult.validCount} articles, discarded ${validationResult.discardedCount}.`);
     
-    // Check if we have enough articles (30+ for comprehensive edition)
-    if (validationResult.validCount >= 30) {
+    // Check if we have enough articles (35+ for comprehensive edition)
+    if (validationResult.validCount >= 35) {
       console.log(`✅ Validator complete: ${validationResult.validCount} articles validated`);
       
-      // Create initial layout with Editor 1
-      await updateAgentProgress('editor', 'working', 'Editor 1: Creating initial newspaper layout...');
-      const editor1Result = await createInitialLayoutAction();
+      // Create complete newspaper with single comprehensive editor
+      await updateAgentProgress('editor', 'working', 'Editor: Creating comprehensive newspaper layout...');
+      const editorResult = await createPreviewEditionAction();
       
-      if (!editor1Result.success) {
-        await updateQueueState({ currentStep: 'error', error: editor1Result.error });
-        return { success: false, message: 'Editor 1 failed', error: editor1Result.error };
+      if (!editorResult.success) {
+        await updateQueueState({ currentStep: 'error', error: editorResult.error });
+        return { success: false, message: 'Editor failed', error: editorResult.error };
       }
       
-      await updateAgentProgress('editor', 'working', `Editor 1 complete. Preparing for Editor 2 refinement...`);
+      await updateAgentProgress('editor', 'success', `Edition created: ${editorResult.editionId}`);
       
-      // Move to Editor 2 step
-      await updateQueueState({ 
-        currentStep: 'editor_2',
-        validCount: validationResult.validCount,
-        initialHtml: editor1Result.html,
-        editionNumber: editor1Result.editionNumber
-      });
+      // Mark workflow as complete
+      await updateQueueState({ currentStep: 'complete', validCount: validationResult.validCount });
+      await updateWorkflowState({ status: 'success', message: 'Workflow completed successfully!' });
       
-      console.log(`✅ Step 5 COMPLETE: Editor 1 finished. Moving to Editor 2...`);
-      return { success: true, message: `Initial layout created. Moving to Editor 2 for refinement...`, nextStep: 'editor_2' };
+      // Reset all agents to idle
+      console.log('🔄 Editor complete - Resetting all agents to idle...');
+      await updateAgentProgress('scout', 'idle', '');
+      await updateAgentProgress('deduplicator', 'idle', '', { checked: 0, remaining: 0 });
+      await updateAgentProgress('journalist', 'idle', '', { drafted: 0, remaining: 0 });
+      await updateAgentProgress('journalist_1', 'idle', '', { drafted: 0 });
+      await updateAgentProgress('journalist_2', 'idle', '', { drafted: 0 });
+      await updateAgentProgress('journalist_3', 'idle', '', { drafted: 0 });
+      await updateAgentProgress('journalist_4', 'idle', '', { drafted: 0 });
+      await updateAgentProgress('journalist_5', 'idle', '', { drafted: 0 });
+      await updateAgentProgress('validator', 'idle', '');
+      await updateAgentProgress('editor', 'idle', '');
+      await updateAgentProgress('publisher', 'idle', '');
+      console.log('✅ All agents reset to idle - Ready for next workflow');
+      
+      console.log(`✅ Step 5 COMPLETE: Editor finished with ${validationResult.validCount} articles. Workflow complete!`);
+      return { success: true, message: `Edition created with ${validationResult.validCount} articles!`, completed: true };
       
     } else if ((state?.attempt || 1) < 3) {
       // Need more articles, retry from scout
-      await updateAgentProgress('validator', 'working', `Need more articles (${validationResult.validCount}/30). Retrying scout...`);
+      await updateAgentProgress('validator', 'working', `Need more articles (${validationResult.validCount}/35). Retrying scout...`);
       await updateQueueState({ 
         currentStep: 'clear_data', 
         attempt: (state?.attempt || 1) + 1,
@@ -482,7 +493,7 @@ export async function executeStep5_ValidateAndEditor1(): Promise<{ success: bool
       
     } else {
       // Failed after 3 attempts
-      const error = `Failed to get 20 articles after 3 attempts (got ${validationResult.validCount})`;
+      const error = `Failed to get 35 articles after 3 attempts (got ${validationResult.validCount})`;
       await updateQueueState({ currentStep: 'error', error });
       await updateWorkflowState({ status: 'error', message: error });
       return { success: false, message: error, error };
@@ -556,13 +567,8 @@ export async function executeNextWorkflowStep(): Promise<{
         
       case 'validate':
       case 'editor':
-        console.log('📋 Executing: Step 5 - Validate & Editor 1');
+        console.log('📋 Executing: Step 5 - Validate & Editor');
         result = await executeStep5_ValidateAndEditor1();
-        break;
-        
-      case 'editor_2':
-        console.log('📋 Executing: Step 6 - Editor 2 (Refinement)');
-        result = await executeStep6_Editor2();
         result.completed = true;
         break;
         

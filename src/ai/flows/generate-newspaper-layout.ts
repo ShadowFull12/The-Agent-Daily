@@ -97,6 +97,18 @@ ${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use relevant Uns
       content: [{
         text: `You are a world-class newspaper layout designer for "The Daily Agent", creating a MODERN, COLORFUL Indian newspaper edition.
 
+**🚨 CRITICAL REQUIREMENT - MINIMUM 10-15 PAGES 🚨**
+You have ${input.articles.length} articles. You MUST create a MINIMUM of 10-15 pages. DO NOT create just 2-3 pages!
+
+**PAGE CALCULATION:**
+- With ${input.articles.length} articles, you should create AT LEAST ${Math.max(10, Math.ceil(input.articles.length / 4))} pages
+- Each page should have 3-6 articles maximum (NOT 15-20 articles crammed on 2 pages!)
+- Better to have 15 pages with 3 articles each than 3 pages with 15 articles each
+- More pages = better readability, no cramming, professional newspaper feel
+
+**ABSOLUTE RULE: ZERO WHITE SPACE TOLERANCE**
+Every single pixel of every page must be filled with content. NO exceptions. Each article must be 400-600 words to properly fill space.
+
 **CRITICAL PRINCIPLE: ADAPTIVE, FLUID DESIGN**
 You are NOT constrained to fixed categories or page structures. Each edition should be UNIQUE based on available content.
 Think like a creative editor who adapts the newspaper design to the day's stories.
