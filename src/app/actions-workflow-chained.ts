@@ -17,6 +17,8 @@ export async function executeStep1_ClearAndScout(): Promise<{ success: boolean; 
   try {
     console.log('📋 Step 1: Clear data and scout');
     
+    await updateWorkflowState({ status: 'running', message: 'Step 1: Clearing data and scouting for news...' });
+    
     // Clear data
     await updateAgentProgress('scout', 'working', 'Clearing previous data...');
     const clearResult = await clearAllDataAction();
@@ -53,6 +55,8 @@ export async function executeStep2_Dedup(): Promise<{ success: boolean; message:
   try {
     console.log('📋 Step 2: Deduplication');
     
+    await updateWorkflowState({ status: 'running', message: 'Step 2: Deduplicating leads...' });
+    
     await updateAgentProgress('deduplicator', 'working', 'AI Deduplicator is analyzing all leads...');
     const { deduplicateLeadsActionBatch } = await import('@/app/actions-dedup-new');
     const dedupResult = await deduplicateLeadsActionBatch();
@@ -77,6 +81,8 @@ export async function executeStep2_Dedup(): Promise<{ success: boolean; message:
 export async function executeStep3_DistributeLeads(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
   try {
     console.log('📋 Step 3: Distributing leads to journalists');
+    
+    await updateWorkflowState({ status: 'running', message: 'Step 3: Distributing leads to 5 journalists...' });
     
     await updateAgentProgress('journalist', 'working', 'Distributing leads to 5 journalists...');
     
@@ -155,6 +161,8 @@ export async function executeStep3_DistributeLeads(): Promise<{ success: boolean
 export async function executeStep4_JournalistsParallel(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
   try {
     console.log('📋 Step 4: Running all 5 journalists in parallel');
+    
+    await updateWorkflowState({ status: 'running', message: 'Step 4: All 5 journalists drafting articles in parallel...' });
     
     await updateAgentProgress('journalist', 'working', 'All 5 journalists drafting articles...');
     
@@ -288,7 +296,9 @@ async function runJournalistFromAssignedLeads(journalistId: string): Promise<{ d
 // Step 5: Validate and Editor (completes in < 60s)
 export async function executeStep5_ValidateAndEdit(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string; completed?: boolean }> {
   try {
-    console.log('📋 Step 4: Validate and Editor');
+    console.log('📋 Step 5: Validate and Editor');
+    
+    await updateWorkflowState({ status: 'running', message: 'Step 5: Validating articles and creating edition...' });
     
     const state = await getQueueState();
     
