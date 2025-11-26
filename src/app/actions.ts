@@ -382,17 +382,26 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
             return { success: false, error: "No valid articles to create an edition." };
         }
 
-        // Check for existing unpublished editions to prevent duplicates
-        const unpublishedQuery = query(
+        // Check for RECENT duplicate editions (created in last 2 minutes) to prevent race conditions
+        // Fetch recent editions and filter in memory to avoid composite index
+        const twoMinutesAgo = Timestamp.fromMillis(Date.now() - 2 * 60 * 1000);
+        const recentEditionsQuery = query(
             collection(firestore, "newspaper_editions"),
-            orderBy("editionNumber", "desc")
+            orderBy("publicationDate", "desc"),
+            limit(10)
         );
-        const unpublishedSnapshot = await getDocs(unpublishedQuery);
-        const existingDrafts = unpublishedSnapshot.docs.filter(doc => !doc.data().isPublished);
+        const recentSnapshot = await getDocs(recentEditionsQuery);
         
-        if (existingDrafts.length > 0) {
-            console.log(`⚠️ Found ${existingDrafts.length} existing draft editions. Using existing edition instead of creating duplicate.`);
-            return { success: true, editionId: existingDrafts[0].id };
+        // Filter in memory for unpublished editions created within last 2 minutes
+        const recentDrafts = recentSnapshot.docs.filter(doc => {
+            const data = doc.data();
+            return !data.isPublished && data.publicationDate >= twoMinutesAgo;
+        });
+        
+        if (recentDrafts.length > 0) {
+            const existingEdition = recentDrafts[0];
+            console.log(`⚠️ Found recent draft edition created within 2 minutes. Using existing edition #${existingEdition.data().editionNumber} instead of creating duplicate.`);
+            return { success: true, editionId: existingEdition.id };
         }
 
         const editionsQuery = query(collection(firestore, "newspaper_editions"), orderBy("editionNumber", "desc"), limit(1));
@@ -440,19 +449,21 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
 export async function publishLatestEditionAction(): Promise<{ success: boolean; error?: string; message?: string }> {
   const { firestore } = getFirebaseServices();
   try {
-    const q = query(
+    // Get all editions, filter unpublished in memory to avoid composite index
+    const allEditionsQuery = query(
       collection(firestore, "newspaper_editions"), 
-      where("isPublished", "==", false),
-      orderBy("publicationDate", "desc"), 
-      limit(1) 
+      orderBy("publicationDate", "desc")
     );
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(allEditionsQuery);
     
-    if(snapshot.empty) {
+    // Filter unpublished editions in memory
+    const unpublishedEditions = snapshot.docs.filter(doc => !doc.data().isPublished);
+    
+    if(unpublishedEditions.length === 0) {
       return { success: false, error: "No unpublished edition found to publish." };
     }
 
-    const editionToPublish = snapshot.docs[0];
+    const editionToPublish = unpublishedEditions[0];
    
     await updateDoc(doc(firestore, "newspaper_editions", editionToPublish.id), {
       isPublished: true,
@@ -463,6 +474,36 @@ export async function publishLatestEditionAction(): Promise<{ success: boolean; 
   } catch (error: any) {
     const errorMessage = `Failed to publish latest edition: ${error.message}`;
     console.error("publishLatestEditionAction failed:", error);
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Publish a specific edition by ID
+export async function publishEditionByIdAction(editionId: string): Promise<{ success: boolean; error?: string; message?: string }> {
+  const { firestore } = getFirebaseServices();
+  try {
+    const editionRef = doc(firestore, "newspaper_editions", editionId);
+    const editionDoc = await getDoc(editionRef);
+    
+    if (!editionDoc.exists()) {
+      return { success: false, error: "Edition not found." };
+    }
+    
+    const editionData = editionDoc.data();
+    
+    if (editionData.isPublished) {
+      return { success: false, error: "Edition is already published." };
+    }
+   
+    await updateDoc(editionRef, {
+      isPublished: true,
+      publicationDate: Timestamp.now(),
+    });
+    
+    return { success: true, message: `Edition #${editionData.editionNumber} has been published.` };
+  } catch (error: any) {
+    const errorMessage = `Failed to publish edition: ${error.message}`;
+    console.error("publishEditionByIdAction failed:", error);
     return { success: false, error: errorMessage };
   }
 }

@@ -9,7 +9,7 @@ import { Newspaper, Eye, Trash2, Loader2, Maximize2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { deleteEditionAction, publishLatestEditionAction } from "@/app/actions";
+import { deleteEditionAction, publishEditionByIdAction } from "@/app/actions";
 
 interface Edition {
   id: string;
@@ -119,7 +119,7 @@ export function EditionsManager({ onRefresh }: EditionsManagerProps) {
   const handlePublish = async (editionId: string, editionNumber: number) => {
     setPublishing(editionId);
     try {
-      const result = await publishLatestEditionAction();
+      const result = await publishEditionByIdAction(editionId);
       
       if (result.success) {
         toast({
