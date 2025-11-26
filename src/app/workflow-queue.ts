@@ -22,6 +22,8 @@ export type QueueState = {
   validCount: number;
   error?: string;
   isManualRun?: boolean;
+  isExecuting?: boolean; // Lock to prevent concurrent executions
+  executionStartedAt?: any; // Timestamp when execution started
   lastUpdated: any;
 };
 
@@ -48,8 +50,16 @@ export async function updateQueueState(state: Partial<QueueState>) {
     draftsMade: state.draftsMade ?? currentState?.draftsMade ?? 0,
     validCount: state.validCount ?? currentState?.validCount ?? 0,
     isManualRun: state.isManualRun ?? currentState?.isManualRun ?? false,
+    isExecuting: state.isExecuting ?? currentState?.isExecuting ?? false,
     lastUpdated: Timestamp.now(),
   };
+  
+  // Include executionStartedAt if provided
+  if (state.executionStartedAt !== undefined) {
+    newState.executionStartedAt = state.executionStartedAt;
+  } else if (currentState?.executionStartedAt) {
+    newState.executionStartedAt = currentState.executionStartedAt;
+  }
   
   // Only include error field if it has a value (Firestore doesn't accept undefined)
   if (state.error !== undefined && state.error !== null) {
