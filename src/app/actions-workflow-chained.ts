@@ -370,11 +370,12 @@ export async function executeStep5_ValidateAndEdit(): Promise<{ success: boolean
       return { success: false, message: 'Validation failed', error: validationResult.error };
     }
     
-    await updateAgentProgress('validator', 'working', `Validator approved ${validationResult.validCount} articles, discarded ${validationResult.discardedCount}.`);
+    // FIX: Set validator to SUCCESS status after completion (not 'working')
+    await updateAgentProgress('validator', 'success', `Validator approved ${validationResult.validCount} articles, discarded ${validationResult.discardedCount}.`);
     
     // Check if we have enough articles (30+ for comprehensive edition)
     if (validationResult.validCount >= 30) {
-      await updateAgentProgress('validator', 'working', `Article count sufficient (${validationResult.validCount}). Proceeding to layout.`);
+      console.log(`✅ Validator complete: ${validationResult.validCount} articles validated`);
       
       // Double-check we're not already complete (prevent duplicate editions)
       const currentState = await getQueueState();
@@ -398,10 +399,20 @@ export async function executeStep5_ValidateAndEdit(): Promise<{ success: boolean
       await updateAgentProgress('editor', 'success', `Edition created: ${editorResult.editionId}`);
       await updateWorkflowState({ status: 'success', message: 'Workflow completed successfully!' });
       
-      // Keep journalist progress with article counts (don't reset to 0)
-      // Note: Individual journalist counts are preserved automatically in Firestore
-      // We just update status to 'idle' without resetting drafted counts
-      await updateAgentProgress('journalist', 'idle', 'Completed', { remaining: 0 });
+      // DOUBLE-CHECK: Reset all agents to idle after editor completes (fresh state for next run)
+      console.log('🔄 Editor complete - Resetting all agents to idle (double-check system)...');
+      await updateAgentProgress('scout', 'idle', '');
+      await updateAgentProgress('deduplicator', 'idle', '', { checked: 0, remaining: 0 });
+      await updateAgentProgress('journalist', 'idle', '', { drafted: 0, remaining: 0 });
+      await updateAgentProgress('journalist_1', 'idle', '', { drafted: 0 });
+      await updateAgentProgress('journalist_2', 'idle', '', { drafted: 0 });
+      await updateAgentProgress('journalist_3', 'idle', '', { drafted: 0 });
+      await updateAgentProgress('journalist_4', 'idle', '', { drafted: 0 });
+      await updateAgentProgress('journalist_5', 'idle', '', { drafted: 0 });
+      await updateAgentProgress('validator', 'idle', '');
+      await updateAgentProgress('editor', 'idle', '');
+      await updateAgentProgress('publisher', 'idle', '');
+      console.log('✅ All agents reset to idle - Ready for next workflow');
       
       console.log(`✅ Step 5 COMPLETE: Editor finished. Workflow complete with ${validationResult.validCount} articles!`);
       return { success: true, message: `Edition created with ${validationResult.validCount} articles!`, completed: true };
@@ -518,6 +529,21 @@ export async function startChainedWorkflow(isManualRun = false): Promise<{ succe
   
   try {
     console.log(`🚀 Initializing chained workflow... (${isManualRun ? 'MANUAL' : 'CRON'} trigger)`);
+    
+    // STEP 1: RESET ALL AGENTS TO IDLE (FRESH START)
+    console.log('🔄 Resetting all agent states to idle...');
+    await updateAgentProgress('scout', 'idle', '');
+    await updateAgentProgress('deduplicator', 'idle', '', { checked: 0, remaining: 0 });
+    await updateAgentProgress('journalist', 'idle', '', { drafted: 0, remaining: 0 });
+    await updateAgentProgress('journalist_1', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_2', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_3', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_4', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_5', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('validator', 'idle', '');
+    await updateAgentProgress('editor', 'idle', '');
+    await updateAgentProgress('publisher', 'idle', '');
+    console.log('✅ All agents reset to idle state');
     
     // Clear any previous queue state
     await clearQueueState();
