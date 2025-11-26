@@ -42,87 +42,55 @@ const prompt = ai.definePrompt({
   model: 'googleai/gemini-2.5-pro', // Using Gemini 2.5 Pro for superior HTML generation
   input: {schema: GenerateNewspaperLayoutInputSchema},
   output: {schema: GenerateNewspaperLayoutOutputSchema},
-  prompt: `You are a world-class newspaper layout designer for "The Daily Agent". Your task is to generate a complete HTML newspaper layout.
+  prompt: `You are a world-class newspaper layout designer for "The Daily Agent", a prestigious Indian newspaper.
 
-**🚨 CRITICAL: THE CSS AUTOMATICALLY CREATES 3 COLUMNS 🚨**
+**YOUR TASK:** Generate a complete newspaper edition using the provided template below. Follow these rules EXACTLY:
 
-The HTML template includes this CSS: \`column-count: 3;\` 
-This means the browser will AUTOMATICALLY arrange your content into 3 columns.
+**CRITICAL RULES:**
+1. Use the EXACT HTML template structure provided below
+2. The CSS \`column-count: 3\` automatically creates 3 columns - DO NOT create manual column divs
+3. Create 20-30 <article class="story"> elements in sequence - CSS will flow them into columns
+4. First article MUST use class="story lead" for prominence
+5. Vary article lengths: 150-400 words for visual balance
+6. Include images (using provided imageUrl) in approximately 50% of articles
+7. Use ALL provided articles - expand content to 150-400 words per article if needed
+8. Use Indian cities, reporter names, and local context
+9. Each article needs: kicker (category), headline, byline, content paragraphs
+10. Start paragraphs with <strong>CITY:</strong> format
 
-**YOUR ONLY JOB: Create 20-30 <article> elements in sequence**
-
-DO THIS:
-\`\`\`html
-<div class="page">
-  <div class="page-heading">...</div>
-  <article class="story">Story 1 content (200 words)</article>
-  <article class="story">Story 2 content (300 words)</article>
-  <article class="story">Story 3 content (150 words)</article>
-  <article class="story">Story 4 content (250 words)</article>
-  <!-- Keep adding 20-30 articles total -->
-</div>
-\`\`\`
-
-The CSS will automatically flow these into 3 columns. You don't create columns manually.
-
-**DO NOT DO THIS:**
-- ❌ DO NOT create \`<div class="column">\` wrappers
-- ❌ DO NOT use CSS Grid/Flexbox for columns
-- ❌ DO NOT manually split articles with "Continued on Col. 2"
-- ❌ DO NOT create column divs of any kind
-
-**SIMPLE RULES:**
-1. Create 20-30 \`<article class="story">\` elements inside each \`<div class="page">\`
-2. Each article: 150-400 words (vary lengths for visual interest)
-3. Include \`<figure>\` with image in 50% of articles
-4. Use ALL provided article data
-5. First article = lead story (use class="story lead")
-
-**Article Structure:**
+**Article Structure Pattern:**
 \`\`\`html
 <article class="story">
-  <p class="kicker">CATEGORY NAME</p>
-  <h2>Headline Goes Here</h2>
-  <p class="byline">By Reporter Name | Location</p>
+  <p class="kicker">Technology</p>
+  <h2>Article Headline Here</h2>
+  <p class="byline">By Priya Sharma | Mumbai Bureau</p>
   <figure class="float-media">
-    <img src="{{imageUrl}}" alt="Description" />
-    <figcaption>Image caption here</figcaption>
+    <img src="IMAGE_URL_HERE" alt="Description" />
+    <figcaption>Brief image caption explaining the photo.</figcaption>
   </figure>
-  <p><strong>CITY:</strong> First paragraph with city name...</p>
-  <p>Second paragraph continues story...</p>
-  <p>Third paragraph adds more details...</p>
+  <p><strong>MUMBAI:</strong> Opening paragraph with key information...</p>
+  <p>Second paragraph expanding on the story...</p>
+  <p>Additional context and details...</p>
 </article>
 \`\`\`
 
-**Article Structure:**
-\`\`\`html
-<article class="story">
-  <p class="kicker">CATEGORY NAME</p>
-  <h2>Headline Goes Here</h2>
-  <p class="byline">By Reporter Name | Location</p>
-  <figure class="float-media">
-    <img src="{{imageUrl}}" alt="Description" />
-    <figcaption>Image caption here</figcaption>
-  </figure>
-  <p><strong>CITY:</strong> First paragraph with city name...</p>
-  <p>Second paragraph continues story...</p>
-  <p>Third paragraph adds more details...</p>
-</article>
-\`\`\`
+**Provided Articles to Use:**
+${input.articles.map((article, idx) => `
+Article ${idx + 1}:
+- Headline: ${article.headline}
+- Content: ${article.content}
+${article.imageUrl ? `- Image: ${article.imageUrl}` : '- Image: Use placeholder from unsplash.com'}
+`).join('\n')}
 
-**Dynamic Fields to Update:**
-- Date: ${format(new Date(), 'EEEE, MMMM d, yyyy')}
-- Volume: {{editionNumber}}
-- Page numbers: 1, 2, 3, etc.
+**Categories to Use:** National Development, Technology, Politics, Business, Markets, Sports, Culture, Science, Environment, Education, Agriculture, Infrastructure, Policy Watch
 
-**Use ALL Provided Articles:**
-{{#each articles}}
-- Headline: {{headline}}
-- Content: {{content}}
-{{#if imageUrl}}- Image: {{{imageUrl}}}{{/if}}
-{{/each}}
-
-Output must be complete HTML from \`<!DOCTYPE html>\` to \`</html>\`. No markdown, no comments outside HTML.
+**Output Requirements:**
+- Complete HTML from <!DOCTYPE html> to </html>
+- NO markdown formatting, NO code blocks, NO comments
+- Use current date: ${format(new Date(), 'EEEE, MMMM d, yyyy')}
+- Edition number: ${input.editionNumber}
+- Replace ALL placeholder content with actual articles
+- Create exactly ONE page with 20-30 articles
 
 
 **HTML TEMPLATE TO USE:**
@@ -162,7 +130,6 @@ Output must be complete HTML from \`<!DOCTYPE html>\` to \`</html>\`. No markdow
 
         .newspaper-shell {
             max-width: 1400px;
-            min-width: 1200px;
             margin: 0 auto 6rem;
             padding: 2.5rem 2rem 4rem;
             background: var(--paper);
@@ -260,12 +227,11 @@ Output must be complete HTML from \`<!DOCTYPE html>\` to \`</html>\`. No markdow
                 0 1px 3px rgba(26, 22, 20, 0.06),
                 0 10px 30px rgba(26, 22, 20, 0.08);
             column-count: 3;
-            column-gap: 2.5rem;
-            column-fill: auto;
+            column-gap: 3.2rem;
+            column-fill: balance;
             column-rule: 1px solid var(--border);
             position: relative;
             page-break-inside: avoid;
-            min-width: 1100px;
         }
 
         .page:not(:first-of-type) {
@@ -435,9 +401,22 @@ Output must be complete HTML from \`<!DOCTYPE html>\` to \`</html>\`. No markdow
             margin: 0.3rem 0;
         }
 
-        @media print {
+        @media (max-width: 1180px) {
             .page {
-                page-break-after: always;
+                column-count: 2;
+                column-gap: 2.5rem;
+                padding: 2rem;
+            }
+
+            .float-media,
+            .story.lead .float-media {
+                width: 100%;
+                float: none;
+                margin: 0 0 1.2rem;
+            }
+
+            .story.lead {
+                column-span: none;
             }
         }
 
