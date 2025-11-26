@@ -34,24 +34,39 @@ const SearchBreakingNewsOutputSchema = z.object({
 export type SearchBreakingNewsOutput = z.infer<typeof SearchBreakingNewsOutputSchema>;
 
 async function fetchNewsForTopic(topic: string, size: number): Promise<any[]> {
-    // Multiple API keys with fallback logic
+    // Multiple API keys with fallback logic (5 keys for better distribution)
     const apiKeys = [
         process.env.NEWSDATA_API_KEY,
         process.env.NEWSDATA_API_KEY_2,
         process.env.NEWSDATA_API_KEY_3,
+        process.env.NEWSDATA_API_KEY_4,
+        process.env.NEWSDATA_API_KEY_5,
     ].filter(Boolean) as string[]; // Remove undefined/empty keys
     
     if (apiKeys.length === 0) {
         throw new Error("No NEWSDATA_API_KEY is set in the environment variables.");
     }
     
-    // Use 'top' as a general priority topic, and specific categories otherwise
-    const categoryQuery = topic.toLowerCase() === 'top' ? '' : `&category=${topic.toLowerCase()}`;
-    
     // Try each API key until one succeeds
     for (let i = 0; i < apiKeys.length; i++) {
         const apiKey = apiKeys[i];
-        const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&language=en${categoryQuery}&size=${size}&prioritydomain=top`;
+        
+        // Add delay between requests to avoid rate limits (except for first request)
+        if (i > 0) {
+            console.log(`⏳ Waiting 500ms before trying API Key ${i + 1}...`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        // SPECIAL CASE: 'india' is not a valid category, use country filter instead
+        let url;
+        if (topic === 'india') {
+            url = `https://newsdata.io/api/1/news?apikey=${apiKey}&country=in&language=en&size=${size}`;
+            console.log(`🇮🇳 Using country=in filter for India news`);
+        } else if (topic.toLowerCase() === 'top') {
+            url = `https://newsdata.io/api/1/news?apikey=${apiKey}&language=en&size=${size}&prioritydomain=top`;
+        } else {
+            url = `https://newsdata.io/api/1/news?apikey=${apiKey}&language=en&category=${topic.toLowerCase()}&size=${size}&prioritydomain=top`;
+        }
 
         try {
             console.log(`🔍 [API Key ${i + 1}/${apiKeys.length}] Fetching news for topic: ${topic}`);

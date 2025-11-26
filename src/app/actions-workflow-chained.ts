@@ -552,9 +552,7 @@ export async function startChainedWorkflow(isManualRun = false): Promise<{ succe
     console.log('✅ All agents reset to idle state');
     
     // Initialize workflow state with appropriate message
-    const statusMessage = isManualRun 
-      ? 'Workflow started manually. Executing steps immediately...'
-      : 'Workflow initialized. Waiting for cron to execute steps...';
+    const statusMessage = 'Workflow initialized. Cron will execute steps...';
     
     await updateWorkflowState({ 
       status: 'running',
@@ -568,7 +566,7 @@ export async function startChainedWorkflow(isManualRun = false): Promise<{ succe
     
     await setDoc(doc(firestore, 'workflow_queue', 'current'), {
       currentStep: 'clear_data' as any,
-      isManualRun: isManualRun,
+      isManualRun: false,  // Always false - cron handles everything
       attempt: 1,
       draftsMade: 0,
       validCount: 0,
@@ -578,16 +576,11 @@ export async function startChainedWorkflow(isManualRun = false): Promise<{ succe
     });
     
     console.log('✅ Queue initialized to: clear_data');
-    console.log(isManualRun 
-      ? '⚡ Client executor will run steps immediately'
-      : '⏰ Vercel Cron will execute steps (separate function calls)'
-    );
+    console.log('⏰ Vercel Cron will execute steps (one per minute)');
     
     return { 
       success: true, 
-      message: isManualRun 
-        ? 'Workflow started! Executing steps now...'
-        : 'Workflow initialized. Cron will execute each step as separate function call.'
+      message: 'Workflow initialized. Cron will execute each step.'
     };
     
   } catch (error: any) {

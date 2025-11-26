@@ -43,7 +43,7 @@ function categorizeStory(topic: string): string {
 }
 
 // 1. Scout Agent: Finds new leads
-export async function findLeadsAction(limitStories: number = 25): Promise<{ success: boolean; leadCount: number; error?: string; }> {
+export async function findLeadsAction(limitStories: number = 40): Promise<{ success: boolean; leadCount: number; error?: string; }> {
   const { firestore } = getFirebaseServices();
   const { withTimeout } = await import('@/lib/firebase-server');
   
@@ -52,7 +52,7 @@ export async function findLeadsAction(limitStories: number = 25): Promise<{ succ
     // IMPORTANT: Search India-specific topics first to ensure National page has Indian content
     // Then add international and other topics
     const topics = [
-      "india",           // Indian domestic news for National page
+      "india",           // Indian domestic news for National page (uses country=in filter)
       "world",           // International news
       "technology", 
       "business", 
