@@ -184,15 +184,12 @@ Every single pixel of every page must be filled with content. NO exceptions.
    - Keep line-height: 1.4 (not 1.8 or 2)
    - Use margin-bottom: 0.5rem between items (not 1rem)
    
-   **INFO BOX CONTENT FORMAT:**
-   ```html
-   <div class="info-box" style="padding: 0.8rem; font-size: 0.9rem;">
-     <h4 style="margin-bottom: 0.5rem; font-size: 1rem;">Market Watch</h4>
-     <p style="margin: 0.3rem 0;">Sensex: 82,347 ▲ 1.2%</p>
-     <p style="margin: 0.3rem 0;">Nifty: 25,184 ▲ 0.8%</p>
-     <p style="margin: 0.3rem 0;">Bank Nifty: 54,230 ▲ 0.5%</p>
-   </div>
-   ```
+   **INFO BOX CONTENT FORMAT - Use inline styles:**
+   - div.info-box with style="padding: 0.8rem; font-size: 0.9rem;"
+   - h4 with style="margin-bottom: 0.5rem; font-size: 1rem;"
+   - Each p with style="margin: 0.3rem 0;"
+   - Include 3-5 data points per box (like Sensex, Nifty, Bank Nifty)
+   - Keep content concise and data-focused
    
    **STRATEGIC BOX PLACEMENT:**
    - Only add boxes in the THIRD column (right side)
@@ -205,28 +202,20 @@ Every single pixel of every page must be filled with content. NO exceptions.
 5. **LAYOUT PATTERNS (STRICT TEMPLATES):**
 
    **Pattern A - 6 Articles (Standard):**
-   ```
    Row 1: [Article 350w] [Article 350w] [Article 350w]
    Row 2: [Article 350w] [Article 350w] [Article 350w + Compact-Box]
-   ```
 
    **Pattern B - 5 Articles (Feature):**
-   ```
    Row 1: [BIG Article 600w span-2        ] [Article 400w]
    Row 2: [Article 400w] [Article 400w] [Article 400w + Box]
-   ```
 
    **Pattern C - 4 Articles (Expanded):**
-   ```
    Row 1: [BIG Article 700w span-2        ] [Article 500w + Box]
    Row 2: [Article 600w] [BIG Article 700w span-2        ]
-   ```
 
    **Pattern D - 3 Articles (Maximum Fill):**
-   ```
    Row 1: [HUGE Article 800w span-2 multi-column] [Article 600w + Box]
    Row 2: [Article 700w] [HUGE Article 800w span-2 multi-column]
-   ```
 
 6. **MANDATORY TECHNIQUES TO FILL SPACE:**
    - ✅ Increase article word count (primary method)
