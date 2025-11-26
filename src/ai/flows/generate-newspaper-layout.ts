@@ -36,31 +36,39 @@ export async function generateNewspaperLayout(input: GenerateNewspaperLayoutInpu
   return generateNewspaperLayoutFlow(input);
 }
 
-// Define the web search tool for real-time data
-const webSearchTool = ai.defineTool(
+// Define and export the web search tool for real-time data
+export const webSearchTool = ai.defineTool(
   {
     name: 'webSearch',
     description: 'Search the web for current, real-time information including stock prices, fuel prices, weather, news, entertainment releases, and sports scores. Use this when you need up-to-date factual information that may have changed recently.',
     inputSchema: z.object({
       query: z.string().describe('The search query. Be specific about what information you need (e.g., "current fuel price in Mumbai", "Sensex value today", "weather in Delhi")'),
     }),
-    outputSchema: z.string().describe('The search results with current information'),
+    outputSchema: z.string(),
   },
-  webSearchToolImplementation
+  async (input) => {
+    try {
+      const result = await webSearchToolImplementation(input);
+      return result;
+    } catch (error: any) {
+      console.error('Web search tool error:', error);
+      return `Unable to fetch data: ${error.message}`;
+    }
+  }
 );
 
-const prompt = ai.definePrompt({
-  name: 'generateNewspaperLayoutPrompt',
-  model: 'googleai/gemini-2.5-pro',
-  input: {schema: GenerateNewspaperLayoutInputSchema},
-  output: {schema: GenerateNewspaperLayoutOutputSchema},
-  tools: [webSearchTool], // Add web search tool
-  config: {
-    // Web search tool uses Grok's native web search capabilities via OpenRouter
-    // Gemini can now request real-time data by calling the webSearch tool
-    temperature: 0.7,
+const prompt = ai.definePrompt(
+  {
+    name: 'generateNewspaperLayoutPrompt',
+    model: 'googleai/gemini-2.5-pro',
+    input: {schema: GenerateNewspaperLayoutInputSchema},
+    output: {schema: GenerateNewspaperLayoutOutputSchema},
+    tools: [webSearchTool],
+    config: {
+      temperature: 0.7,
+    },
   },
-}, async (input) => {
+  async (input) => {
   const currentDate = format(new Date(), 'EEEE, MMMM d, yyyy');
   const currentYear = new Date().getFullYear();
   
