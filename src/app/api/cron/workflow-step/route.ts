@@ -41,10 +41,16 @@ export async function GET(request: NextRequest) {
     
     if (state.currentStep === 'error') {
       console.error('❌ Workflow is in error state');
+      console.error('❌ Error details:', state.error || 'No error message available');
+      console.error('❌ Last step attempted:', {
+        attempt: state.attempt,
+        validCount: state.validCount,
+        draftsMade: state.draftsMade
+      });
       return NextResponse.json({ 
         success: false, 
         message: 'Workflow in error state',
-        error: state.error 
+        error: state.error || 'Unknown error'
       });
     }
     
