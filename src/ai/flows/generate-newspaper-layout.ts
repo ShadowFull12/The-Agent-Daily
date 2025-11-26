@@ -306,13 +306,100 @@ Every edition should feel fresh and different based on the day's news.
    - Last resort: Add 1-2 compact data boxes if page still has white space
    - Not every page needs data boxes - only add where truly beneficial and relevant
 
-7. **Modern Aesthetic:**
+7. **COMPREHENSIVE COMPONENTS FOR EACH PAGE TYPE:**
+
+   **SPORTS PAGE COMPONENTS (MANDATORY):**
+   - **Cricket:** Live scores, IPL standings, Test match updates, ODI results
+   - **Football:** Premier League results, La Liga scores, Champions League, Indian Super League
+   - **F1 Racing:** If F1 weekend, include race results, driver standings, constructor points
+   - **Tennis:** Grand Slam updates, ATP/WTA rankings, tournament results
+   - **Other Sports:** Badminton rankings, Hockey scores, Athletics records, Chess updates
+   - **Scoreboard Widget:** Today's matches with live scores or final results
+   - Example: Use webSearch("latest cricket football F1 tennis scores today India")
+   
+   **SCIENCE/TECHNOLOGY PAGE COMPONENTS (MANDATORY):**
+   - **Science Facts:** Recent discoveries, research breakthroughs, space missions
+   - **Tech News Snippets:** Startup funding news, gadget launches, AI developments
+   - **Did You Know?** Scientific trivia, interesting facts about nature/physics/biology
+   - **Innovation Corner:** New patents, inventions, technological breakthroughs
+   - **Tech Tips:** Quick productivity hacks, software tips, security advice
+   - Example: Use webSearch("latest technology news India startups science discoveries today")
+   
+   **CULTURE/ENTERTAINMENT PAGE COMPONENTS (MANDATORY):**
+   - **New Movie Releases:** Bollywood and Hollywood films releasing this week
+   - **OTT Premieres:** Netflix, Prime Video, Disney+, Hotstar new series/movies
+   - **Music Chart:** Top songs, trending music, new album releases
+   - **Book Releases:** New books by popular authors, bestseller lists
+   - **Celebrity News:** Award shows, celebrity events, entertainment gossip
+   - **Weekend Guide:** What to watch, what to read, where to go
+   - Example: Use webSearch("new movies releasing India this week OTT Netflix Prime")
+   
+   **BUSINESS PAGE COMPONENTS (MANDATORY):**
+   - **Market Data:** Sensex, Nifty 50, top gainers, top losers
+   - **Fuel Prices:** Petrol/diesel prices in major cities
+   - **Gold/Silver Prices:** 22K, 24K gold rates per 10 grams
+   - **Cryptocurrency:** Bitcoin, Ethereum prices in INR
+   - **Currency Rates:** USD, EUR, GBP to INR exchange rates
+   - **IPO Updates:** Upcoming IPOs, recent listings, subscription status
+   - Example: Use webSearch("current Sensex Nifty gold Bitcoin fuel prices today India")
+   
+   **NATIONAL/FRONT PAGE COMPONENTS (OPTIONAL):**
+   - **Weather Forecast:** Temperature and conditions for major cities
+   - **Quote of the Day:** Inspirational or thought-provoking quote
+   - **This Day in History:** Important events that happened on this date
+   - **Sunrise/Sunset Times:** For major Indian cities
+   - Example: Use webSearch("current weather Mumbai Delhi Bangalore Chennai today")
+   
+   **UNIVERSAL COMPONENTS (USE ACROSS ANY PAGE):**
+   - **Word of the Day:** Interesting vocabulary with definition
+   - **Health Tip:** Quick wellness advice, nutrition facts
+   - **Trivia Box:** Interesting facts related to page category
+   - **Poll Results:** Public opinion on current issues
+   - **Reader's Corner:** Letters to editor, reader submissions
+
+8. **ARTICLE EXPANSION STRATEGIES (CRITICAL FOR LENGTH):**
+
+   **Automatic Article Enlargement:**
+   - **300 words minimum:** Every article should have substantial content
+   - **400-500 words for major stories:** Top stories need comprehensive coverage
+   - **Text-only articles:** Should be LONGER (400-600 words) to compensate for no image
+   - **Add these elements to expand articles:**
+     * More paragraphs with detailed context and background
+     * Expert quotes from officials, analysts, witnesses
+     * Statistical data and numbers to support story
+     * Historical context ("This is not the first time...")
+     * Future implications ("This could lead to...")
+     * Multiple perspectives (government view, opposition view, public reaction)
+     * Regional impact (how it affects different states/cities)
+   
+   **Text-Only vs Image Articles:**
+   - **Articles WITH images:** 300-400 words (image provides visual interest)
+   - **Articles WITHOUT images:** 450-600 words (text must compensate)
+   - **Strategy:** Make text-only articles more detailed, analytical, in-depth
+   - **Visual balance:** Cluster 2-3 text-only articles together for cleaner layout
+   
+   **Content Enrichment Techniques:**
+   - **For Political stories:** Add party reactions, voter sentiment, election impact
+   - **For Economic stories:** Add market analysis, expert predictions, global comparison
+   - **For Sports stories:** Add player statistics, team rankings, match analysis
+   - **For Tech stories:** Add company background, competitor analysis, market potential
+   - **For Culture stories:** Add reviews, ratings, box office predictions, audience reactions
+   
+   **Multi-Page Category Expansion:**
+   - **IF National has 6+ articles:** Create "National News Part I" (Page 2) and "National News Part II" (Page 3)
+   - **IF Business has 6+ articles:** Create "Business & Markets" (Page 5) and "Business & Economy" (Page 6)
+   - **IF Sports has 7+ articles:** Create "Sports - Cricket" (Page 8) and "Sports - Football & More" (Page 9)
+   - **TARGET:** 10-15 pages minimum (not just 5-7 pages)
+   - **STRATEGY:** Better to have more pages with comfortable spacing than cramming everything
+
+9. **Modern Aesthetic:**
    - Consistent spacing and rhythm
    - Balanced visual weight across columns
    - Clean typography with proper hierarchy
    - Professional color palette throughout
-   - Equal page lengths with proper page breaks
+   - Equal page lengths with proper page breaks (min-height: 1400px)
    - Pages feel full and information-rich, never sparse
+   - Text-only articles clustered together for visual coherence
 
 **PROVIDED ARTICLES (${input.articles.length} total):**
 ${articlesText}

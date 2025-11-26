@@ -5,6 +5,7 @@ import 'dotenv/config';
 import { searchBreakingNews } from "@/ai/flows/search-breaking-news";
 import { summarizeBreakingNews } from "@/ai/flows/summarize-breaking-news";
 import { generateNewspaperLayout } from "@/ai/flows/generate-newspaper-layout";
+import { refineNewspaperLayout } from "@/ai/flows/refine-newspaper-layout";
 import {
   collection,
   addDoc,
@@ -457,7 +458,30 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
         }
 
         console.log(`📝 Editor [${editionCreationId}]: Creating edition #${newEditionNumber}...`);
-        const layout = await generateNewspaperLayout({ articles, editionNumber: newEditionNumber });
+        
+        // STEP 1: Junior Editor (Gemini 2.5 Pro) creates initial layout
+        console.log(`👨‍💼 Junior Editor: Creating initial newspaper layout...`);
+        const juniorLayout = await generateNewspaperLayout({ articles, editionNumber: newEditionNumber });
+        
+        // STEP 2: Senior Editor (Gemini 3 Pro Preview) reviews and refines
+        let finalLayout = juniorLayout;
+        try {
+            console.log(`👔 Chief Editor (Gemini 3 Pro): Reviewing and refining layout...`);
+            const categoryList = [...new Set(articles.map(a => a.category || 'National'))].join(', ');
+            const refinedLayout = await refineNewspaperLayout({
+                html: juniorLayout.html,
+                articleCount: articles.length,
+                categories: categoryList,
+            });
+            
+            // Use senior editor's refined version
+            finalLayout = refinedLayout;
+            console.log(`✅ Chief Editor: Successfully refined the newspaper layout`);
+        } catch (error) {
+            // Fallback to junior editor's version if senior editor fails
+            console.error(`⚠️ Chief Editor failed, using Junior Editor's version:`, error);
+            console.log(`📋 Fallback: Using Junior Editor's original layout`);
+        }
 
         const mainArticle = articles[0];
         // Use article image if available, otherwise use a news-related placeholder
@@ -466,7 +490,7 @@ export async function createPreviewEditionAction(): Promise<{ success: boolean; 
         const editionData: Omit<Edition, 'id'> = {
             editionNumber: newEditionNumber,
             publicationDate: Timestamp.now(),
-            htmlContent: layout.html, 
+            htmlContent: finalLayout.html, 
             coverImageUrl: coverImageUrl,
             headline: mainArticle.headline,
             isPublished: false, 
