@@ -317,43 +317,81 @@ Every edition should feel fresh and different based on the day's news.
 
 6. **DATA BOXES & WIDGETS - REVOLUTIONARY 40-50 BOX SYSTEM:**
 
-   **🚨 CRITICAL: CREATE 40-50 COMPACT BOXES TO ELIMINATE WHITE SPACE 🚨**
+   **🚨 CRITICAL: CREATE 40-50 CREATIVE BOXES WITH STYLIZED TYPOGRAPHY 🚨**
    
    **BOX PHILOSOPHY:**
-   - Small boxes stacked vertically = NO white space
-   - Colored boxes matching page theme = Professional look
-   - 40-50 boxes total across all pages = Information-rich newspaper
-   - Smart placement based on article count per category
+   - Magazine-style boxes with unique typography for each type
+   - NO EMPTY SPACE - wrap boxes tightly around content
+   - Two distinct styles: DATA BOXES (webSearch) vs EDITORIAL BOXES (creative content)
+   - 40-50 boxes total = Information-rich, visually engaging newspaper
    
-   **BOX SIZING RULES (ABSOLUTE):**
-   - Height: 80-150px maximum (NEVER 300-400px!)
-   - Padding: 0.8rem (NOT 2rem)
-   - Font-size: 0.9rem (NOT 1.1rem)
-   - Line-height: 1.3 (NOT 1.8)
-   - Margins: 0.5rem between boxes
-   - Each box: 3-5 lines of content maximum
+   **TYPE 1: DATA BOXES (webSearch content - stocks, weather, sports):**
    
-   **BOX COLORS BY PAGE:**
-   - Business page boxes: background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;
-   - Sports page boxes: background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white;
-   - Technology page boxes: background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;
-   - Culture page boxes: background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); color: white;
-   - National page boxes: background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white;
-   - Science page boxes: background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white;
-   - Health page boxes: background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white;
+   **SIZING - WRAP TO CONTENT (CRITICAL):**
+   - Height: AUTO (fit-content) - NO fixed heights!
+   - Padding: 1rem
+   - Font-size for numbers: 1.5rem - 2rem (BIG and BOLD)
+   - Font-size for labels: 0.8rem (small, uppercase, letter-spacing)
+   - Use monospace fonts for numbers: font-family: 'Courier New', monospace;
+   - Tight line-height: 1.2 for numbers
+   
+   **VISUAL STYLE:**
+   - Bold gradient backgrounds matching page color
+   - White text with text-shadow for depth
+   - Large numbers/data points as focal point
+   - Small labels in ALL CAPS with letter-spacing: 2px
+   - Border-left: 4px solid (lighter shade) for accent
+   
+   DATA BOX EXAMPLE STYLE: Green gradient background, white color, 1rem padding. Small label at top (0.7rem, uppercase, letter-spacing 2px) says "MARKET WATCH". Below that, big numbers in Courier New monospace at 1.8rem bold: "82,347" with small green up arrow and percentage. Then small label "Sensex Closing" at 0.75rem. Repeat for each data point. Height wraps to content.
+   
+   **TYPE 2: EDITORIAL BOXES (Editor's picks, facts, quotes, tips - NO webSearch):**
+   
+   **CREATIVE TYPOGRAPHY STYLES:**
+   
+   **Style A - QUOTE BOX (magazine pull-quote style):**
+   Light gray background (#f9fafb) with thick pink left border (6px). Georgia serif font at 1.3rem, italic. Quote text in dark gray, attribution below in pink uppercase with letter-spacing.
+   
+   **Style B - EDITOR'S PICK (bold magazine style):**
+   Dark gradient background (black to dark gray), white text, rounded corners (12px). Pink badge "EDITOR'S PICK" at top in tiny uppercase letters (0.7rem, letter-spacing 3px). Big title in Georgia serif (1.4rem, bold). Description text below at 0.9rem. Decorative pink circle element in top-right corner with opacity 0.2.
+   
+   **Style C - FUN FACT BOX (playful magazine style):**
+   Yellow gradient background (#fef3c7 to #fde68a), brown text, rounded with dashed orange border (3px). Big emoji at top (2rem). Label "DID YOU KNOW?" in tiny orange uppercase (0.75rem, letter-spacing 2px). Fact text at 1rem, medium weight.
+   
+   **Style D - TIP/ADVICE BOX (clean magazine style):**
+   White background with blue border (2px solid). Blue circular icon on left (40px diameter) with emoji inside. Label "HEALTH TIP" next to icon in tiny blue uppercase (0.8rem, letter-spacing 2px). Tip text below at 1rem, medium weight.
+   
+   **Style E - WORD OF THE DAY (educational magazine style):**
+   Purple gradient background (#ddd6fe to #c4b5fd). Label "WORD OF THE DAY" in tiny purple uppercase. Word itself in huge Georgia serif (2rem, bold, dark purple). Pronunciation below in italic (0.8rem). Definition at bottom (0.95rem, medium weight).
    
    **BOX PLACEMENT STRATEGY - INTELLIGENT DISTRIBUTION:**
    
-   **IF page has 6+ articles → Add 2-3 compact boxes**
-   **IF page has 4-5 articles → Add 4-6 compact boxes**
-   **IF page has 2-3 articles → Add 8-10 compact boxes**
-   **IF page has 1 article → Add 12-15 compact boxes**
+   **IF page has 6+ articles → Add 2-3 boxes**
+   **IF page has 4-5 articles → Add 4-6 boxes**
+   **IF page has 2-3 articles → Add 8-10 boxes**
+   **IF page has 1 article → Add 12-15 boxes**
    
-   Stack boxes vertically in the 3rd column (right side). Never interrupt articles.
+   **CRITICAL RULES FOR ALL BOXES:**
+   - Use height: auto or fit-content - NEVER fixed heights
+   - Wrap boxes tightly around content - NO empty space inside
+   - Data boxes: Big numbers (1.5-2rem), small labels (0.75-0.85rem)
+   - Editorial boxes: Use appropriate style (Quote/Pick/Fact/Tip/Word)
+   - Each box should be self-contained and visually distinct
+   - Mix styles throughout the page for visual variety
+   - NO boring uniform boxes - each type gets unique typography
    
-   **STEP 1: GATHER DATA (Make 15-20 webSearch calls):**
+   **CONTENT GENERATION:**
    
-   Use webSearch tool to collect ALL this data:
+   For DATA BOXES: Use webSearch for real-time data (stocks, weather, etc.)
+   For EDITORIAL BOXES: Create original content (no webSearch needed):
+   - Editor's Picks: Your creative recommendations
+   - Fun Facts: Interesting trivia from general knowledge
+   - Tips: Helpful advice (health, tech, finance, lifestyle)
+   - Quotes: Inspirational/famous quotes
+   - Word of Day: Vocabulary with definition and example
+   
+   **STEP 1: GATHER DATA (Make 15-20 webSearch calls for DATA BOXES only):**
+   
+   Use webSearch tool to collect data for DATA BOXES:
    
    **BUSINESS/FINANCE DATA:**
    1. webSearch("current Sensex Nifty 50 Bank Nifty closing price today India NSE BSE")
@@ -387,85 +425,87 @@ Every edition should feel fresh and different based on the day's news.
    19. webSearch("word of the day English vocabulary interesting words")
    20. webSearch("famous quote of the day inspirational motivational")
    
-   **STEP 2: CREATE 40-50 COMPACT BOXES**
+   **STEP 2: CREATE 40-50 BOXES WITH APPROPRIATE STYLES**
    
-   **BUSINESS PAGE (8-12 boxes):**
-   - Market Watch (Sensex, Nifty, Bank Nifty with change %)
-   - Top 5 Gainers (stock names + % change)
-   - Top 5 Losers (stock names + % change)
-   - Fuel Prices (Petrol/Diesel in 5 cities)
-   - Gold & Silver Prices (22K, 24K, Silver rates)
-   - Crypto Corner (Bitcoin, Ethereum, Ripple prices)
-   - Currency Rates (USD, EUR, GBP to INR)
-   - World's Richest (Top 5 with net worth)
-   - IPO Watch (Upcoming IPOs this week)
-   - Economic Indicator (GDP, Inflation, etc.)
-   - Stock Tip of the Day
-   - Market Trivia
+   **BUSINESS PAGE (8-12 boxes - mix data + editorial):**
+   DATA BOXES (use webSearch):
+   - Market Watch (Style: Big numbers, monospace font)
+   - Top 5 Gainers (Style: List with green up arrows)
+   - Top 5 Losers (Style: List with red down arrows)
+   - Fuel Prices (Style: City grid with big prices)
+   - Gold & Silver (Style: Big prices, small labels)
+   - Crypto Corner (Style: Coin symbols + prices)
+   - Currency Rates (Style: Exchange rate grid)
+   - World's Richest (Style: Numbered list with net worth)
+   - IPO Watch (Style: Company names + dates)
+   
+   EDITORIAL BOXES (no webSearch):
+   - Stock Tip of the Day (Style D: Tip box)
+   - Market Trivia (Style C: Fun fact)
+   - Investment Quote (Style A: Quote box)
    
    **SPORTS PAGE (6-10 boxes):**
-   IMPORTANT: Sports boxes are PRE-GENERATED by Sports Journalist and provided in sportsBoxes parameter.
-   DO NOT use webSearch for sports data. Simply format and display the provided sports boxes on the Sports page.
-   The sportsBoxes array contains ready-to-use data with sport name, title, content, and type.
-   Just create HTML boxes from this pre-generated data with orange gradient styling.
+   IMPORTANT: Sports boxes are PRE-GENERATED by Sports Journalist.
+   Use the provided sportsBoxes data with DATA BOX style (big scores, monospace).
    
-   **TECHNOLOGY PAGE (5-8 boxes):**
-   - Tech News Briefs (4-5 one-line items)
-   - Startup Funding (recent funding rounds)
-   - Tech Tip of the Day
-   - Gadget Launch (new devices)
-   - AI Update (latest AI developments)
-   - Tech Trivia
-   - App of the Week
+   **TECHNOLOGY PAGE (5-8 boxes - mix data + editorial):**
+   DATA BOXES:
+   - Tech News Briefs (Style: Bullet list)
+   - Startup Funding (Style: Company + amount)
+   - Gadget Launch (Style: Product grid)
    
-   **CULTURE PAGE (6-10 boxes):**
-   - This Week's Movies (Bollywood + Hollywood)
-   - OTT Releases (Netflix, Prime, Disney+)
-   - Editor's Pick: Movie of the Week
-   - Editor's Pick: Series of the Week
-   - Music Chart (Top 5 songs)
-   - Books to Read (new releases)
-   - Weekend Guide (what to watch/read)
-   - Celebrity News Brief
-   - Movie Trivia
+   EDITORIAL BOXES:
+   - Tech Tip of the Day (Style D)
+   - AI Fun Fact (Style C)
+   - Tech Quote (Style A)
+   - App of the Week (Style B: Editor's pick)
    
-   **SCIENCE PAGE (4-6 boxes):**
-   - Science Fact of the Day
-   - Did You Know? (interesting fact)
-   - Space Update (NASA, ISRO news)
-   - Tech Innovation (new patents/inventions)
-   - Science Quiz
-   - Research Highlight
+   **CULTURE PAGE (6-10 boxes - heavy editorial):**
+   DATA BOXES:
+   - This Week's Movies (Style: Movie grid from webSearch)
+   - OTT Releases (Style: Platform + titles)
+   - Music Chart (Style: Numbered list from webSearch)
+   - Books to Read (Style: Book list from webSearch)
    
-   **HEALTH PAGE (4-6 boxes):**
-   - Health Tip of the Day
-   - Nutrition Fact
-   - Wellness Advice
-   - Exercise Tip
-   - Mental Health Tip
-   - Health Quiz
+   EDITORIAL BOXES:
+   - Editor's Pick: Movie (Style B)
+   - Editor's Pick: Series (Style B)
+   - Weekend Guide (Style D: Tip)
+   - Movie Trivia (Style C: Fun fact)
    
-   **NATIONAL PAGE (5-8 boxes):**
-   - Weather Today (5-6 major cities)
-   - Sunrise/Sunset Times
-   - This Day in History
-   - Quote of the Day
-   - Word of the Day
-   - Poll Result
-   - Reader's Corner
-   - National Trivia
+   **SCIENCE PAGE (4-6 boxes - heavy editorial):**
+   DATA BOXES:
+   - Space Update (Style: News brief from webSearch)
+   - Research Highlight (Style: Discovery brief from webSearch)
    
-   **BOX CONTENT EXAMPLE:**
+   EDITORIAL BOXES:
+   - Science Fact (Style C: Fun fact)
+   - Did You Know? (Style C: Fun fact)
+   - Innovation Spotlight (Style D: Tip)
+   - Science Quote (Style A)
    
-   Market Watch box with green gradient background (#10b981 to #059669), white color, 0.8rem padding, 0.9rem font-size, line-height 1.3, margin-bottom 0.8rem, border-radius 8px. Contains title "Market Watch" at 1rem font-size, bold, then 3-5 data points at 0.85rem: Sensex 82,347 up 1.2%, Nifty 50 25,184 up 0.8%, Bank Nifty 54,230 up 0.5%.
+   **HEALTH PAGE (4-6 boxes - heavy editorial):**
+   DATA BOXES:
+   - Health News Brief (Style: From webSearch)
    
-   **CRITICAL RULES:**
-   - Use inline styles for EVERY box (padding, font-size, colors, margins)
-   - Match gradient color to page category
-   - Maximum 5 lines of content per box
-   - Stack boxes vertically in right column
-   - Leave 0.8rem margin between boxes
-   - NO large empty boxes - every box must have 3-5 data points
+   EDITORIAL BOXES:
+   - Health Tip of the Day (Style D)
+   - Nutrition Fact (Style C)
+   - Wellness Advice (Style D)
+   - Exercise Tip (Style D)
+   - Mental Health Tip (Style D)
+   
+   **NATIONAL PAGE (5-8 boxes - mix):**
+   DATA BOXES:
+   - Weather Today (Style: City grid with temps from webSearch)
+   - Sunrise/Sunset (Style: Time grid from webSearch)
+   
+   EDITORIAL BOXES:
+   - This Day in History (Style C: Fun fact)
+   - Quote of the Day (Style A)
+   - Word of the Day (Style E)
+   - National Trivia (Style C)
+   - Poll Result (Style: Percentage bar visual)
 
 7. **FRONT PAGE COVER IMAGE & TITLE - CRITICAL FIX:**
    
