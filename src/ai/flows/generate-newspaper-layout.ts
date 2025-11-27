@@ -315,6 +315,14 @@ Every edition should feel fresh and different based on the day's news.
    - Well-structured paragraphs starting with <strong>CITY:</strong>
    - Images in ~60% of articles (use story-image class)
 
+5a. **NARROW ARTICLE STACKING (LEFT COLUMN OPTION):**
+   - You CAN stack 2 narrow articles vertically in a single column
+   - Add class="narrow-article" to each stacked article
+   - Each narrow article: 250-350 words, optional small image
+   - Separated by 1rem margin between them
+   - Perfect for: briefs, short updates, quick stories
+   - Example: Top of left column has 2 narrow stacked articles, right side has 1 regular article
+
 6. **DATA BOXES & WIDGETS - REVOLUTIONARY 40-50 BOX SYSTEM:**
 
    **🚨 CRITICAL: CREATE 40-50 CREATIVE BOXES WITH STYLIZED TYPOGRAPHY 🚨**
@@ -328,12 +336,14 @@ Every edition should feel fresh and different based on the day's news.
    **TYPE 1: DATA BOXES (webSearch content - stocks, weather, sports):**
    
    **SIZING - WRAP TO CONTENT (CRITICAL):**
-   - Height: AUTO (fit-content) - NO fixed heights!
+   - Style attribute MUST include: display: block; height: fit-content; min-height: auto;
    - Padding: 1rem
+   - Margin between title and content: 0 (NO gaps!)
    - Font-size for numbers: 1.5rem - 2rem (BIG and BOLD)
    - Font-size for labels: 0.8rem (small, uppercase, letter-spacing)
    - Use monospace fonts for numbers: font-family: 'Courier New', monospace;
    - Tight line-height: 1.2 for numbers
+   - Title margin-bottom: 0.5rem MAX (no floating titles)
    
    **VISUAL STYLE:**
    - Bold gradient backgrounds matching page color
@@ -349,7 +359,7 @@ Every edition should feel fresh and different based on the day's news.
    **CREATIVE TYPOGRAPHY STYLES:**
    
    **Style A - QUOTE BOX (magazine pull-quote style):**
-   Light gray background (#f9fafb) with thick pink left border (6px). Georgia serif font at 1.3rem, italic. Quote text in dark gray, attribution below in pink uppercase with letter-spacing.
+   Light gray background (#f9fafb) with thick pink left border (6px). Georgia serif font at 1.3rem, italic. Quote text in dark gray, attribution below in pink uppercase with letter-spacing. CRITICAL: Use height: fit-content; margin-bottom on quote text should be 0.5rem (tight spacing, no gaps).
    
    **Style B - EDITOR'S PICK (bold magazine style):**
    Dark gradient background (black to dark gray), white text, rounded corners (12px). Pink badge "EDITOR'S PICK" at top in tiny uppercase letters (0.7rem, letter-spacing 3px). Big title in Georgia serif (1.4rem, bold). Description text below at 0.9rem. Decorative pink circle element in top-right corner with opacity 0.2.
@@ -371,8 +381,10 @@ Every edition should feel fresh and different based on the day's news.
    **IF page has 1 article → Add 12-15 boxes**
    
    **CRITICAL RULES FOR ALL BOXES:**
-   - Use height: auto or fit-content - NEVER fixed heights
+   - MUST use inline style: display: block; height: fit-content; min-height: auto;
    - Wrap boxes tightly around content - NO empty space inside
+   - All child elements should have tight margins (0.3-0.5rem between elements)
+   - NO floating headers - title margin-bottom must connect to content below
    - Data boxes: Big numbers (1.5-2rem), small labels (0.75-0.85rem)
    - Editorial boxes: Use appropriate style (Quote/Pick/Fact/Tip/Word)
    - Each box should be self-contained and visually distinct
