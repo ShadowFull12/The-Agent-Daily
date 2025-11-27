@@ -76,6 +76,36 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // PHASE 3 TIMEOUT DETECTION: Check if Phase 3 has been running for 230+ seconds
+    if (state.currentStep === 'phase3_editor' && state.phase3StartTime) {
+      const phase3StartMillis = state.phase3StartTime?.toMillis ? state.phase3StartTime.toMillis() : Date.now();
+      const phase3ElapsedTime = Date.now() - phase3StartMillis;
+      const PHASE3_TIMEOUT_THRESHOLD = 230 * 1000; // 230 seconds (3:50)
+      
+      if (phase3ElapsedTime >= PHASE3_TIMEOUT_THRESHOLD && !state.isExecuting) {
+        console.warn(`⏱️ PHASE 3 TIMEOUT DETECTED: Running for ${Math.floor(phase3ElapsedTime / 1000)}s`);
+        console.warn(`⏱️ Triggering automatic resume to phase3_editor_resume...`);
+        
+        // Switch to resume mode
+        const { updateQueueState } = await import('@/app/workflow-queue');
+        await updateQueueState({ 
+          currentStep: 'phase3_editor_resume',
+          phase3StartTime: undefined // Clear the timeout tracker
+        });
+        
+        // Let the next cron iteration handle the resume
+        return NextResponse.json({
+          success: true,
+          message: 'Phase 3 timeout detected - switched to resume mode',
+          currentStep: 'phase3_editor_resume',
+          timeoutSeconds: Math.floor(phase3ElapsedTime / 1000)
+        });
+      } else if (phase3ElapsedTime >= PHASE3_TIMEOUT_THRESHOLD / 2) {
+        // Log warning at halfway point (115s)
+        console.warn(`⚠️ Phase 3 approaching timeout: ${Math.floor(phase3ElapsedTime / 1000)}s / 230s`);
+      }
+    }
+    
     // Set execution lock before starting work
     const { updateQueueState } = await import('@/app/workflow-queue');
     const { Timestamp } = await import('firebase/firestore');

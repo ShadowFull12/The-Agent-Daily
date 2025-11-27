@@ -7,7 +7,8 @@ export type WorkflowStep =
   | 'idle'
   | 'phase1_prep'        // Phase 1: Scout + Dedup + Distribute (< 5 min)
   | 'phase2_content'     // Phase 2: Journalists + Sports Journalist + Validate (< 5 min)
-  | 'phase3_editor'      // Phase 3: Editor creates newspaper (< 5 min)
+  | 'phase3_editor'      // Phase 3: Editor creates newspaper (< 5 min, with timeout handling)
+  | 'phase3_editor_resume' // Phase 3 resume: Continue from saved progress
   | 'complete'
   | 'error';
 
@@ -22,6 +23,9 @@ export type QueueState = {
   executionStartedAt?: any; // Timestamp when execution started
   initialHtml?: string; // HTML from Editor 1 for Editor 2 to refine
   editionNumber?: number; // Edition number from Editor 1
+  phase3StartTime?: any; // When Phase 3 started (for timeout detection)
+  partialHtml?: string; // Partial HTML progress from editor (for timeout recovery)
+  pagesCompleted?: number; // Number of pages completed so far
   lastUpdated: any;
 };
 
@@ -71,6 +75,25 @@ export async function updateQueueState(state: Partial<QueueState>) {
     newState.editionNumber = state.editionNumber;
   } else if (currentState?.editionNumber) {
     newState.editionNumber = currentState.editionNumber;
+  }
+  
+  // Preserve Phase 3 timeout handling fields
+  if (state.phase3StartTime !== undefined) {
+    newState.phase3StartTime = state.phase3StartTime;
+  } else if (currentState?.phase3StartTime) {
+    newState.phase3StartTime = currentState.phase3StartTime;
+  }
+  
+  if (state.partialHtml !== undefined) {
+    newState.partialHtml = state.partialHtml;
+  } else if (currentState?.partialHtml) {
+    newState.partialHtml = currentState.partialHtml;
+  }
+  
+  if (state.pagesCompleted !== undefined) {
+    newState.pagesCompleted = state.pagesCompleted;
+  } else if (currentState?.pagesCompleted) {
+    newState.pagesCompleted = currentState.pagesCompleted;
   }
   
   // Only include error field if it has a value (Firestore doesn't accept undefined)

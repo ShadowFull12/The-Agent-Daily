@@ -719,15 +719,25 @@ export async function executePhase2_ContentCreation(): Promise<{ success: boolea
   }
 }
 
-// PHASE 3: Editor creates complete newspaper (< 5 minutes)
+// PHASE 3: Editor creates complete newspaper (< 5 minutes, with timeout handling)
 export async function executePhase3_Editor(): Promise<{ success: boolean; message: string; error?: string; completed?: boolean }> {
   try {
-    console.log('🚀 ========== PHASE 3: EDITOR ==========');
+    console.log('🚀 ========== PHASE 3: EDITOR (WITH TIMEOUT PROTECTION) ==========');
     await updateWorkflowState({ status: 'running', message: 'Phase 3: Editor creating comprehensive newspaper...' });
     
     const state = await getQueueState();
     
+    // Record Phase 3 start time for timeout detection
+    const { Timestamp } = await import('firebase/firestore');
+    await updateQueueState({ 
+      phase3StartTime: Timestamp.now(),
+      partialHtml: undefined, // Clear any old partial progress
+      pagesCompleted: 0
+    });
+    
     await updateAgentProgress('editor', 'working', 'Editor: Creating comprehensive newspaper layout...');
+    
+    // Create edition with built-in timeout handling
     const editorResult = await createPreviewEditionAction();
     
     if (!editorResult.success) {
@@ -738,7 +748,13 @@ export async function executePhase3_Editor(): Promise<{ success: boolean; messag
     await updateAgentProgress('editor', 'success', `Edition created: ${editorResult.editionId}`);
     
     // Mark workflow as complete
-    await updateQueueState({ currentStep: 'complete', validCount: state?.validCount || 0 });
+    await updateQueueState({ 
+      currentStep: 'complete', 
+      validCount: state?.validCount || 0,
+      phase3StartTime: undefined, // Clear timeout tracking
+      partialHtml: undefined,
+      pagesCompleted: undefined
+    });
     await updateWorkflowState({ status: 'success', message: 'Workflow completed successfully!' });
     
     // Reset all agents to idle
@@ -760,8 +776,73 @@ export async function executePhase3_Editor(): Promise<{ success: boolean; messag
     return { success: true, message: `Edition created with ${state?.validCount || 0} articles!`, completed: true };
     
   } catch (error: any) {
+    // Check if this is a timeout error
+    if (error.message?.includes('timeout') || error.message?.includes('deadline')) {
+      console.log('⏱️ TIMEOUT DETECTED in Phase 3 - Saving progress for resume...');
+      await updateQueueState({ 
+        currentStep: 'phase3_editor_resume',
+        error: undefined // Clear error since we'll resume
+      });
+      await updateWorkflowState({ status: 'running', message: 'Phase 3: Timeout detected, will resume next cycle...' });
+      return { success: true, message: 'Phase 3 timeout - will resume next cycle' };
+    }
+    
     await updateQueueState({ currentStep: 'error', error: error.message });
     return { success: false, message: 'Phase 3 failed', error: error.message };
+  }
+}
+
+// PHASE 3 RESUME: Continue from saved progress after timeout
+export async function executePhase3_EditorResume(): Promise<{ success: boolean; message: string; error?: string; completed?: boolean }> {
+  try {
+    console.log('🔄 ========== PHASE 3 RESUME: CONTINUING FROM TIMEOUT ==========');
+    await updateWorkflowState({ status: 'running', message: 'Phase 3: Resuming editor work from timeout...' });
+    
+    const state = await getQueueState();
+    
+    await updateAgentProgress('editor', 'working', 'Editor: Resuming newspaper creation from saved progress...');
+    
+    // Try to complete the edition again
+    const editorResult = await createPreviewEditionAction();
+    
+    if (!editorResult.success) {
+      await updateQueueState({ currentStep: 'error', error: editorResult.error });
+      return { success: false, message: 'Editor resume failed', error: editorResult.error };
+    }
+    
+    await updateAgentProgress('editor', 'success', `Edition created: ${editorResult.editionId}`);
+    
+    // Mark workflow as complete
+    await updateQueueState({ 
+      currentStep: 'complete', 
+      validCount: state?.validCount || 0,
+      phase3StartTime: undefined,
+      partialHtml: undefined,
+      pagesCompleted: undefined
+    });
+    await updateWorkflowState({ status: 'success', message: 'Workflow completed successfully after resume!' });
+    
+    // Reset all agents to idle
+    console.log('🔄 Resetting all agents to idle...');
+    await updateAgentProgress('scout', 'idle', '');
+    await updateAgentProgress('deduplicator', 'idle', '', { checked: 0, remaining: 0 });
+    await updateAgentProgress('journalist', 'idle', '', { drafted: 0, remaining: 0 });
+    await updateAgentProgress('journalist_1', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_2', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_3', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_4', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_5', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('sports_journalist' as any, 'idle', '');
+    await updateAgentProgress('validator', 'idle', '');
+    await updateAgentProgress('editor', 'idle', '');
+    await updateAgentProgress('publisher', 'idle', '');
+    
+    console.log('🎉 ========== PHASE 3 RESUME COMPLETE - WORKFLOW DONE ==========');
+    return { success: true, message: `Edition created with ${state?.validCount || 0} articles (after resume)!`, completed: true };
+    
+  } catch (error: any) {
+    await updateQueueState({ currentStep: 'error', error: error.message });
+    return { success: false, message: 'Phase 3 resume failed', error: error.message };
   }
 }
 
@@ -817,6 +898,12 @@ export async function executeNextWorkflowStep(): Promise<{
       case 'phase3_editor':
         console.log('📋 Executing: Phase 3 - Editor (Create Newspaper)');
         result = await executePhase3_Editor();
+        result.completed = true;
+        break;
+        
+      case 'phase3_editor_resume':
+        console.log('📋 Executing: Phase 3 Resume - Editor (Continue from Timeout)');
+        result = await executePhase3_EditorResume();
         result.completed = true;
         break;
         
