@@ -151,7 +151,23 @@ For each category, count articles:
 
 **FLEXIBLE PAGE STRUCTURE (Adapt based on content):**
 
-- **Page 1**: Front Page - HERO story + 3-4 top stories from ANY available categories
+- **Page 1: FRONT PAGE (CRITICAL - ALWAYS PERFECT):**
+  
+  **MANDATORY FRONT PAGE LAYOUT:**
+  * First article MUST use hero-story class (spans full width or 2 columns)
+  * Hero article: 500-700 words, MUST have image (hero-image class)
+  * Below hero: 3-4 supporting stories in standard grid
+  * Supporting stories: 350-450 words each
+  * NO narrow stacked articles on front page - use standard single-column only
+  * NO info boxes on front page - keep it clean and professional
+  * Front page should look prestigious and well-designed
+  * Mix of categories allowed: Take best stories from any category
+  * Red gradient header: "The Daily Agent - Front Page"
+  
+  **FRONT PAGE STRUCTURE EXAMPLE:**
+  Row 1: [HERO STORY - 2 columns wide, 600 words, big image]
+  Row 2: [Story 350w] [Story 350w] [Story 350w]
+  Row 3 (if needed): [Story 350w] [Story 350w]
 
 - **Pages 2+**: Create pages ONLY for categories that have articles:
   * IF National has 5+ articles → Create 1-2 National pages
@@ -166,6 +182,11 @@ For each category, count articles:
   * IF National has only 2-3 articles → Merge into Front Page, don't create separate National page
   * IF a category has only 1-2 articles → Place on Front Page or merge with related category
   * Example: 2 Science articles + 2 Healthcare articles = 1 "Science & Health" page
+  
+- **Special Rules for Inner Pages (Pages 2+):**
+  * Narrow stacked articles allowed on inner pages only
+  * Info boxes allowed on inner pages in 3rd column
+  * More experimental layouts permitted
 
 **STEP 3: ELIMINATE WHITE SPACE - MANDATORY LAYOUT RULES**
 
