@@ -153,21 +153,49 @@ For each category, count articles:
 
 - **Page 1: FRONT PAGE (CRITICAL - ALWAYS PERFECT):**
   
-  **MANDATORY FRONT PAGE LAYOUT:**
-  * First article MUST use hero-story class (spans full width or 2 columns)
-  * Hero article: 500-700 words, MUST have image (hero-image class)
-  * Below hero: 3-4 supporting stories in standard grid
-  * Supporting stories: 350-450 words each
-  * NO narrow stacked articles on front page - use standard single-column only
-  * NO info boxes on front page - keep it clean and professional
-  * Front page should look prestigious and well-designed
-  * Mix of categories allowed: Take best stories from any category
-  * Red gradient header: "The Daily Agent - Front Page"
+  **DYNAMIC LAYOUT - VARY PER EDITION (Choose one layout style randomly):**
   
-  **FRONT PAGE STRUCTURE EXAMPLE:**
+  🚨 DO NOT use the same layout every time! Alternate between these 4 modern layouts:
+  
+  **LAYOUT A - CLASSIC HERO (60% of editions):**
   Row 1: [HERO STORY - 2 columns wide, 600 words, big image]
   Row 2: [Story 350w] [Story 350w] [Story 350w]
-  Row 3 (if needed): [Story 350w] [Story 350w]
+  - Hero article spans 2 columns (col-span-2 class)
+  - 3 supporting stories below in standard grid
+  - Clean, prestigious look
+  
+  **LAYOUT B - HERO WITH SIDEBAR (20% of editions):**
+  Left: [HERO STORY - 2 columns, 700 words, big image spanning both]
+  Right: [Story 400w]
+         [Story 400w]
+  - Hero dominates left 2 columns
+  - Right column has 2 stacked stories
+  - Modern magazine feel
+  
+  **LAYOUT C - SPLIT FEATURE (15% of editions):**
+  Row 1: [BIG Story 600w] [BIG Story 600w with large image]
+  Row 2: [Story 350w] [Story 350w] [Story 350w]
+  - Two equally important stories at top (no hero)
+  - 3 supporting stories below
+  - Balanced, dual-focus approach
+  
+  **LAYOUT D - HERO FULL WIDTH (5% of editions):**
+  Row 1: [MASSIVE HERO - Full 3 columns, 800 words, huge image]
+  Row 2: [Story 400w] [Story 400w] [Story 400w]
+  - Hero spans entire width (col-span-3 class)
+  - Maximum impact for breaking news
+  - Reserved for most important stories
+  
+  **FRONT PAGE MANDATORY RULES:**
+  - First article MUST be prominent (hero-story class)
+  - Hero: 500-800 words depending on layout
+  - Hero MUST have image (hero-image class)
+  - Supporting stories: 350-450 words
+  - NO narrow stacked articles on front page
+  - NO info boxes on front page (keep clean)
+  - Red gradient header: "The Daily Agent - Front Page"
+  - Mix of categories allowed: best stories from any category
+  - Look prestigious, modern, and well-designed
 
 - **Pages 2+**: Create pages ONLY for categories that have articles:
   * IF National has 5+ articles → Create 1-2 National pages
@@ -335,6 +363,21 @@ Every edition should feel fresh and different based on the day's news.
    - Byline with reporter name and location
    - Well-structured paragraphs starting with <strong>CITY:</strong>
    - Images in ~60% of articles (use story-image class)
+   
+   **IMAGE HANDLING - CRITICAL FOR PROPER DISPLAY:**
+   - ALWAYS use article.imageUrl if provided (these are real, verified URLs)
+   - For img tags, MUST include: loading="lazy" onerror="this.style.display='none'"
+   - Example: <img src="{article.imageUrl}" alt="Story" class="story-image" loading="lazy" onerror="this.style.display='none'">
+   - If article.imageUrl is missing or "No image", use relevant Unsplash URL:
+     * Business: https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800
+     * Tech: https://images.unsplash.com/photo-1518770660439-4636190af475?w=800
+     * Sports: https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800
+     * Health: https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800
+     * Science: https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800
+     * Culture: https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=800
+     * National: https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800
+   - Images MUST have width: 100%; height: auto; object-fit: cover; in inline style
+   - Add display: block; to prevent spacing issues
 
 5a. **NARROW ARTICLE STACKING (LEFT COLUMN OPTION):**
    - You CAN stack 2 narrow articles vertically in a single column
@@ -394,14 +437,89 @@ Every edition should feel fresh and different based on the day's news.
    **Style E - WORD OF THE DAY (educational magazine style):**
    Purple gradient background (#ddd6fe to #c4b5fd). Label "WORD OF THE DAY" in tiny purple uppercase. Word itself in huge Georgia serif (2rem, bold, dark purple). Pronunciation below in italic (0.8rem). Definition at bottom (0.95rem, medium weight).
    
-   **BOX PLACEMENT STRATEGY - INTELLIGENT DISTRIBUTION:**
+   **BOX PLACEMENT STRATEGY - USE ALL GATHERED DATA:**
    
-   **IF page has 6+ articles → Add 2-3 boxes**
-   **IF page has 4-5 articles → Add 4-6 boxes**
-   **IF page has 2-3 articles → Add 8-10 boxes**
-   **IF page has 1 article → Add 12-15 boxes**
+   🚨 CRITICAL: You will gather 15-20 pieces of data via webSearch. YOU MUST USE ALL OF IT!
+   DO NOT waste gathered data. Every webSearch result must become a box.
    
-   **CRITICAL RULES FOR ALL BOXES:**
+   **PLACEMENT RULES - FILL ALL WHITE SPACE:**
+   - Boxes go in the RIGHT COLUMN (3rd column) of the 3-column grid
+   - Stack boxes VERTICALLY from top to bottom
+   - If right column has white space at bottom → ADD MORE BOXES
+   - If you gathered 15 data points → CREATE 15+ boxes (add editorial boxes too)
+   - NEVER leave empty space when you have unused data
+   - Place boxes AFTER articles in right column, then continue stacking below
+   
+   **BY PAGE TYPE:**
+   - **National page:** 8-12 boxes minimum (weather, sunrise/sunset, history, quote, word, trivia, poll)
+   - **Business page:** 10-15 boxes minimum (use ALL financial data gathered)
+   - **Sports page:** 6-10 boxes (from Sports Journalist pre-generated data)
+   - **Tech page:** 6-10 boxes (news, funding, tips, facts, quotes)
+   - **Culture page:** 8-12 boxes (movies, OTT, music, books, editor picks, trivia)
+   - **Science page:** 6-8 boxes (discoveries, facts, tips, quotes)
+   - **Health page:** 6-8 boxes (tips, nutrition, wellness, exercise)
+   
+   **VERTICAL STACKING EXAMPLE:**
+   Right Column:
+   [Article] ← Top
+   [Box 1: Market Watch]
+   [Box 2: Top Gainers]
+   [Box 3: Top Losers]
+   [Box 4: Fuel Prices]
+   [Box 5: Gold/Silver]
+   [Box 6: Crypto]
+   [Box 7: Currency]
+   [Box 8: World's Richest]
+   [Box 9: IPO Watch]
+   [Box 10: Stock Tip]
+   [Box 11: Market Trivia]
+   [Box 12: Investment Quote] ← Bottom (NO white space left)
+   
+   **BOX COLORS - UNIQUE GRADIENT FOR EACH CATEGORY:**
+   
+   Use DIFFERENT colors for variety - NO repeating colors on same page!
+   
+   **Business/Finance boxes (use variety):**
+   - Market Watch: Green gradient (#10b981 to #059669)
+   - Gainers/Losers: Emerald gradient (#34d399 to #10b981)
+   - Fuel Prices: Amber gradient (#f59e0b to #d97706)
+   - Gold/Silver: Yellow gradient (#fbbf24 to #f59e0b)
+   - Crypto: Indigo gradient (#6366f1 to #4f46e5)
+   - Currency: Blue gradient (#3b82f6 to #2563eb)
+   - World's Richest: Purple gradient (#a855f7 to #9333ea)
+   - Stock Tip: Teal gradient (#14b8a6 to #0d9488)
+   
+   **Sports boxes:** Orange gradient (#f97316 to #ea580c)
+   
+   **Technology boxes (use variety):**
+   - Tech News: Blue gradient (#3b82f6 to #2563eb)
+   - Startup Funding: Cyan gradient (#06b6d4 to #0891b2)
+   - Tech Tip: Sky gradient (#0ea5e9 to #0284c7)
+   - AI Update: Violet gradient (#8b5cf6 to #7c3aed)
+   
+   **Culture boxes (use variety):**
+   - Movies: Pink gradient (#ec4899 to #db2777)
+   - OTT: Rose gradient (#f43f5e to #e11d48)
+   - Music: Fuchsia gradient (#d946ef to #c026d3)
+   - Books: Purple gradient (#a855f7 to #9333ea)
+   
+   **Science boxes (use variety):**
+   - Space Update: Indigo gradient (#6366f1 to #4f46e5)
+   - Science Fact: Cyan gradient (#06b6d4 to #0891b2)
+   - Innovation: Teal gradient (#14b8a6 to #0d9488)
+   
+   **Health boxes (use variety):**
+   - Health Tip: Green gradient (#22c55e to #16a34a)
+   - Nutrition: Lime gradient (#84cc16 to #65a30d)
+   - Wellness: Emerald gradient (#10b981 to #059669)
+   
+   **National boxes (use variety):**
+   - Weather: Sky gradient (#0ea5e9 to #0284c7)
+   - Sunrise/Sunset: Amber gradient (#f59e0b to #d97706)
+   - History: Slate gradient (#64748b to #475569)
+   - Quote: Purple gradient (#8b5cf6 to #7c3aed)
+   - Word of Day: Violet gradient (#a78bfa to #8b5cf6)
+   - YOU MUST USE ALL DATA YOU GATHERED - If you made 15 webSearch calls, create 15+ boxes
    - MUST use inline style: display: block; height: fit-content; min-height: auto;
    - Wrap boxes tightly around content - NO empty space inside
    - All child elements should have tight margins (0.3-0.5rem between elements)
@@ -409,8 +527,10 @@ Every edition should feel fresh and different based on the day's news.
    - Data boxes: Big numbers (1.5-2rem), small labels (0.75-0.85rem)
    - Editorial boxes: Use appropriate style (Quote/Pick/Fact/Tip/Word)
    - Each box should be self-contained and visually distinct
-   - Mix styles throughout the page for visual variety
-   - NO boring uniform boxes - each type gets unique typography
+   - Stack boxes vertically in right column until NO white space remains
+   - Mix colors - use different gradient for each box type
+   - If bottom of page has white space → ADD MORE BOXES
+   - Better to have too many boxes than white space
    
    **CONTENT GENERATION:**
    
