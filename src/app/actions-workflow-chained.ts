@@ -541,62 +541,79 @@ export async function executePhase1_Preparation(): Promise<{ success: boolean; m
     
     // STEP 2: Deduplication
     console.log('📋 Phase 1 - Step 2: Deduplication');
-    await updateAgentProgress('deduplicator', 'working', 'Checking for duplicate stories...');
+    await updateAgentProgress('deduplicator', 'working', 'AI Deduplicator is analyzing all leads...');
+    const { deduplicateLeadsActionBatch } = await import('@/app/actions-dedup-new');
+    const dedupResult = await deduplicateLeadsActionBatch();
     
-    const { default: checkOneLeadAction } = await import("@/app/actions");
-    let totalChecked = 0;
-    let deletedCount = 0;
-    
-    while (true) {
-      const checkResult = await checkOneLeadAction();
-      if (!checkResult.success) break;
-      
-      totalChecked++;
-      if (checkResult.deletedCount && checkResult.deletedCount > 0) {
-        deletedCount += checkResult.deletedCount;
-      }
-      
-      await updateAgentProgress('deduplicator', 'working', `Dedup: Checked ${totalChecked}, removed ${deletedCount} duplicates. ${checkResult.remaining || 0} remaining.`, {
-        checked: totalChecked,
-        remaining: checkResult.remaining || 0
-      });
-      
-      if ((checkResult.remaining || 0) === 0) break;
+    if (!dedupResult.success) {
+      await updateQueueState({ currentStep: 'error', error: dedupResult.error });
+      return { success: false, message: 'Deduplication failed', error: dedupResult.error };
     }
     
-    await updateAgentProgress('deduplicator', 'success', `Deduplication complete: Checked ${totalChecked}, removed ${deletedCount} duplicates.`);
-    console.log(`✅ Phase 1 - Dedup complete: ${deletedCount} duplicates removed`);
+    await updateAgentProgress('deduplicator', 'success', `Removed ${dedupResult.deletedCount} duplicates. ${dedupResult.totalLeads} unique leads remain.`, { 
+      deleted: dedupResult.deletedCount, 
+      passed: dedupResult.totalLeads 
+    });
+    console.log(`✅ Phase 1 - Dedup complete: ${dedupResult.deletedCount} duplicates removed, ${dedupResult.totalLeads} leads remain`);
     
     // STEP 3: Distribute leads
     console.log('📋 Phase 1 - Step 3: Distribute leads to journalists');
-    const { getFirebaseServices } = await import("@/lib/firebase-server");
-    const { collection, getDocs, writeBatch, doc: firestoreDoc } = await import("firebase/firestore");
-    const { firestore } = getFirebaseServices();
+    await updateAgentProgress('journalist', 'working', 'Distributing leads to 5 journalists...');
     
-    const leadsSnapshot = await getDocs(collection(firestore, "raw_leads"));
-    const leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const { firestore } = await import('@/lib/firebase-server').then(m => m.getFirebaseServices());
+    const { collection, getDocs, writeBatch, doc: firestoreDoc, Timestamp } = await import('firebase/firestore');
     
-    const batch = writeBatch(firestore);
-    const journalistsCount = 5;
+    // Get all raw leads
+    const leadsSnapshot = await getDocs(collection(firestore, 'raw_leads'));
+    const allLeads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    leads.forEach((lead: any, index) => {
-      const journalistId = (index % journalistsCount) + 1;
-      batch.update(firestoreDoc(firestore, "raw_leads", lead.id), { 
-        assignedTo: journalistId,
-        assignedAt: new Date().toISOString()
+    if (allLeads.length === 0) {
+      await updateQueueState({ currentStep: 'error', error: 'No leads to distribute' });
+      return { success: false, message: 'No leads found to distribute', error: 'No leads available' };
+    }
+    
+    // Divide leads equally among 5 journalists
+    const journalists = ['journalist_1', 'journalist_2', 'journalist_3', 'journalist_4', 'journalist_5'];
+    const leadsPerJournalist = Math.ceil(allLeads.length / journalists.length);
+    
+    console.log(`📊 Distributing ${allLeads.length} leads: ~${leadsPerJournalist} per journalist`);
+    
+    // Create batches for each journalist
+    for (let i = 0; i < journalists.length; i++) {
+      const journalistId = journalists[i];
+      const startIdx = i * leadsPerJournalist;
+      const endIdx = Math.min(startIdx + leadsPerJournalist, allLeads.length);
+      const journalistLeads = allLeads.slice(startIdx, endIdx);
+      
+      if (journalistLeads.length === 0) continue;
+      
+      const batch = writeBatch(firestore);
+      
+      console.log(`📌 ${journalistId} will process ${journalistLeads.length} leads`);
+      
+      // Add leads to journalist-specific collection
+      journalistLeads.forEach((lead: any) => {
+        const newDocRef = firestoreDoc(collection(firestore, `leads_${journalistId}`));
+        batch.set(newDocRef, {
+          ...lead,
+          assignedAt: Timestamp.now(),
+          status: 'pending'
+        });
       });
-    });
+      
+      await batch.commit();
+    }
     
-    await batch.commit();
-    await updateAgentProgress('deduplicator', 'success', `Distributed ${leads.length} leads to 5 journalists.`);
-    console.log(`✅ Phase 1 - Distribution complete: ${leads.length} leads assigned`);
+    await updateAgentProgress('journalist', 'success', `Distributed ${allLeads.length} leads to 5 journalists.`);
+    console.log(`✅ Phase 1 - Distribution complete: ${allLeads.length} leads assigned`);
     
     // Move to Phase 2
     await updateQueueState({ currentStep: 'phase2_content' });
     console.log('🎉 ========== PHASE 1 COMPLETE ==========');
-    return { success: true, message: `Phase 1 complete: ${leads.length} leads ready for journalists`, nextStep: 'phase2_content' };
+    return { success: true, message: `Phase 1 complete: ${allLeads.length} leads ready for journalists`, nextStep: 'phase2_content' };
     
   } catch (error: any) {
+    console.error('❌ Phase 1 error:', error);
     await updateQueueState({ currentStep: 'error', error: error.message });
     return { success: false, message: 'Phase 1 failed', error: error.message };
   }
