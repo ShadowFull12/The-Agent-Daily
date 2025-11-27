@@ -119,6 +119,49 @@ Every single pixel of every page must be filled with content. NO exceptions. Eac
 You are NOT constrained to fixed categories or page structures. Each edition should be UNIQUE based on available content.
 Think like a creative editor who adapts the newspaper design to the day's stories.
 
+**🚨 MANDATORY CATEGORY SYSTEM - DO NOT CREATE CUSTOM CATEGORIES:**
+
+You MUST use ONLY these predefined categories. DO NOT create categories like "Nation and World" or other custom names:
+
+**ALLOWED CATEGORIES (ONLY USE THESE):**
+1. **National** - Indian news, domestic affairs, Indian politics
+2. **International** - Foreign countries, world events, global news
+3. **Business** - Economy, markets, finance, companies
+4. **Technology** - Tech news, startups, gadgets, AI, software
+5. **Sports** - All sports coverage (cricket, football, F1, tennis, etc.)
+6. **Culture** - Entertainment, movies, music, art, lifestyle
+7. **Science** - Scientific discoveries, research, space, innovation
+8. **Health** - Healthcare, wellness, nutrition, medical news
+9. **Environment** - Climate, ecology, sustainability, nature
+
+**CATEGORIZATION RULES:**
+- Each article MUST be assigned to ONE of the above categories
+- DO NOT mix categories (no "Business & Technology" or "National & International")
+- DO NOT create new category names
+- If unsure, default to National or Business
+- Articles about Indian companies → Business (not National)
+- Articles about world politics → International (not National)
+
+**🚨 MANDATORY NAVIGATION HYPERLINKS:**
+
+At the TOP of every page (right after the masthead), you MUST add a horizontal navigation bar with hyperlinks to ALL categories present in this edition.
+
+Example HTML structure (without code fences):
+<nav class="category-nav" style="text-align: center; padding: 1rem 2rem; background: #f8f9fa; border-bottom: 2px solid #e0e0e0; margin-bottom: 2rem;">
+  <a href="#national" style="display: inline-block; padding: 0.5rem 1rem; margin: 0 0.5rem; font-weight: 700; text-transform: uppercase; font-size: 0.9rem; color: #7b1fa2; text-decoration: none; border-bottom: 3px solid transparent; transition: all 0.3s;">National</a>
+  <a href="#business" style="display: inline-block; padding: 0.5rem 1rem; margin: 0 0.5rem; font-weight: 700; text-transform: uppercase; font-size: 0.9rem; color: #388e3c; text-decoration: none; border-bottom: 3px solid transparent;">Business</a>
+  <a href="#technology" style="display: inline-block; padding: 0.5rem 1rem; margin: 0 0.5rem; font-weight: 700; text-transform: uppercase; font-size: 0.9rem; color: #1976d2; text-decoration: none; border-bottom: 3px solid transparent;">Technology</a>
+  <a href="#sports" style="display: inline-block; padding: 0.5rem 1rem; margin: 0 0.5rem; font-weight: 700; text-transform: uppercase; font-size: 0.9rem; color: #f57c00; text-decoration: none; border-bottom: 3px solid transparent;">Sports</a>
+  (Add links for all categories present in this edition)
+</nav>
+
+**Navigation Requirements:**
+- Include ONLY categories that have pages in this edition
+- Use category-specific colors (purple for National, green for Business, blue for Tech, orange for Sports, etc.)
+- Each link must have href="#category-name" matching the page ID
+- Each category page must have id="category-name" on the <section> tag
+- Links should be clickable and jump to the respective section
+
 **STEP 1: ANALYZE AVAILABLE CONTENT**
 First, look at ALL ${input.articles.length} articles and group them by category:
 ${categoryList}
@@ -243,6 +286,36 @@ Every single pixel of every page must be filled with content. NO exceptions.
    - **Span-2 article with image:** 500-700 words minimum
    - **Span-2 article without image:** 700-900 words minimum
    - **Multi-column article:** 600-800 words minimum (text flows across 2 columns)
+   
+   **🚨 COLUMN BREAK LINES - MANDATORY FOR MULTI-COLUMN ARTICLES:**
+   
+   Whenever an article is broken into 2 columns (using multi-column class or column-count: 2), you MUST add a vertical divider line between the columns.
+   
+   **Implementation:**
+   - Add this CSS to the article div: column-rule: 2px solid #e0e0e0; column-gap: 2rem;
+   - Example: <div class="story multi-column" style="column-count: 2; column-rule: 2px solid #e0e0e0; column-gap: 2rem;">...</div>
+   - The line should be solid, gray (#e0e0e0), 2px thick
+   - Gap between columns should be 2rem for readability
+   - This creates a professional newspaper column look
+   
+   **🚨 DECORATIVE DIVIDER LINES - ADD BETWEEN BOXES:**
+   
+   Add decorative horizontal lines between info boxes in the right column to create visual separation and organization.
+   
+   **Implementation:**
+   - Between every 2-3 boxes, add: <div style="border-top: 2px solid #e0e0e0; margin: 1.5rem 0;"></div>
+   - OR use ornamental style: <div style="text-align: center; margin: 1.5rem 0; color: #999;">❖ ◆ ✦</div>
+   - Makes the sidebar look more organized and professional
+   - Helps readers distinguish between different data sections
+   
+   Example sequence:
+   [Market Watch Box]
+   <div style="border-top: 2px solid #e0e0e0; margin: 1.5rem 0;"></div>
+   [Fuel Prices Box]
+   [Gold Prices Box]
+   <div style="text-align: center; margin: 1.5rem 0; color: #999;">❖</div>
+   [Crypto Box]
+   [Currency Box]
 
 4. **INFO BOX RULES - CRITICAL FIX:**
    
@@ -318,6 +391,27 @@ Every single pixel of every page must be filled with content. NO exceptions.
 - **3 articles**: Make 1 span-2, add boxes, expand content
 - **2 articles**: Each spans-2, add data boxes between
 - **1 article**: Skip category or merge into another page
+
+**🚨 DYNAMIC PAGE HEIGHT - NO FIXED PAGE LENGTH:**
+
+DO NOT maintain a fixed page height if content is short. Let each page be as tall as its content requires.
+
+**NEW PAGE HEIGHT RULES:**
+- REMOVE min-height: 1400px constraint
+- Each page should naturally fit its content (articles + boxes)
+- If page has 3 articles + 5 boxes → page height should wrap to that content
+- If page has 6 articles + 10 boxes → page will naturally be taller
+- Use: min-height: auto; or don't specify min-height at all
+- Let flexbox/grid naturally determine page height
+- NO white space at bottom of pages (see user's screenshot)
+
+**Implementation:**
+- On <section class="newspaper-page">: Use height: auto; NOT min-height: 1400px
+- Let content dictate height naturally
+- Page 1 with 4 articles → shorter page
+- Page 5 with 8 articles + 12 boxes → taller page
+- This creates a more natural, professional newspaper feel
+- Eliminates awkward white space at page bottoms
 
 **NO FIXED STRUCTURE - BE ADAPTIVE!**
 Don't force categories. If this edition has mostly Tech and Sports, make those pages great!
@@ -400,6 +494,22 @@ Every edition should feel fresh and different based on the day's news.
    - First paragraph of hero: Add drop cap
    - Between major sections: Add ornamental dividers
    - Kickers: Always uppercase with letter-spacing
+   
+   **🚨 FONT CONSISTENCY RULE - SAME PAGE ARTICLES:**
+   
+   On a SINGLE page, ALL article headlines should use the SAME font style. Do NOT mix fonts within one page.
+   
+   **Implementation:**
+   - Page 1 (Front Page): ALL headlines use Style 1 (BOLD CAPS Georgia)
+   - Page 2 (National): ALL headlines use Style 2 (Elegant Italic Times New Roman)
+   - Page 3 (Business): ALL headlines use Style 4 (Classic Serif Georgia)
+   - Page 4 (Technology): ALL headlines use Style 5 (Modern Bold Arial Black)
+   - Page 5 (Sports): ALL headlines use Style 3 (Typewriter Courier New)
+   - And so on...
+   
+   **Why:** Mixing fonts on same page looks unprofessional. Each page should have visual consistency.
+   
+   **Exception:** Info boxes CAN use different typography from articles (boxes are sidebars, not main content)
    
    **IMAGE HANDLING - CRITICAL FOR PROPER DISPLAY:**
    - ALWAYS use article.imageUrl if provided (these are real, verified URLs)
@@ -689,6 +799,7 @@ Every edition should feel fresh and different based on the day's news.
    DATA BOXES:
    - Weather Today (Style: City grid with temps from webSearch)
    - Sunrise/Sunset (Style: Time grid from webSearch)
+   - Air Quality Index (Style: City-wise AQI levels)
    
    EDITORIAL BOXES:
    - This Day in History (Style C: Fun fact)
@@ -696,6 +807,79 @@ Every edition should feel fresh and different based on the day's news.
    - Word of the Day (Style E)
    - National Trivia (Style C)
    - Poll Result (Style: Percentage bar visual)
+   - Indian Festival Calendar (Style: Upcoming festivals)
+   - Railway Updates (Style: Major route delays/updates)
+   
+   **🚨 EXPANDED BOX CATEGORIES - MORE FUN & INFORMATIVE OPTIONS:**
+   
+   Add these creative boxes throughout the newspaper for variety:
+   
+   **GENERAL KNOWLEDGE BOXES (any page):**
+   - World Record of the Day (Style C: Fun fact)
+   - Nobel Prize Winners (Style: Educational)
+   - UNESCO World Heritage Sites (Style: Educational with images)
+   - Language Corner (Style E: Learn a phrase in different language)
+   - Mythology Moment (Style C: Story from mythology)
+   - Philosophy Quote (Style A: Deep thought of the day)
+   
+   **LIFESTYLE BOXES (Culture/National pages):**
+   - Recipe of the Day (Style D: Quick recipe tip)
+   - Fashion Tip (Style D: Style advice)
+   - Travel Destination (Style B: Editor's pick with image)
+   - Pet Care Tip (Style D: Animal care advice)
+   - Gardening Tip (Style D: Plant care)
+   - Home Décor Idea (Style: DIY suggestion)
+   
+   **EDUCATION BOXES (Science/National pages):**
+   - Math Puzzle (Style C: Quick brain teaser)
+   - Science Experiment (Style D: Try at home)
+   - Historical Figure (Style: Biography snippet)
+   - Geography Fact (Style C: Country/city trivia)
+   - Space Fact (Style C: Astronomy trivia)
+   
+   **ENTERTAINMENT BOXES (Culture page):**
+   - Celebrity Birthday (Style: Who's celebrating today)
+   - Oscar Winners (Style: Film history)
+   - Music Genre Spotlight (Style B: Genre of the week)
+   - Video Game News (Style: Latest releases/updates)
+   - Streaming Stats (Style: Most-watched shows)
+   
+   **FINANCIAL LITERACY BOXES (Business page):**
+   - Investment Tip (Style D: Financial advice)
+   - Tax Saving Tip (Style D: Money management)
+   - Startup Success Story (Style B: Inspiring founder story)
+   - Economic Term (Style E: Learn financial vocabulary)
+   - Credit Score Tip (Style D: Improve your credit)
+   
+   **WELLNESS BOXES (Health page):**
+   - Yoga Pose (Style D: Benefits and how-to)
+   - Meditation Tip (Style D: Mindfulness practice)
+   - Sleep Hygiene (Style D: Better sleep habits)
+   - Stress Relief (Style D: Quick relaxation technique)
+   - Immunity Booster (Style: Food/habit recommendation)
+   
+   **TECH LIFE BOXES (Technology page):**
+   - Keyboard Shortcut (Style D: Productivity hack)
+   - App Recommendation (Style B: Editor's pick)
+   - Cybersecurity Tip (Style D: Stay safe online)
+   - AI Tool Spotlight (Style: New AI feature)
+   - Coding Tip (Style D: Programming advice)
+   
+   **SPORTS TRIVIA BOXES (Sports page):**
+   - Record Breaker (Style C: Historic sports achievement)
+   - Player Stat (Style: Career highlights)
+   - Match History (Style C: Memorable game)
+   - Sports Rule (Style E: Learn the game)
+   - Athlete Quote (Style A: Inspirational)
+   
+   **ENVIRONMENTAL BOXES (any page):**
+   - Eco Tip (Style D: Sustainability advice)
+   - Endangered Species (Style C: Wildlife conservation)
+   - Climate Fact (Style C: Environmental data)
+   - Green Technology (Style: Innovation spotlight)
+   - Conservation Success (Style B: Positive environmental news)
+   
+   **Mix 8-12 of these boxes per edition across all pages for maximum variety and reader engagement!**
 
 7. **FRONT PAGE COVER IMAGE & TITLE - CRITICAL FIX:**
    
@@ -927,10 +1111,14 @@ When a page has articles that don't divide evenly by 3:
             text-transform: uppercase;
             line-height: 1;
             margin: 0 0 0.5rem;
-            background: linear-gradient(135deg, var(--ink) 0%, #333 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        }
+        
+        .nameplate-the {
+            color: #d32f2f;
+        }
+        
+        .nameplate-rest {
+            color: #000000;
         }
 
         .masthead-meta {
@@ -1344,7 +1532,7 @@ When a page has articles that don't divide evenly by 3:
 <body>
     <div class="newspaper-shell">
         <header class="masthead">
-            <div class="nameplate" style="background: linear-gradient(135deg, #d32f2f 0%, #000000 50%, #d32f2f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); font-weight: 900; letter-spacing: 0.3rem;">THE DAILY AGENT</div>
+            <h1 class="nameplate"><span style="color: #d32f2f;">The</span> <span style="color: #000000;">Daily Agent</span></h1>
             <div class="masthead-meta">
                 <span>${currentDate}</span>
                 <span>|</span>
