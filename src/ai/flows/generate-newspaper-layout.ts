@@ -453,16 +453,9 @@ Every edition should feel fresh and different based on the day's news.
    - Reader's Corner
    - National Trivia
    
-   **BOX CONTENT TEMPLATE:**
+   **BOX CONTENT EXAMPLE:**
    
-   ```html
-   <div class="info-box" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.8rem; font-size: 0.9rem; line-height: 1.3; margin-bottom: 0.8rem; border-radius: 8px;">
-     <h4 style="font-size: 1rem; margin: 0 0 0.5rem 0; font-weight: 700;">Market Watch</h4>
-     <p style="margin: 0.2rem 0; font-size: 0.85rem;">Sensex: 82,347 ▲ 1.2%</p>
-     <p style="margin: 0.2rem 0; font-size: 0.85rem;">Nifty 50: 25,184 ▲ 0.8%</p>
-     <p style="margin: 0.2rem 0; font-size: 0.85rem;">Bank Nifty: 54,230 ▲ 0.5%</p>
-   </div>
-   ```
+   Market Watch box with green gradient background (#10b981 to #059669), white color, 0.8rem padding, 0.9rem font-size, line-height 1.3, margin-bottom 0.8rem, border-radius 8px. Contains title "Market Watch" at 1rem font-size, bold, then 3-5 data points at 0.85rem: Sensex 82,347 up 1.2%, Nifty 50 25,184 up 0.8%, Bank Nifty 54,230 up 0.5%.
    
    **CRITICAL RULES:**
    - Use inline styles for EVERY box (padding, font-size, colors, margins)

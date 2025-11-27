@@ -5,14 +5,9 @@ import { doc, setDoc, getDoc, Timestamp } from "firebase/firestore";
 
 export type WorkflowStep = 
   | 'idle'
-  | 'clear_data'
-  | 'scout'
-  | 'dedup'
-  | 'distribute_leads'
-  | 'journalists_parallel'
-  | 'validate'
-  | 'editor'
-  | 'editor_2'
+  | 'phase1_prep'        // Phase 1: Scout + Dedup + Distribute (< 5 min)
+  | 'phase2_content'     // Phase 2: Journalists + Sports Journalist + Validate (< 5 min)
+  | 'phase3_editor'      // Phase 3: Editor creates newspaper (< 5 min)
   | 'complete'
   | 'error';
 

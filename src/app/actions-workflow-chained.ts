@@ -505,7 +505,240 @@ export async function executeStep5_ValidateAndEditor1(): Promise<{ success: bool
   }
 }
 
-// Main orchestrator - executes ONE step and returns
+// ========================================
+// 3-PHASE CONSOLIDATED WORKFLOW FUNCTIONS
+// ========================================
+
+// PHASE 1: Scout + Dedup + Distribute Leads (< 5 minutes total)
+export async function executePhase1_Preparation(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
+  try {
+    console.log('🚀 ========== PHASE 1: PREPARATION ==========');
+    await updateWorkflowState({ status: 'running', message: 'Phase 1: Scouting, deduplicating, and distributing leads...' });
+    
+    const state = await getQueueState();
+    const attempt = state?.attempt || 1;
+    
+    // STEP 1: Clear data and scout
+    console.log('📋 Phase 1 - Step 1: Clear data and scout');
+    await updateAgentProgress('scout', 'working', 'Clearing previous data...');
+    const clearResult = await clearAllDataAction();
+    if (!clearResult.success) {
+      await updateQueueState({ currentStep: 'error', error: clearResult.error });
+      return { success: false, message: 'Failed to clear data', error: clearResult.error };
+    }
+    
+    const leadsToFind = attempt === 1 ? 45 : 5;
+    await updateAgentProgress('scout', 'working', `Scout is gathering news leads (Attempt ${attempt}/3)...`);
+    const scoutResult = await findLeadsAction(leadsToFind);
+    
+    if (!scoutResult.success) {
+      await updateQueueState({ currentStep: 'error', error: scoutResult.error });
+      return { success: false, message: 'Scout failed', error: scoutResult.error };
+    }
+    
+    await updateAgentProgress('scout', 'success', `Scout found ${scoutResult.leadCount} breaking news leads.`);
+    console.log(`✅ Phase 1 - Scout complete: ${scoutResult.leadCount} leads found`);
+    
+    // STEP 2: Deduplication
+    console.log('📋 Phase 1 - Step 2: Deduplication');
+    await updateAgentProgress('deduplicator', 'working', 'Checking for duplicate stories...');
+    
+    const { default: checkOneLeadAction } = await import("@/app/actions");
+    let totalChecked = 0;
+    let deletedCount = 0;
+    
+    while (true) {
+      const checkResult = await checkOneLeadAction();
+      if (!checkResult.success) break;
+      
+      totalChecked++;
+      if (checkResult.deletedCount && checkResult.deletedCount > 0) {
+        deletedCount += checkResult.deletedCount;
+      }
+      
+      await updateAgentProgress('deduplicator', 'working', `Dedup: Checked ${totalChecked}, removed ${deletedCount} duplicates. ${checkResult.remaining || 0} remaining.`, {
+        checked: totalChecked,
+        remaining: checkResult.remaining || 0
+      });
+      
+      if ((checkResult.remaining || 0) === 0) break;
+    }
+    
+    await updateAgentProgress('deduplicator', 'success', `Deduplication complete: Checked ${totalChecked}, removed ${deletedCount} duplicates.`);
+    console.log(`✅ Phase 1 - Dedup complete: ${deletedCount} duplicates removed`);
+    
+    // STEP 3: Distribute leads
+    console.log('📋 Phase 1 - Step 3: Distribute leads to journalists');
+    const { getFirebaseServices } = await import("@/lib/firebase-server");
+    const { collection, getDocs, writeBatch, doc: firestoreDoc } = await import("firebase/firestore");
+    const { firestore } = getFirebaseServices();
+    
+    const leadsSnapshot = await getDocs(collection(firestore, "raw_leads"));
+    const leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    const batch = writeBatch(firestore);
+    const journalistsCount = 5;
+    
+    leads.forEach((lead: any, index) => {
+      const journalistId = (index % journalistsCount) + 1;
+      batch.update(firestoreDoc(firestore, "raw_leads", lead.id), { 
+        assignedTo: journalistId,
+        assignedAt: new Date().toISOString()
+      });
+    });
+    
+    await batch.commit();
+    await updateAgentProgress('deduplicator', 'success', `Distributed ${leads.length} leads to 5 journalists.`);
+    console.log(`✅ Phase 1 - Distribution complete: ${leads.length} leads assigned`);
+    
+    // Move to Phase 2
+    await updateQueueState({ currentStep: 'phase2_content' });
+    console.log('🎉 ========== PHASE 1 COMPLETE ==========');
+    return { success: true, message: `Phase 1 complete: ${leads.length} leads ready for journalists`, nextStep: 'phase2_content' };
+    
+  } catch (error: any) {
+    await updateQueueState({ currentStep: 'error', error: error.message });
+    return { success: false, message: 'Phase 1 failed', error: error.message };
+  }
+}
+
+// PHASE 2: All Journalists + Sports Journalist + Validation (< 5 minutes total)
+export async function executePhase2_ContentCreation(): Promise<{ success: boolean; message: string; error?: string; nextStep?: string }> {
+  try {
+    console.log('🚀 ========== PHASE 2: CONTENT CREATION ==========');
+    await updateWorkflowState({ status: 'running', message: 'Phase 2: Creating articles and gathering sports data...' });
+    
+    // STEP 1: All 5 journalists work in parallel
+    console.log('📋 Phase 2 - Step 1: 5 Journalists drafting articles');
+    await updateAgentProgress('journalist', 'working', 'All journalists are drafting articles...');
+    
+    const journalistPromises = [1, 2, 3, 4, 5].map(async (journalistId) => {
+      await updateAgentProgress(`journalist_${journalistId}` as any, 'working', `Journalist ${journalistId}: Writing articles...`, { drafted: 0 });
+      
+      for (let i = 0; i < 20; i++) {
+        const draftResult = await draftArticleAction(journalistId);
+        if (!draftResult.success) break;
+        
+        await updateAgentProgress(`journalist_${journalistId}` as any, 'working', `Journalist ${journalistId}: Drafted ${i + 1} articles...`, { drafted: i + 1 });
+        
+        if (draftResult.remaining === 0) {
+          await updateAgentProgress(`journalist_${journalistId}` as any, 'success', `Journalist ${journalistId}: Completed all assignments.`, { drafted: i + 1 });
+          break;
+        }
+      }
+    });
+    
+    // STEP 2: Sports Journalist works in parallel
+    console.log('📋 Phase 2 - Step 2: Sports Journalist gathering data');
+    const { generateSportsDataAction } = await import("@/app/actions");
+    
+    const sportsPromise = (async () => {
+      await updateAgentProgress('sports_journalist' as any, 'working', 'Sports Journalist: Gathering sports scores...');
+      const sportsResult = await generateSportsDataAction();
+      
+      if (sportsResult.success) {
+        await updateAgentProgress('sports_journalist' as any, 'success', `Sports Journalist: Collected ${sportsResult.boxCount} sports boxes.`);
+        console.log(`✅ Phase 2 - Sports Journalist complete: ${sportsResult.boxCount} boxes`);
+      } else {
+        console.warn(`⚠️ Sports Journalist failed: ${sportsResult.error}`);
+      }
+      
+      return sportsResult;
+    })();
+    
+    // Wait for all journalists and sports journalist
+    await Promise.all([...journalistPromises, sportsPromise]);
+    
+    await updateAgentProgress('journalist', 'success', 'All journalists have completed their articles.');
+    console.log('✅ Phase 2 - All journalists complete');
+    
+    // STEP 3: Validation
+    console.log('📋 Phase 2 - Step 3: Validating articles');
+    await updateAgentProgress('validator', 'working', 'Validating article quality...');
+    const validationResult = await validateArticlesAction();
+    
+    if (!validationResult.success) {
+      await updateQueueState({ currentStep: 'error', error: validationResult.error });
+      return { success: false, message: 'Validation failed', error: validationResult.error };
+    }
+    
+    await updateAgentProgress('validator', 'success', `Validator approved ${validationResult.validCount} articles, discarded ${validationResult.discardedCount}.`);
+    console.log(`✅ Phase 2 - Validation complete: ${validationResult.validCount} valid articles`);
+    
+    // Check if we have enough articles
+    const state = await getQueueState();
+    if (validationResult.validCount >= 35) {
+      await updateQueueState({ currentStep: 'phase3_editor', validCount: validationResult.validCount });
+      console.log('🎉 ========== PHASE 2 COMPLETE ==========');
+      return { success: true, message: `Phase 2 complete: ${validationResult.validCount} articles ready for editor`, nextStep: 'phase3_editor' };
+    } else if ((state?.attempt || 1) < 3) {
+      // Need more articles, retry from phase 1
+      await updateAgentProgress('validator', 'working', `Need more articles (${validationResult.validCount}/35). Retrying...`);
+      await updateQueueState({ 
+        currentStep: 'phase1_prep', 
+        attempt: (state?.attempt || 1) + 1,
+        validCount: validationResult.validCount 
+      });
+      return { success: true, message: `Only ${validationResult.validCount} articles. Retrying phase 1 (${(state?.attempt || 1) + 1}/3)...`, nextStep: 'phase1_prep' };
+    } else {
+      const error = `Failed to get 35 articles after 3 attempts (got ${validationResult.validCount})`;
+      await updateQueueState({ currentStep: 'error', error });
+      return { success: false, message: error, error };
+    }
+    
+  } catch (error: any) {
+    await updateQueueState({ currentStep: 'error', error: error.message });
+    return { success: false, message: 'Phase 2 failed', error: error.message };
+  }
+}
+
+// PHASE 3: Editor creates complete newspaper (< 5 minutes)
+export async function executePhase3_Editor(): Promise<{ success: boolean; message: string; error?: string; completed?: boolean }> {
+  try {
+    console.log('🚀 ========== PHASE 3: EDITOR ==========');
+    await updateWorkflowState({ status: 'running', message: 'Phase 3: Editor creating comprehensive newspaper...' });
+    
+    const state = await getQueueState();
+    
+    await updateAgentProgress('editor', 'working', 'Editor: Creating comprehensive newspaper layout...');
+    const editorResult = await createPreviewEditionAction();
+    
+    if (!editorResult.success) {
+      await updateQueueState({ currentStep: 'error', error: editorResult.error });
+      return { success: false, message: 'Editor failed', error: editorResult.error };
+    }
+    
+    await updateAgentProgress('editor', 'success', `Edition created: ${editorResult.editionId}`);
+    
+    // Mark workflow as complete
+    await updateQueueState({ currentStep: 'complete', validCount: state?.validCount || 0 });
+    await updateWorkflowState({ status: 'success', message: 'Workflow completed successfully!' });
+    
+    // Reset all agents to idle
+    console.log('🔄 Resetting all agents to idle...');
+    await updateAgentProgress('scout', 'idle', '');
+    await updateAgentProgress('deduplicator', 'idle', '', { checked: 0, remaining: 0 });
+    await updateAgentProgress('journalist', 'idle', '', { drafted: 0, remaining: 0 });
+    await updateAgentProgress('journalist_1', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_2', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_3', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_4', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('journalist_5', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('sports_journalist' as any, 'idle', '');
+    await updateAgentProgress('validator', 'idle', '');
+    await updateAgentProgress('editor', 'idle', '');
+    await updateAgentProgress('publisher', 'idle', '');
+    
+    console.log('🎉 ========== PHASE 3 COMPLETE - WORKFLOW DONE ==========');
+    return { success: true, message: `Edition created with ${state?.validCount || 0} articles!`, completed: true };
+    
+  } catch (error: any) {
+    await updateQueueState({ currentStep: 'error', error: error.message });
+    return { success: false, message: 'Phase 3 failed', error: error.message };
+  }
+}
+
+// Main orchestrator - executes ONE phase and returns
 export async function executeNextWorkflowStep(): Promise<{ 
   success: boolean; 
   message: string; 
@@ -544,31 +777,19 @@ export async function executeNextWorkflowStep(): Promise<{
     let result: any;
     
     switch (state.currentStep) {
-      case 'clear_data':
-      case 'scout':
-        console.log('📋 Executing: Step 1 - Clear & Scout');
-        result = await executeStep1_ClearAndScout();
+      case 'phase1_prep':
+        console.log('📋 Executing: Phase 1 - Preparation (Scout + Dedup + Distribute)');
+        result = await executePhase1_Preparation();
         break;
         
-      case 'dedup':
-        console.log('📋 Executing: Step 2 - Deduplication');
-        result = await executeStep2_Dedup();
+      case 'phase2_content':
+        console.log('📋 Executing: Phase 2 - Content Creation (Journalists + Sports + Validate)');
+        result = await executePhase2_ContentCreation();
         break;
         
-      case 'distribute_leads':
-        console.log('📋 Executing: Step 3 - Distribute Leads');
-        result = await executeStep3_DistributeLeads();
-        break;
-        
-      case 'journalists_parallel':
-        console.log('📋 Executing: Step 4 - All Journalists (Parallel)');
-        result = await executeStep4_JournalistsParallel();
-        break;
-        
-      case 'validate':
-      case 'editor':
-        console.log('📋 Executing: Step 5 - Validate & Editor');
-        result = await executeStep5_ValidateAndEditor1();
+      case 'phase3_editor':
+        console.log('📋 Executing: Phase 3 - Editor (Create Newspaper)');
+        result = await executePhase3_Editor();
         result.completed = true;
         break;
         
@@ -606,13 +827,14 @@ export async function startChainedWorkflow(isManualRun = false): Promise<{ succe
     await updateAgentProgress('journalist_3', 'idle', '', { drafted: 0 });
     await updateAgentProgress('journalist_4', 'idle', '', { drafted: 0 });
     await updateAgentProgress('journalist_5', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('sports_journalist' as any, 'idle', '');
     await updateAgentProgress('validator', 'idle', '');
     await updateAgentProgress('editor', 'idle', '');
     await updateAgentProgress('publisher', 'idle', '');
     console.log('✅ All agents reset to idle state');
     
     // Initialize workflow state with appropriate message
-    const statusMessage = 'Workflow initialized. Cron will execute steps...';
+    const statusMessage = 'Workflow initialized. Cron will execute 3 phases...';
     
     await updateWorkflowState({ 
       status: 'running',
@@ -625,7 +847,7 @@ export async function startChainedWorkflow(isManualRun = false): Promise<{ succe
     const { setDoc, doc, Timestamp } = await import('firebase/firestore');
     
     await setDoc(doc(firestore, 'workflow_queue', 'current'), {
-      currentStep: 'clear_data' as any,
+      currentStep: 'phase1_prep' as any,
       isManualRun: false,  // Always false - cron handles everything
       attempt: 1,
       draftsMade: 0,
@@ -635,12 +857,12 @@ export async function startChainedWorkflow(isManualRun = false): Promise<{ succe
       executionStartedAt: null as any
     });
     
-    console.log('✅ Queue initialized to: clear_data');
-    console.log('⏰ Vercel Cron will execute steps (one per minute)');
+    console.log('✅ Queue initialized to: phase1_prep');
+    console.log('⏰ Vercel Cron will execute 3 phases (one per minute)');
     
     return { 
       success: true, 
-      message: 'Workflow initialized. Cron will execute each step.'
+      message: 'Workflow initialized. Cron will execute Phase 1 → 2 → 3.'
     };
     
   } catch (error: any) {
@@ -676,6 +898,7 @@ export async function stopChainedWorkflow(): Promise<{ success: boolean; message
     await updateAgentProgress('journalist_3', 'idle', '', { drafted: 0 });
     await updateAgentProgress('journalist_4', 'idle', '', { drafted: 0 });
     await updateAgentProgress('journalist_5', 'idle', '', { drafted: 0 });
+    await updateAgentProgress('sports_journalist' as any, 'idle', '');
     await updateAgentProgress('validator', 'idle', '');
     await updateAgentProgress('editor', 'idle', '');
     await updateAgentProgress('publisher', 'idle', '');
