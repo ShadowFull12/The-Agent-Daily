@@ -654,8 +654,18 @@ export async function executePhase2_ContentCreation(): Promise<{ success: boolea
       const sportsResult = await generateSportsDataAction();
       
       if (sportsResult.success) {
+        // Store sports boxes in Firestore for editor to use
+        const { firestore } = await import('@/lib/firebase-server').then(m => m.getFirebaseServices());
+        const { setDoc, doc, Timestamp } = await import('firebase/firestore');
+        
+        await setDoc(doc(firestore, 'sports_data', 'current'), {
+          boxes: sportsResult.boxes,
+          generatedAt: Timestamp.now(),
+          boxCount: sportsResult.boxCount
+        });
+        
         await updateAgentProgress('sports_journalist' as any, 'success', `Sports Journalist: Collected ${sportsResult.boxCount} sports boxes.`);
-        console.log(`✅ Phase 2 - Sports Journalist complete: ${sportsResult.boxCount} boxes`);
+        console.log(`✅ Phase 2 - Sports Journalist complete: ${sportsResult.boxCount} boxes stored in Firestore`);
       } else {
         console.warn(`⚠️ Sports Journalist failed: ${sportsResult.error}`);
       }
