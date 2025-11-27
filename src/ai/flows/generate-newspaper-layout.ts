@@ -309,73 +309,191 @@ Every edition should feel fresh and different based on the day's news.
    - Well-structured paragraphs starting with <strong>CITY:</strong>
    - Images in ~60% of articles (use story-image class)
 
-6. **DATA BOXES & WIDGETS - CRITICAL RULES:**
+6. **DATA BOXES & WIDGETS - REVOLUTIONARY 40-50 BOX SYSTEM:**
 
-   **MANDATORY: ALL DATA MUST COME FROM webSearch TOOL - NO MADE-UP DATA!**
+   **🚨 CRITICAL: CREATE 40-50 COMPACT BOXES TO ELIMINATE WHITE SPACE 🚨**
    
-   **webSearch Tool Usage - UNLIMITED CALLS ENCOURAGED:**
-   - You have access to webSearch tool powered by Grok 4.1 Fast (FREE, real-time web search)
-   - **CALL IT AS MANY TIMES AS YOU NEED** - No limits! Make 10-20+ calls if needed
-   - **NEVER make up or estimate data** - Always use webSearch for current information
-   - **Gather extensive data first, then intelligently place boxes**
+   **BOX PHILOSOPHY:**
+   - Small boxes stacked vertically = NO white space
+   - Colored boxes matching page theme = Professional look
+   - 40-50 boxes total across all pages = Information-rich newspaper
+   - Smart placement based on article count per category
    
-   **Step 1: DATA GATHERING (Make Multiple webSearch Calls):**
-   Call webSearch for ALL these data types before creating layout:
+   **BOX SIZING RULES (ABSOLUTE):**
+   - Height: 80-150px maximum (NEVER 300-400px!)
+   - Padding: 0.8rem (NOT 2rem)
+   - Font-size: 0.9rem (NOT 1.1rem)
+   - Line-height: 1.3 (NOT 1.8)
+   - Margins: 0.5rem between boxes
+   - Each box: 3-5 lines of content maximum
    
-   1. **Market Data:** webSearch("current Sensex Nifty closing price today India NSE BSE")
-   2. **Fuel Prices:** webSearch("current petrol diesel prices Mumbai Delhi Bangalore Chennai Kolkata today")
-   3. **Gold/Silver:** webSearch("current gold silver price 22k 24k India today per 10 grams")
-   4. **Weather:** webSearch("current weather temperature Mumbai Delhi Bangalore Chennai Kolkata today")
-   5. **Crypto:** webSearch("current Bitcoin Ethereum price USD INR today")
-   6. **Currency:** webSearch("current USD EUR GBP to INR exchange rate today")
-   7. **Movies:** webSearch("new movies releasing this week India Bollywood Hollywood OTT Netflix Prime")
-   8. **Sports:** webSearch("latest cricket football tennis scores today India IPL Premier League")
-   9. **Tech News:** webSearch("latest technology news today India startups gadgets")
-   10. **Stock Winners/Losers:** webSearch("top gainers losers NSE BSE today India stock market")
+   **BOX COLORS BY PAGE:**
+   - Business page boxes: background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;
+   - Sports page boxes: background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white;
+   - Technology page boxes: background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;
+   - Culture page boxes: background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); color: white;
+   - National page boxes: background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white;
+   - Science page boxes: background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white;
+   - Health page boxes: background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white;
    
-   **Make 10-15 webSearch calls to gather comprehensive real-time data!**
+   **BOX PLACEMENT STRATEGY - INTELLIGENT DISTRIBUTION:**
    
-   **Step 2: INTELLIGENT PLACEMENT (NO DUPLICATES!):**
+   **IF page has 6+ articles → Add 2-3 compact boxes**
+   **IF page has 4-5 articles → Add 4-6 compact boxes**
+   **IF page has 2-3 articles → Add 8-10 compact boxes**
+   **IF page has 1 article → Add 12-15 compact boxes**
    
-   After gathering all data, place widgets strategically:
+   Stack boxes vertically in the 3rd column (right side). Never interrupt articles.
    
-   **UNIQUE DATA BOXES - Each appears ONLY ONCE in entire newspaper:**
-   - **Nifty/Sensex Box** → Place on Business page ONLY (not on multiple pages!)
-   - **Fuel Prices Box** → Place on Business page ONLY
-   - **Weather Box** → Place on National page ONLY
-   - **Gold/Silver Prices** → Place on Business page ONLY
-   - **Cricket Scores** → Place on Sports page ONLY
-   - **Movie Releases** → Place on Culture/Entertainment page ONLY
-   - **Bitcoin/Crypto** → Place on Business/Technology page ONLY
-   - **Currency Rates** → Place on Business page ONLY
+   **STEP 1: GATHER DATA (Make 15-20 webSearch calls):**
    
-   **Where to Place Data Boxes:**
-   - **Business Page:** Market data (Sensex, Nifty), Fuel prices, Gold/Silver, Crypto, Currency rates, Top gainers/losers
-   - **National Page:** Weather forecast for major cities, Sunrise/Sunset times
-   - **Sports Page:** Cricket scores, Football scores, Tennis rankings
-   - **Culture Page:** New movie releases, OTT trends, Music charts
-   - **Technology Page:** Latest tech news snippets, Startup funding news
-   - **Front Page:** Quote of the Day, On This Day in History
+   Use webSearch tool to collect ALL this data:
    
-   **DO NOT place the same data box on multiple pages!** Check before adding:
-   - If you already added "Nifty 50" box on Business page, don't add it again anywhere
-   - If you already added "Fuel Prices" box, don't repeat it
-   - Each unique data point should appear ONCE
+   **BUSINESS/FINANCE DATA:**
+   1. webSearch("current Sensex Nifty 50 Bank Nifty closing price today India NSE BSE")
+   2. webSearch("top gainers NSE today India stock market")
+   3. webSearch("top losers NSE today India stock market")
+   4. webSearch("current petrol diesel prices Mumbai Delhi Bangalore Chennai Kolkata today")
+   5. webSearch("current gold 22k 24k silver price India today per 10 grams")
+   6. webSearch("current Bitcoin Ethereum Ripple price INR today cryptocurrency")
+   7. webSearch("current USD EUR GBP to INR exchange rate today")
+   8. webSearch("top 5 richest people in the world current net worth 2025")
+   9. webSearch("IPO upcoming this week India latest listings subscription status")
    
-   **Widget Sizing - Keep Compact:**
-   - **Quote boxes:** 2-3 lines max, compact padding (0.8rem)
-   - **Stat boxes:** Large number + short label, tight spacing
-   - **Info boxes:** 3-4 bullet points max, small font
-   - **News briefs:** 4-5 one-line items, minimal padding
-   - DO NOT make boxes overly large - they should enhance, not dominate
+   **WEATHER DATA:**
+   10. webSearch("current weather temperature Mumbai Delhi Bangalore Chennai Kolkata Hyderabad Pune today")
    
-   **Only Add Boxes When Needed:**
-   - First try: span-2 class, multi-column class to fill space
-   - Then try: Expanding article content with more context
-   - Last resort: Add 1-2 compact data boxes if page still has white space
-   - Not every page needs data boxes - only add where truly beneficial and relevant
+   **CULTURE/ENTERTAINMENT DATA:**
+   11. webSearch("new movies releasing this week India Bollywood Hollywood OTT Netflix Prime Disney")
+   12. webSearch("new web series releasing this week Netflix Prime Disney Hotstar")
+   13. webSearch("top songs trending India Spotify today music chart")
+   14. webSearch("new books releasing this week bestsellers India 2025")
+   
+   **SCIENCE/TECH DATA:**
+   15. webSearch("latest technology news today India startups funding AI gadgets")
+   16. webSearch("interesting science facts discoveries breakthrough today")
+   
+   **HEALTH DATA:**
+   17. webSearch("daily health tips wellness advice nutrition facts")
+   
+   **OTHER DATA:**
+   18. webSearch("sunrise sunset time Mumbai Delhi Bangalore Chennai Kolkata today")
+   19. webSearch("word of the day English vocabulary interesting words")
+   20. webSearch("famous quote of the day inspirational motivational")
+   
+   **STEP 2: CREATE 40-50 COMPACT BOXES**
+   
+   **BUSINESS PAGE (8-12 boxes):**
+   - Market Watch (Sensex, Nifty, Bank Nifty with change %)
+   - Top 5 Gainers (stock names + % change)
+   - Top 5 Losers (stock names + % change)
+   - Fuel Prices (Petrol/Diesel in 5 cities)
+   - Gold & Silver Prices (22K, 24K, Silver rates)
+   - Crypto Corner (Bitcoin, Ethereum, Ripple prices)
+   - Currency Rates (USD, EUR, GBP to INR)
+   - World's Richest (Top 5 with net worth)
+   - IPO Watch (Upcoming IPOs this week)
+   - Economic Indicator (GDP, Inflation, etc.)
+   - Stock Tip of the Day
+   - Market Trivia
+   
+   **SPORTS PAGE (6-10 boxes):**
+   - Cricket Scores (latest match scores)
+   - Football Scores (Premier League, La Liga results)
+   - NBA Scores (last night's games)
+   - F1 Standings (Top 5 drivers)
+   - Tennis Rankings (ATP/WTA Top 3)
+   - IPL Points Table (if IPL season)
+   - Sports Trivia
+   - Match Schedule (upcoming matches)
+   
+   **TECHNOLOGY PAGE (5-8 boxes):**
+   - Tech News Briefs (4-5 one-line items)
+   - Startup Funding (recent funding rounds)
+   - Tech Tip of the Day
+   - Gadget Launch (new devices)
+   - AI Update (latest AI developments)
+   - Tech Trivia
+   - App of the Week
+   
+   **CULTURE PAGE (6-10 boxes):**
+   - This Week's Movies (Bollywood + Hollywood)
+   - OTT Releases (Netflix, Prime, Disney+)
+   - Editor's Pick: Movie of the Week
+   - Editor's Pick: Series of the Week
+   - Music Chart (Top 5 songs)
+   - Books to Read (new releases)
+   - Weekend Guide (what to watch/read)
+   - Celebrity News Brief
+   - Movie Trivia
+   
+   **SCIENCE PAGE (4-6 boxes):**
+   - Science Fact of the Day
+   - Did You Know? (interesting fact)
+   - Space Update (NASA, ISRO news)
+   - Tech Innovation (new patents/inventions)
+   - Science Quiz
+   - Research Highlight
+   
+   **HEALTH PAGE (4-6 boxes):**
+   - Health Tip of the Day
+   - Nutrition Fact
+   - Wellness Advice
+   - Exercise Tip
+   - Mental Health Tip
+   - Health Quiz
+   
+   **NATIONAL PAGE (5-8 boxes):**
+   - Weather Today (5-6 major cities)
+   - Sunrise/Sunset Times
+   - This Day in History
+   - Quote of the Day
+   - Word of the Day
+   - Poll Result
+   - Reader's Corner
+   - National Trivia
+   
+   **BOX CONTENT TEMPLATE:**
+   
+   ```html
+   <div class="info-box" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.8rem; font-size: 0.9rem; line-height: 1.3; margin-bottom: 0.8rem; border-radius: 8px;">
+     <h4 style="font-size: 1rem; margin: 0 0 0.5rem 0; font-weight: 700;">Market Watch</h4>
+     <p style="margin: 0.2rem 0; font-size: 0.85rem;">Sensex: 82,347 ▲ 1.2%</p>
+     <p style="margin: 0.2rem 0; font-size: 0.85rem;">Nifty 50: 25,184 ▲ 0.8%</p>
+     <p style="margin: 0.2rem 0; font-size: 0.85rem;">Bank Nifty: 54,230 ▲ 0.5%</p>
+   </div>
+   ```
+   
+   **CRITICAL RULES:**
+   - Use inline styles for EVERY box (padding, font-size, colors, margins)
+   - Match gradient color to page category
+   - Maximum 5 lines of content per box
+   - Stack boxes vertically in right column
+   - Leave 0.8rem margin between boxes
+   - NO large empty boxes - every box must have 3-5 data points
 
-7. **COMPREHENSIVE COMPONENTS FOR EACH PAGE TYPE:**
+7. **FRONT PAGE COVER IMAGE & TITLE - CRITICAL FIX:**
+   
+   **THE ISSUE:** Edition title and cover image are generic/not found in newspaper
+   
+   **THE FIX:**
+   - Edition title MUST be the first article's headline (the hero story)
+   - Cover image MUST be the first article's image
+   - NO generic titles like "Breaking News" or "The Daily Agent"
+   - The front page hero story should be the most important story of the day
+   
+   **IMPLEMENTATION:**
+   - Take Article 1 (first article provided) → This is your hero story
+   - Use Article 1's headline as the edition title
+   - Use Article 1's imageUrl as the cover image
+   - Place this article prominently on Page 1 with hero-story class
+   
+   Example:
+   If Article 1 is "Sabrina Carpenter's Dazzling Rhinestone Bodysuit..."
+   Then edition title = "Sabrina Carpenter's Dazzling Rhinestone Bodysuit..."
+   And cover photo = Article 1's imageUrl
+
+8. **COMPREHENSIVE COMPONENTS FOR EACH PAGE TYPE:**
 
    **SPORTS PAGE COMPONENTS (MANDATORY):**
    - **Cricket:** Live scores, IPL standings, Test match updates, ODI results
@@ -426,12 +544,13 @@ Every edition should feel fresh and different based on the day's news.
    - **Poll Results:** Public opinion on current issues
    - **Reader's Corner:** Letters to editor, reader submissions
 
-8. **ARTICLE EXPANSION STRATEGIES (CRITICAL FOR LENGTH):**
+9. **ARTICLE EXPANSION STRATEGIES (CRITICAL FOR LENGTH):**
 
    **Automatic Article Enlargement:**
    - **300 words minimum:** Every article should have substantial content
    - **400-500 words for major stories:** Top stories need comprehensive coverage
    - **Text-only articles:** Should be LONGER (400-600 words) to compensate for no image
+   - **Combined with 40-50 boxes:** Articles + boxes = ZERO white space
    - **Add these elements to expand articles:**
      * More paragraphs with detailed context and background
      * Expert quotes from officials, analysts, witnesses
@@ -461,7 +580,7 @@ Every edition should feel fresh and different based on the day's news.
    - **TARGET:** 10-15 pages minimum (not just 5-7 pages)
    - **STRATEGY:** Better to have more pages with comfortable spacing than cramming everything
 
-9. **Modern Aesthetic:**
+10. **Modern Aesthetic:**
    - Consistent spacing and rhythm
    - Balanced visual weight across columns
    - Clean typography with proper hierarchy

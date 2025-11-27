@@ -6,6 +6,7 @@ import { searchBreakingNews } from "@/ai/flows/search-breaking-news";
 import { summarizeBreakingNews } from "@/ai/flows/summarize-breaking-news";
 import { generateNewspaperLayout } from "@/ai/flows/generate-newspaper-layout";
 import { refineNewspaperLayout } from "@/ai/flows/refine-newspaper-layout";
+import { generateSportsBoxes } from "@/ai/flows/generate-sports-boxes";
 import {
   collection,
   addDoc,
@@ -390,6 +391,30 @@ export async function validateArticlesAction(): Promise<{ success: boolean; vali
     } catch (error: any) {
         console.error("validateArticlesAction failed:", error);
         return { success: false, validCount: 0, discardedCount: 0, error: error.message };
+    }
+}
+
+
+// 4.5. Sports Journalist: Generates comprehensive sports data boxes
+export async function generateSportsDataAction(): Promise<{ success: boolean; boxCount: number; boxes: any[]; error?: string; }> {
+    try {
+        console.log('⚽ Sports Journalist: Starting sports data collection...');
+        
+        const today = new Date();
+        const dateString = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        
+        const result = await generateSportsBoxes({ date: dateString });
+        
+        console.log(`✅ Sports Journalist: Generated ${result.boxes.length} sports boxes`);
+        
+        return { 
+            success: true, 
+            boxCount: result.boxes.length,
+            boxes: result.boxes 
+        };
+    } catch (error: any) {
+        console.error("Sports Journalist failed:", error);
+        return { success: false, boxCount: 0, boxes: [], error: error.message };
     }
 }
 
