@@ -157,20 +157,21 @@ For each category, count articles:
   
   🚨 DO NOT use the same layout every time! Alternate between these 4 modern layouts:
   
-  **LAYOUT A - CLASSIC HERO (60% of editions):**
-  Row 1: [HERO STORY - 2 columns wide, 600 words, big image]
-  Row 2: [Story 350w] [Story 350w] [Story 350w]
-  - Hero article spans 2 columns (col-span-2 class)
-  - 3 supporting stories below in standard grid
-  - Clean, prestigious look
-  
-  **LAYOUT B - HERO WITH SIDEBAR (20% of editions):**
+  **LAYOUT B - HERO WITH SIDEBAR (60% of editions) - PREFERRED:**
   Left: [HERO STORY - 2 columns, 700 words, big image spanning both]
   Right: [Story 400w]
          [Story 400w]
   - Hero dominates left 2 columns
   - Right column has 2 stacked stories
   - Modern magazine feel
+  - MOST DYNAMIC AND INTERESTING LAYOUT
+  
+  **LAYOUT A - CLASSIC HERO (20% of editions):**
+  Row 1: [HERO STORY - 2 columns wide, 600 words, big image]
+  Row 2: [Story 350w] [Story 350w] [Story 350w]
+  - Hero article spans 2 columns (col-span-2 class)
+  - 3 supporting stories below in standard grid
+  - Clean, prestigious look
   
   **LAYOUT C - SPLIT FEATURE (15% of editions):**
   Row 1: [BIG Story 600w] [BIG Story 600w with large image]
@@ -363,6 +364,42 @@ Every edition should feel fresh and different based on the day's news.
    - Byline with reporter name and location
    - Well-structured paragraphs starting with <strong>CITY:</strong>
    - Images in ~60% of articles (use story-image class)
+   
+   **TYPOGRAPHY VARIETY - VINTAGE NEWSPAPER STYLE:**
+   
+   Mix different font styles throughout the newspaper for visual interest:
+   
+   **HEADLINE FONT VARIATIONS (alternate between articles):**
+   - Style 1: font-family: 'Georgia', serif; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; (BOLD CAPS)
+   - Style 2: font-family: 'Times New Roman', serif; font-style: italic; font-weight: 600; (Elegant Italic)
+   - Style 3: font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 2px; (Typewriter Bold)
+   - Style 4: font-family: 'Georgia', serif; font-weight: 700; (Classic Serif)
+   - Style 5: font-family: 'Arial Black', sans-serif; font-weight: 900; letter-spacing: -0.5px; (Modern Bold Condensed)
+   
+   **KICKER/LABEL TYPOGRAPHY:**
+   - Use: font-family: 'Arial', sans-serif; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+   - Alternative: font-family: 'Courier New', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;
+   
+   **BYLINE TYPOGRAPHY:**
+   - Style 1: font-family: 'Georgia', serif; font-style: italic; font-size: 0.85rem; (Classic Italic)
+   - Style 2: font-family: 'Times New Roman', serif; font-size: 0.8rem; font-weight: 400; (Traditional)
+   
+   **DECORATIVE ELEMENTS (use sparingly):**
+   - Ornamental dividers between sections: border-top: 3px double #333; or border-top: 2px solid #000; border-bottom: 1px solid #000; margin: 1rem 0; padding: 0.5rem 0;
+   - Drop caps for first paragraph: First letter font-size: 3.5rem; float: left; line-height: 0.8; padding-right: 8px; font-family: Georgia, serif; font-weight: 700;
+   - Section breaks: Use ❖ ◆ ✦ symbols with font-size: 1.2rem; text-align: center; margin: 1rem 0;
+   
+   **BOX TITLE TYPOGRAPHY (vintage newspaper style):**
+   - Use condensed uppercase: font-family: 'Arial Narrow', 'Arial', sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; font-stretch: condensed;
+   - Alternative: font-family: 'Impact', sans-serif; font-weight: 900; letter-spacing: 0.5px;
+   
+   **APPLY THESE STYLES:**
+   - Hero headline: Use Style 1 (BOLD CAPS) at 2.5-3rem
+   - Regular headlines: Alternate between Styles 2, 3, 4, 5 at 1.5-1.8rem
+   - Box titles: Use condensed uppercase style
+   - First paragraph of hero: Add drop cap
+   - Between major sections: Add ornamental dividers
+   - Kickers: Always uppercase with letter-spacing
    
    **IMAGE HANDLING - CRITICAL FOR PROPER DISPLAY:**
    - ALWAYS use article.imageUrl if provided (these are real, verified URLs)
